@@ -2,14 +2,36 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::path::PathBuf;
+use merkle_hash::camino::Utf8PathBuf;
+use serde::{Serialize};
 use tauri::api::dialog;
 use tauri::{CustomMenuItem, Menu, MenuItem, Submenu};
 use lazy_static::lazy_static;
 use parking_lot::Mutex;
 use merkle_hash::{bytes_to_hex, Algorithm, MerkleTree, anyhow::Error};
+use std::fs::File;
+use std::io::prelude::*;
+
+#[derive(Serialize)]
+struct CADFile {
+    path: String,
+    size: u64,
+    hash: String,
+    is_file: bool
+}
 
 lazy_static! {
     static ref PATH: Mutex<PathBuf> = Mutex::new(PathBuf::new());
+}
+
+fn update_path(path: PathBuf) {
+    println!("path: {}", path.display());
+    *PATH.lock() = path;
+}
+
+fn pathbuf_to_string(path: PathBuf) -> String {
+    let output: String = path.into_os_string().into_string().unwrap();
+    return output;
 }
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
@@ -20,19 +42,12 @@ fn greet(name: &str) -> String {
     return output;
 }
 
-fn update_path(path: PathBuf) {
-    println!("path: {}", path.display());
-    *PATH.lock() = path;
-}
-
 #[tauri::command]
 fn get_changes() {
-    //let path: &str = "demo";
     let path_buf_obj: PathBuf = PATH.lock().to_path_buf();
-    let path: &str = match path_buf_obj.to_str() {
-        Some(p) => p,
-        None => "demo"
-    };
+    let path: String = pathbuf_to_string(path_buf_obj);
+    let mut files: Vec<CADFile> = Vec::new();
+
     let do_steps = || -> Result<(), Error> {
         let tree = MerkleTree::builder(path)
         .algorithm(Algorithm::Blake3)
@@ -40,12 +55,37 @@ fn get_changes() {
         .build()?;
 
         for item in tree {
-            println!("{}: {}", item.path.relative, bytes_to_hex(item.hash));
+            let brrr = item.path.absolute;
+            let pathbuf = brrr.into_string();
+            let s_hash = bytes_to_hex(item.hash);
+
+            println!("{}: {}", pathbuf, s_hash);
+            if pathbuf.as_str() == "" {
+                continue;
+            }
+            let metadata = std::fs::metadata(pathbuf.as_str())?;
+            let isthisfile = metadata.is_file();
+            let filesize = metadata.len();
+            let spath = pathbuf;
+            
+            let file = CADFile {
+                hash: s_hash,
+                path: spath,
+                size: filesize,
+                is_file: isthisfile
+            };
+            files.push(file);
         }
+
+        let json = serde_json::to_string(&files)?;
+
+        let mut file = File::create("foo.json")?;
+        file.write_all(json.as_bytes())?;
         Ok(())
     };
-
     let _ = do_steps();
+
+    println!("fn get_changes done");
 }
 
 fn main() {
