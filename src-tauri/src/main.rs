@@ -55,8 +55,7 @@ fn get_changes() {
         .build()?;
 
         for item in tree {
-            let brrr = item.path.absolute;
-            let pathbuf = brrr.into_string();
+            let pathbuf = item.path.absolute.into_string();
             let s_hash = bytes_to_hex(item.hash);
 
             println!("{}: {}", pathbuf, s_hash);
@@ -66,11 +65,10 @@ fn get_changes() {
             let metadata = std::fs::metadata(pathbuf.as_str())?;
             let isthisfile = metadata.is_file();
             let filesize = metadata.len();
-            let spath = pathbuf;
             
             let file = CADFile {
                 hash: s_hash,
-                path: spath,
+                path: pathbuf,
                 size: filesize,
                 is_file: isthisfile
             };
