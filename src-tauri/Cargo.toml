@@ -1,9 +1,9 @@
 [package]
 name = "lemoncad-client"
-version = "0.0.0"
+version = "0.1.0"
 description = "A Tauri App"
-authors = ["you"]
-license = ""
+authors = ["Joshua Tenorio"]
+license = "GPL"
 repository = ""
 edition = "2021"
 
@@ -13,9 +13,10 @@ edition = "2021"
 tauri-build = { version = "1.4", features = [] }
 
 [dependencies]
-tauri = { version = "1.4", features = [ "fs-all", "shell-open"] }
+tauri = { version = "1.4", features = [ "dialog-all", "fs-all", "shell-open"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+merkle_hash = "3.5"
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem
