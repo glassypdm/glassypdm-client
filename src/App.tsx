@@ -15,10 +15,10 @@ function App() {
   }
 
   async function directory() {
-    setGreetMsg(await invoke("get_directory", { path }));
-
-
+    console.log("click directory");
+    setGreetMsg(await invoke("get_changes"));
   }
+
 
   return (
     <div className="container">
@@ -54,6 +54,7 @@ function App() {
       </form>
 
       <p>{greetMsg}</p>
+      <button onClick={directory}>Search for file changes</button>
     </div>
   );
 }
