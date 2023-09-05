@@ -24,3 +24,5 @@ dist-ssr
 
 # lemonCAD specific
 demo
+base.json
+compare.json

@@ -27,6 +27,8 @@ lazy_static! {
 fn update_path(path: PathBuf) {
     println!("path: {}", path.display());
     *PATH.lock() = path;
+
+    get_changes("..\\base.json");
 }
 
 fn pathbuf_to_string(path: PathBuf) -> String {
@@ -43,7 +45,7 @@ fn greet(name: &str) -> String {
 }
 
 #[tauri::command]
-fn get_changes() {
+fn get_changes(results_path: &str) {
     let path_buf_obj: PathBuf = PATH.lock().to_path_buf();
     let path: String = pathbuf_to_string(path_buf_obj);
     let mut files: Vec<CADFile> = Vec::new();
@@ -77,7 +79,7 @@ fn get_changes() {
 
         let json = serde_json::to_string(&files)?;
 
-        let mut file = File::create("foo.json")?;
+        let mut file = File::create(results_path)?;
         file.write_all(json.as_bytes())?;
         Ok(())
     };
@@ -104,8 +106,7 @@ fn main() {
         }
         _ => {}
         })
-        .invoke_handler(tauri::generate_handler![greet])
-        .invoke_handler(tauri::generate_handler![get_changes])
+        .invoke_handler(tauri::generate_handler![get_changes, greet])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

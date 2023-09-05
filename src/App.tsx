@@ -5,9 +5,8 @@ import { invoke } from "@tauri-apps/api/tauri";
 import "./App.css";
 
 function App() {
-  const [greetMsg, setGreetMsg] = useState("");
+  const [greetMsg, setGreetMsg] = useState("hehe");
   const [name, setName] = useState("");
-  const [path, setPath] = useState("");
 
   async function greet() {
     // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
@@ -16,7 +15,7 @@ function App() {
 
   async function directory() {
     console.log("click directory");
-    setGreetMsg(await invoke("get_changes"));
+    await invoke("get_changes", { resultsPath: "..\\compare.json" });
   }
 
 
