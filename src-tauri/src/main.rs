@@ -24,6 +24,7 @@ struct ProjectDirectory {
     local_path: String
 }
 
+#[tauri::command]
 fn get_project_dir() -> String {
     let output = fs::read_to_string("..\\project_dir.txt").expect("no lol");
     return output;
@@ -116,7 +117,7 @@ fn main() {
         }
         _ => {}
         })
-        .invoke_handler(tauri::generate_handler![get_changes, greet])
+        .invoke_handler(tauri::generate_handler![get_changes, greet, get_project_dir])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
