@@ -89,18 +89,21 @@ fn get_changes(results_path: &str) {
 }
 
 fn main() {
-    let open = CustomMenuItem::new("open".to_string(), "Open");
-    let file_menu = Submenu::new("File", Menu::new().add_item(open));
+    let set_dir = CustomMenuItem::new("Set Project Directory".to_string(), "Set Project Directory");
+    let file_menu = Submenu::new("Configure", Menu::new().add_item(set_dir));
     let menu = Menu::new()
       .add_submenu(file_menu);
 
     tauri::Builder::default()
         .menu(menu)
         .on_menu_event(|event| match event.menu_item_id() {
-        "open" => {
+        "Set Project Directory" => {
             dialog::FileDialogBuilder::default()
             .pick_folder(|path_buf| match path_buf {
-                Some(p) => { println!("{}", p.display()); update_path(p)}
+                Some(p) => {
+                    println!("{}", p.display());
+                    update_path(p);
+                }
                 _ => {}
             });
         }

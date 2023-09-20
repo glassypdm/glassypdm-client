@@ -19,6 +19,9 @@
       "dialog": {
         "all": true
       },
+      "path": {
+        "all": true
+      },
       "shell": {
         "all": false,
         "open": true
@@ -27,7 +30,7 @@
     "bundle": {
       "active": true,
       "targets": "all",
-      "identifier": "com.tauri.dev",
+      "identifier": "org.18x18az.pdm",
       "icon": [
         "icons/32x32.png",
         "icons/128x128.png",

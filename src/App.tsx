@@ -4,9 +4,10 @@ import '@fontsource/roboto/300.css';
 import '@fontsource/roboto/400.css';
 import '@fontsource/roboto/500.css';
 import '@fontsource/roboto/700.css';
+import { Button, Stack } from "@mui/material";
 import { useState } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
-import { Button, Stack } from "@mui/material";
+import { appLocalDataDir } from "@tauri-apps/api/path";
 
 const darkTheme = createTheme({
   palette: {
@@ -26,14 +27,20 @@ function App() {
   async function getChanges() {
     console.log("click getChanges");
     await invoke("get_changes", { resultsPath: "..\\compare.json" });
+
+    // read compare.json and base.json and compare them
   }
 
   async function downloadChanges() {
     console.log("click downloadChanges");
+
+    // TODO: on download, regenerate base.json
   }
 
   async function uploadChanges() {
     console.log("click uploadChanges");
+    const appdata = await appLocalDataDir();
+    console.log(appdata);
   }
 
   return (
