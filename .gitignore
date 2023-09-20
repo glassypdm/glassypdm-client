@@ -22,7 +22,7 @@ dist-ssr
 *.sln
 *.sw?
 
-# lemonCAD specific
+# taxiPDM specific
 demo
 base.json
 compare.json

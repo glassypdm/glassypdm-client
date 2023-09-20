@@ -1,5 +1,5 @@
 [package]
-name = "lemoncad-client"
+name = "taxiPDM-client"
 version = "0.1.0"
 description = "A Tauri App"
 authors = ["Joshua Tenorio"]
