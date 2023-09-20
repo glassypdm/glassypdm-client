@@ -8,12 +8,22 @@ import { Button, Stack } from "@mui/material";
 import { useState } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
 import { appLocalDataDir } from "@tauri-apps/api/path";
+import {
+  ClerkProvider,
+  SignedIn,
+  SignedOut,
+  UserButton,
+  useUser,
+  RedirectToSignIn,
+} from "@clerk/clerk-react";
 
 const darkTheme = createTheme({
   palette: {
     mode: 'dark',
   },
 });
+
+const pubkey = "temp, lol";
 
 function App() {
   const [greetMsg, setGreetMsg] = useState("hehe");
@@ -46,11 +56,17 @@ function App() {
   return (
     <ThemeProvider theme={darkTheme}>
       <CssBaseline/>
+      <ClerkProvider publishableKey={pubkey}>
       <Stack direction="row" spacing={3} justifyContent="center" alignItems="stretch">
         <Button variant="contained" onClick={downloadChanges}>Download</Button>
         <Button variant="contained" onClick={getChanges}>Sync</Button>
         <Button variant="contained" onClick={uploadChanges}>Upload</Button>
       </Stack>
+      <SignedOut>
+        <RedirectToSignIn />
+      </SignedOut>
+      </ClerkProvider>
+
     </ThemeProvider>
   );
 }
