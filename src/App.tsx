@@ -1,8 +1,18 @@
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+import '@fontsource/roboto/300.css';
+import '@fontsource/roboto/400.css';
+import '@fontsource/roboto/500.css';
+import '@fontsource/roboto/700.css';
 import { useState } from "react";
-import reactLogo from "./assets/react.svg";
 import { invoke } from "@tauri-apps/api/tauri";
-import { Button } from "./Button";
-import "./App.css";
+import { Button, Stack } from "@mui/material";
+
+const darkTheme = createTheme({
+  palette: {
+    mode: 'dark',
+  },
+});
 
 function App() {
   const [greetMsg, setGreetMsg] = useState("hehe");
@@ -13,16 +23,28 @@ function App() {
     setGreetMsg(await invoke("greet", { name }));
   }
 
-  async function directory() {
-    console.log("click directory");
+  async function getChanges() {
+    console.log("click getChanges");
     await invoke("get_changes", { resultsPath: "..\\compare.json" });
   }
 
+  async function downloadChanges() {
+    console.log("click downloadChanges");
+  }
+
+  async function uploadChanges() {
+    console.log("click uploadChanges");
+  }
 
   return (
-    <div className="container">
-      <Button onPress={() => alert('button')}>Press</Button>
-    </div>
+    <ThemeProvider theme={darkTheme}>
+      <CssBaseline/>
+      <Stack direction="row" spacing={3} justifyContent="center" alignItems="stretch">
+        <Button variant="contained" onClick={downloadChanges}>Download</Button>
+        <Button variant="contained" onClick={getChanges}>Sync</Button>
+        <Button variant="contained" onClick={uploadChanges}>Upload</Button>
+      </Stack>
+    </ThemeProvider>
   );
 }
 
