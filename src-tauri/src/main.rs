@@ -9,7 +9,7 @@ use tauri::{CustomMenuItem, Menu, MenuItem, Submenu};
 use lazy_static::lazy_static;
 use parking_lot::Mutex;
 use merkle_hash::{bytes_to_hex, Algorithm, MerkleTree, anyhow::Error};
-use std::fs::File;
+use std::fs::{File, self};
 use std::io::prelude::*;
 
 #[derive(Serialize)]
@@ -20,14 +20,18 @@ struct CADFile {
     is_file: bool
 }
 
-lazy_static! {
-    static ref PATH: Mutex<PathBuf> = Mutex::new(PathBuf::new());
+struct ProjectDirectory {
+    local_path: String
 }
 
-fn update_path(path: PathBuf) {
-    println!("path: {}", path.display());
-    *PATH.lock() = path;
+fn get_project_dir() -> String {
+    let output = fs::read_to_string("..\\project_dir.txt").expect("no lol");
+    return output;
+}
 
+fn update_project_dir(path: PathBuf) {
+    println!("new project dir: {}", path.display());
+    let _ = fs::write("..\\project_dir.txt", pathbuf_to_string(path));
     get_changes("..\\base.json");
 }
 
@@ -46,8 +50,11 @@ fn greet(name: &str) -> String {
 
 #[tauri::command]
 fn get_changes(results_path: &str) {
-    let path_buf_obj: PathBuf = PATH.lock().to_path_buf();
-    let path: String = pathbuf_to_string(path_buf_obj);
+    let path: String = get_project_dir();
+    if path == "no lol" {
+        return;
+    }
+    
     let mut files: Vec<CADFile> = Vec::new();
 
     let do_steps = || -> Result<(), Error> {
@@ -102,7 +109,7 @@ fn main() {
             .pick_folder(|path_buf| match path_buf {
                 Some(p) => {
                     println!("{}", p.display());
-                    update_path(p);
+                    update_project_dir(p);
                 }
                 _ => {}
             });
