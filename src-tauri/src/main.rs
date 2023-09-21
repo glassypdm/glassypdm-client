@@ -32,10 +32,12 @@ fn get_file_as_byte_vec(filename: &String) -> Vec<u8> {
 #[tauri::command]
 async fn upload_changes(files: Vec<String>) -> Result<(), ()> {
     let client = reqwest::Client::new();
+
+    // TODO: need to subtract project dir from file path
     for file in files {
         println!("uploading {}", file);
         let content: Vec<u8> = get_file_as_byte_vec(&file);
-        let part = Part::bytes(content).file_name(file);
+        let part = Part::bytes(content).file_name(file.clone());
         let request = reqwest::multipart::Form::new().part("key", part).text("path", file);
 
         let _response = client.post("http://localhost:5000/ingest")
