@@ -23,7 +23,7 @@ const darkTheme = createTheme({
   },
 });
 
-const pubkey = "temp, lol";
+const pubkey = "";
 
 function App() {
   const [greetMsg, setGreetMsg] = useState("hehe");
@@ -43,30 +43,37 @@ function App() {
 
   async function downloadChanges() {
     console.log("click downloadChanges");
-
-    // TODO: on download, regenerate base.json
+    console.log(await invoke("get_project_dir"));
+    // TODO: on download, ensure that:
+    // - there are no current changes (i.e. compare == base)
+    // then download changes
   }
 
   async function uploadChanges() {
     console.log("click uploadChanges");
     const appdata = await appLocalDataDir();
     console.log(appdata);
+
+    invoke("upload_changes", {
+      files: [
+        "C:\\FSAE\\24cad\\shade.SLDPRT"
+      ]
+    });
+  }
+
+  async function resetChanges() {
+    console.log("click resetChanges");
   }
 
   return (
     <ThemeProvider theme={darkTheme}>
       <CssBaseline/>
-      <ClerkProvider publishableKey={pubkey}>
       <Stack direction="row" spacing={3} justifyContent="center" alignItems="stretch">
         <Button variant="contained" onClick={downloadChanges}>Download</Button>
         <Button variant="contained" onClick={getChanges}>Sync</Button>
         <Button variant="contained" onClick={uploadChanges}>Upload</Button>
+        <Button variant="contained" color="warning" onClick={resetChanges}>Reset Changes</Button>
       </Stack>
-      <SignedOut>
-        <RedirectToSignIn />
-      </SignedOut>
-      </ClerkProvider>
-
     </ThemeProvider>
   );
 }

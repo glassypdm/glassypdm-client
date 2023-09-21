@@ -6,11 +6,11 @@ use merkle_hash::camino::Utf8PathBuf;
 use serde::{Serialize};
 use tauri::api::dialog;
 use tauri::{CustomMenuItem, Menu, MenuItem, Submenu};
-use lazy_static::lazy_static;
-use parking_lot::Mutex;
 use merkle_hash::{bytes_to_hex, Algorithm, MerkleTree, anyhow::Error};
 use std::fs::{File, self};
 use std::io::prelude::*;
+use std::io::Read;
+use reqwest::multipart::Part;
 
 #[derive(Serialize)]
 struct CADFile {
@@ -20,8 +20,31 @@ struct CADFile {
     is_file: bool
 }
 
-struct ProjectDirectory {
-    local_path: String
+fn get_file_as_byte_vec(filename: &String) -> Vec<u8> {
+    let mut f = File::open(&filename).expect("no file found");
+    let metadata = fs::metadata(&filename).expect("unable to read metadata");
+    let mut buffer = vec![0; metadata.len() as usize];
+    f.read(&mut buffer).expect("buffer overflow");
+
+    buffer
+}
+
+#[tauri::command]
+async fn upload_changes(files: Vec<String>) -> Result<(), ()> {
+    let client = reqwest::Client::new();
+    for file in files {
+        println!("uploading {}", file);
+        let content: Vec<u8> = get_file_as_byte_vec(&file);
+        let part = Part::bytes(content).file_name(file);
+        let request = reqwest::multipart::Form::new().part("key", part).text("path", file);
+
+        let _response = client.post("http://localhost:5000/ingest")
+            .multipart(request)
+            .send().await;
+
+    }
+
+    Ok(())
 }
 
 #[tauri::command]
@@ -117,7 +140,7 @@ fn main() {
         }
         _ => {}
         })
-        .invoke_handler(tauri::generate_handler![get_changes, greet, get_project_dir])
+        .invoke_handler(tauri::generate_handler![get_changes, greet, get_project_dir, upload_changes])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
