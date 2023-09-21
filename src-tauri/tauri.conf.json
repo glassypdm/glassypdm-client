@@ -14,7 +14,10 @@
     "allowlist": {
       "all": false,
       "fs": {
-        "all": true
+        "all": true,
+        "scope": {
+          "allow": ["$APPDATA", "$APPDATA/*", "$APPLOCALDATA", "$APPLOCALDATA/*"]
+        }
       },
       "dialog": {
         "all": true

@@ -7,7 +7,8 @@ import '@fontsource/roboto/700.css';
 import { Button, Stack } from "@mui/material";
 import { useState } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
-import { appLocalDataDir } from "@tauri-apps/api/path";
+import { resolve, appLocalDataDir } from "@tauri-apps/api/path";
+import { readTextFile, BaseDirectory } from "@tauri-apps/api/fs";
 import {
   ClerkProvider,
   SignedIn,
@@ -24,40 +25,38 @@ const darkTheme = createTheme({
 });
 
 const pubkey = "";
-
+const owo = await invoke("get_project_dir");
 function App() {
-  const [greetMsg, setGreetMsg] = useState("hehe");
-  const [name, setName] = useState("");
-
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
-    setGreetMsg(await invoke("greet", { name }));
-  }
+  const [projDir, setProjDir] = useState(owo);
 
   async function getChanges() {
-    console.log("click getChanges");
-    await invoke("get_changes", { resultsPath: "..\\compare.json" });
+    console.log("click sync");
+
+    const appdata = await appLocalDataDir();
+    const path = await resolve(appdata, "compare.json");
+    console.log(path);
+    await invoke("get_changes", { resultsPath: path });
 
     // read compare.json and base.json and compare them
   }
 
   async function downloadChanges() {
     console.log("click downloadChanges");
-    console.log(await invoke("get_project_dir"));
-    // TODO: on download, ensure that:
-    // - there are no current changes (i.e. compare == base)
-    // then download changes
+    const tmp: string = await invoke("get_project_dir");
+    console.log(tmp);
+    setProjDir(tmp);
   }
 
   async function uploadChanges() {
     console.log("click uploadChanges");
     const appdata = await appLocalDataDir();
     console.log(appdata);
+    const contents = await readTextFile("compare.json", { dir: BaseDirectory.AppLocalData });
+    const files = JSON.parse(contents);
 
     invoke("upload_changes", {
-      files: [
-        "C:\\FSAE\\24cad\\shade.SLDPRT"
-      ]
+      files: files,
+      commit: 0,
     });
   }
 
@@ -68,6 +67,7 @@ function App() {
   return (
     <ThemeProvider theme={darkTheme}>
       <CssBaseline/>
+      <p>Project Directory: {projDir}</p>
       <Stack direction="row" spacing={3} justifyContent="center" alignItems="stretch">
         <Button variant="contained" onClick={downloadChanges}>Download</Button>
         <Button variant="contained" onClick={getChanges}>Sync</Button>

@@ -3,16 +3,18 @@
 
 use std::path::PathBuf;
 use merkle_hash::camino::Utf8PathBuf;
-use serde::{Serialize};
+use serde::{Serialize, Deserialize};
 use tauri::api::dialog;
-use tauri::{CustomMenuItem, Menu, MenuItem, Submenu};
+use tauri::{CustomMenuItem, Menu, MenuItem, Submenu, Manager};
 use merkle_hash::{bytes_to_hex, Algorithm, MerkleTree, anyhow::Error};
 use std::fs::{File, self};
 use std::io::prelude::*;
 use std::io::Read;
 use reqwest::multipart::Part;
+use tauri::api::path::*;
+use tauri::PathResolver;
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 struct CADFile {
     path: String,
     size: u64,
@@ -30,35 +32,57 @@ fn get_file_as_byte_vec(filename: &String) -> Vec<u8> {
 }
 
 #[tauri::command]
-async fn upload_changes(files: Vec<String>) -> Result<(), ()> {
+async fn upload_changes(app_handle: tauri::AppHandle, files: Vec<CADFile>, commit: u64) -> Result<(), ()> {
     let client = reqwest::Client::new();
+    println!("commit # {}", commit);
 
     // TODO: need to subtract project dir from file path
+    let project_dir = get_project_dir(app_handle);
+    println!("{}", project_dir);
+
     for file in files {
-        println!("uploading {}", file);
-        let content: Vec<u8> = get_file_as_byte_vec(&file);
-        let part = Part::bytes(content).file_name(file.clone());
-        let request = reqwest::multipart::Form::new().part("key", part).text("path", file);
+        let path: String = file.path;
+        let relative_path = path.replace(&project_dir, "");
+
+        println!("uploading {}", path);
+        println!("relative {}", relative_path);
+        let content: Vec<u8> = get_file_as_byte_vec(&path);
+        let part = Part::bytes(content).file_name(path.clone());
+        let request = reqwest::multipart::Form::new()
+            .part("key", part)
+            .text("commit", commit.to_string())
+            .text("path", relative_path)
+            .text("size", file.size.to_string())
+            .text("hash", file.hash);
 
         let _response = client.post("http://localhost:5000/ingest")
             .multipart(request)
             .send().await;
 
     }
-
+    println!("upload done");
     Ok(())
 }
 
 #[tauri::command]
-fn get_project_dir() -> String {
-    let output = fs::read_to_string("..\\project_dir.txt").expect("no lol");
+fn get_project_dir(app_handle: tauri::AppHandle) -> String {
+    let appdir = app_handle.path_resolver().app_local_data_dir().unwrap();
+    let path = appdir.join("project_dir.txt");
+    println!("{}", path.as_path().display());
+    let output = fs::read_to_string(path).expect("no lol");
     return output;
 }
 
-fn update_project_dir(path: PathBuf) {
-    println!("new project dir: {}", path.display());
-    let _ = fs::write("..\\project_dir.txt", pathbuf_to_string(path));
-    get_changes("..\\base.json");
+fn update_project_dir(app_handle: tauri::AppHandle, dir: PathBuf) {
+    println!("new project dir: {}", dir.display());
+
+    let appdir = app_handle.path_resolver().app_local_data_dir().unwrap();
+    let mut path = appdir.join("project_dir.txt");
+
+    let _ = fs::write(path, pathbuf_to_string(dir));
+
+    path = appdir.join("base.json");
+    get_changes(app_handle, &pathbuf_to_string(path));
 }
 
 fn pathbuf_to_string(path: PathBuf) -> String {
@@ -75,8 +99,8 @@ fn greet(name: &str) -> String {
 }
 
 #[tauri::command]
-fn get_changes(results_path: &str) {
-    let path: String = get_project_dir();
+fn get_changes(app_handle: tauri::AppHandle, results_path: &str) {
+    let path: String = get_project_dir(app_handle);
     if path == "no lol" {
         return;
     }
@@ -100,6 +124,10 @@ fn get_changes(results_path: &str) {
             let metadata = std::fs::metadata(pathbuf.as_str())?;
             let isthisfile = metadata.is_file();
             let filesize = metadata.len();
+
+            if !isthisfile {
+                continue;
+            }
             
             let file = CADFile {
                 hash: s_hash,
@@ -132,10 +160,10 @@ fn main() {
         .on_menu_event(|event| match event.menu_item_id() {
         "Set Project Directory" => {
             dialog::FileDialogBuilder::default()
-            .pick_folder(|path_buf| match path_buf {
+            .pick_folder(move |path_buf| match path_buf {
                 Some(p) => {
                     println!("{}", p.display());
-                    update_project_dir(p);
+                    update_project_dir(event.window().app_handle(), p);
                 }
                 _ => {}
             });
