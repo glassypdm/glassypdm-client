@@ -22,7 +22,7 @@ dist-ssr
 *.sln
 *.sw?
 
-# taxiPDM specific
+# glassyPDM specific
 demo
 base.json
 compare.json

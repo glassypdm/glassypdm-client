@@ -1,8 +1,6 @@
-# Tauri + React + Typescript
+# glassyPDM Client
 
 This template should help get you started developing with Tauri, React and Typescript in Vite.
-## TODO
-- get file sizes (use this to compare changes first before hash)
 ## Dev Instructions
 ```bash
 $ yarn tauri dev

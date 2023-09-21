@@ -1,5 +1,5 @@
 [package]
-name = "taxi_pdm_client"
+name = "glassy_pdm_client"
 version = "0.1.0"
 description = "A Tauri App"
 authors = ["Joshua Tenorio"]

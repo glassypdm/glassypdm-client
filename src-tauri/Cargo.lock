@@ -1048,6 +1048,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "glassy_pdm_client"
+version = "0.1.0"
+dependencies = [
+ "lazy_static",
+ "merkle_hash",
+ "parking_lot",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+]
+
+[[package]]
 name = "glib"
 version = "0.15.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3180,20 +3194,6 @@ checksum = "5993dc129e544393574288923d1ec447c857f3f644187f4fbf7d9a875fbfc4fb"
 dependencies = [
  "embed-resource",
  "toml 0.7.6",
-]
-
-[[package]]
-name = "taxi_pdm_client"
-version = "0.1.0"
-dependencies = [
- "lazy_static",
- "merkle_hash",
- "parking_lot",
- "reqwest",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
 ]
 
 [[package]]
