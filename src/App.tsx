@@ -36,8 +36,13 @@ function App() {
     const path = await resolve(appdata, "compare.json");
     console.log(path);
     await invoke("get_changes", { resultsPath: path });
-
-    // read compare.json and base.json and compare them
+    
+    // TODO: make a GET call for info/state, store files into remote.json, compare w/ base.json
+    // for each file in remote.json:
+    // - if size == zero and it exists in base.json, then we need to delete the local copy
+    // - if size == zero and it does NOT exist locally, then we can skip it
+    // - if a file is present in remote.json but missing in base.json, then we need to download it
+    // - if a file is different (size/hash) between remote and base, then we need to download it
   }
 
   async function downloadChanges() {
@@ -45,6 +50,8 @@ function App() {
     const tmp: string = await invoke("get_project_dir");
     console.log(tmp);
     setProjDir(tmp);
+
+    // TODO: before downloading, ensure that base.json == current.json
   }
 
   async function uploadChanges() {
