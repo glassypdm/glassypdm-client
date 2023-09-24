@@ -8,7 +8,7 @@ import { Button, Stack } from "@mui/material";
 import { useState } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
 import { resolve, appLocalDataDir } from "@tauri-apps/api/path";
-import { readTextFile, BaseDirectory } from "@tauri-apps/api/fs";
+import { readTextFile, writeTextFile, BaseDirectory } from "@tauri-apps/api/fs";
 import {
   ClerkProvider,
   SignedIn,
@@ -24,10 +24,28 @@ const darkTheme = createTheme({
   },
 });
 
+interface CADFile {
+  path: string,
+  commit: number,
+  size: number,
+  hash: string,
+};
+
+interface LocalCADFile {
+  path: string,
+  size: number,
+  hash: string
+}
+
+interface ProjectState {
+  commit: number,
+  files: CADFile[]
+};
+
 const pubkey = "";
-const owo = await invoke("get_project_dir");
+const projectPath: string = await invoke("get_project_dir");
 function App() {
-  const [projDir, setProjDir] = useState(owo);
+  const [projDir, setProjDir] = useState(projectPath);
 
   async function getChanges() {
     console.log("click sync");
@@ -35,36 +53,153 @@ function App() {
     const appdata = await appLocalDataDir();
     const path = await resolve(appdata, "compare.json");
     console.log(path);
-    await invoke("get_changes", { resultsPath: path });
-    
-    // TODO: make a GET call for info/state, store files into remote.json, compare w/ base.json
-    // for each file in remote.json:
-    // - if size == zero and it exists in base.json, then we need to delete the local copy
-    // - if size == zero and it does NOT exist locally, then we can skip it
-    // - if a file is present in remote.json but missing in base.json, then we need to download it
-    // - if a file is different (size/hash) between remote and base, then we need to download it
+    await invoke("hash_dir", { resultsPath: path });
+    try {
+      const data = await fetch("http://localhost:5000/info/project");
+      const remote: ProjectState = await data.json();
+      console.log(remote);
+
+      // write remote commit into some file
+      const commit: string = remote.commit.toString();
+      await writeTextFile("basecommit.txt", commit, { dir: BaseDirectory.AppLocalData });
+
+      let contents = await readTextFile("base.json", { dir: BaseDirectory.AppLocalData });
+      const base = JSON.parse(contents);
+
+      contents = await readTextFile("compare.json", { dir: BaseDirectory.AppLocalData });
+      const compare = JSON.parse(contents);
+
+      // for getting what to download
+      let toDownload: CADFile[] = [];
+      // for each file in remote:
+      remote.files.forEach( (file: CADFile) => {
+        if(file.size === 0) {
+          let found: boolean = false;
+          base.every( (local: any) => {
+            // adjust path
+            const localPath: string = local.path.replace(projectPath, "");
+            if (file.path === localPath) {
+              found = true;
+              return false;
+            }
+            return true;
+          });
+          if (found) {
+            toDownload.push(file); // file not deleted locally
+          }
+        }
+        else {
+          let found: boolean = false;
+          base.forEach( (local: any) => {
+            // adjust path
+            const localPath: string = local.path.replace(projectPath, "");
+            if (file.path === localPath) {
+              found = true;
+              if (local.hash !== file.hash || local.size != file.size) {
+                toDownload.push(file); // file has been updated
+              }
+            }
+          });
+          if (!found) {
+            toDownload.push(file); // file not downloaded locally
+          }
+        }
+      });
+      console.log(toDownload);
+      console.log(JSON.stringify(toDownload));
+      await writeTextFile("toDownload.json", JSON.stringify(toDownload), { dir: BaseDirectory.AppLocalData });
+
+      // for getting what to upload, compare base.json with compare.json
+      let toUpload: LocalCADFile[] = [];
+
+      base.forEach( (bFile: LocalCADFile) => {
+        // if base && compare, add toUpload if size, hash is different
+        let found: boolean = false;
+        compare.every( (cFile: LocalCADFile) => {
+          if (bFile.path === cFile.path) {
+            found = true;
+            if (bFile.hash !== cFile.hash) {
+              toUpload.push(cFile);
+            }
+            return false;
+          }
+          return true;
+        });
+
+        // if base && !compare, add toUpload w/ size 0
+        if (!found) {
+          toUpload.push({
+            path: bFile.path,
+            size: 0,
+            hash: bFile.hash
+          });
+        }
+      });
+
+      // if !base && compare, add toUpload
+      compare.forEach( (cFile: LocalCADFile) => {
+        let found: boolean = false;
+        base.every( (bFile: LocalCADFile) => {
+          if (bFile.path == cFile.path) {
+            found = true;
+            return false;
+          }
+          return true;
+        });
+
+        if (!found) {
+          toUpload.push(cFile);
+        }
+      });
+
+      console.log(JSON.stringify(toUpload));
+      await writeTextFile("toUpload.json", JSON.stringify(toUpload), { dir: BaseDirectory.AppLocalData });
+    } catch(err: any) {
+      console.error(err.message);
+    }
   }
 
   async function downloadChanges() {
     console.log("click downloadChanges");
-    const tmp: string = await invoke("get_project_dir");
-    console.log(tmp);
-    setProjDir(tmp);
+    const projectDir: string = await invoke("get_project_dir");
+    console.log(projectDir);
+    setProjDir(projectDir);
 
-    // TODO: before downloading, ensure that base.json == current.json
+    // TODO: before downloading, ensure that base.json == compare.json
+    
+    // download files
+
+    // after download, hash dir to base.json
+    const appdata = await appLocalDataDir();
+    const path = await resolve(appdata, "base.json");
+    await invoke("hash_dir", { resultsPath: path });
   }
 
   async function uploadChanges() {
     console.log("click uploadChanges");
     const appdata = await appLocalDataDir();
     console.log(appdata);
-    const contents = await readTextFile("compare.json", { dir: BaseDirectory.AppLocalData });
+    const contents = await readTextFile("toUpload.json", { dir: BaseDirectory.AppLocalData });
     const files = JSON.parse(contents);
 
-    invoke("upload_changes", {
+    // TODO ensure base == remote before uploading
+    // TODO mutex?
+    
+    // get commit of base
+    const commitStr = await readTextFile("basecommit.txt", { dir: BaseDirectory.AppLocalData });
+    let newCommit: number = parseInt(commitStr);
+    newCommit += 1;
+
+    
+    await invoke("upload_changes", {
       files: files,
-      commit: 0,
+      commit: newCommit,
     });
+
+    // update base.json
+    const path = await resolve(appdata, "base.json");
+    await invoke("hash_dir", { resultsPath: path });
+    
   }
 
   async function resetChanges() {

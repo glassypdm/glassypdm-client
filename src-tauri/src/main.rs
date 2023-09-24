@@ -15,11 +15,10 @@ use tauri::api::path::*;
 use tauri::PathResolver;
 
 #[derive(Serialize, Deserialize)]
-struct CADFile {
+struct LocalCADFile {
     path: String,
     size: u64,
-    hash: String,
-    is_file: bool
+    hash: String
 }
 
 fn get_file_as_byte_vec(filename: &String) -> Vec<u8> {
@@ -32,7 +31,7 @@ fn get_file_as_byte_vec(filename: &String) -> Vec<u8> {
 }
 
 #[tauri::command]
-async fn upload_changes(app_handle: tauri::AppHandle, files: Vec<CADFile>, commit: u64) -> Result<(), ()> {
+async fn upload_changes(app_handle: tauri::AppHandle, files: Vec<LocalCADFile>, commit: u64) -> Result<(), ()> {
     let client = reqwest::Client::new();
     println!("commit # {}", commit);
 
@@ -68,7 +67,6 @@ async fn upload_changes(app_handle: tauri::AppHandle, files: Vec<CADFile>, commi
 fn get_project_dir(app_handle: tauri::AppHandle) -> String {
     let appdir = app_handle.path_resolver().app_local_data_dir().unwrap();
     let path = appdir.join("project_dir.txt");
-    println!("{}", path.as_path().display());
     let output = fs::read_to_string(path).expect("no lol");
     return output;
 }
@@ -81,8 +79,9 @@ fn update_project_dir(app_handle: tauri::AppHandle, dir: PathBuf) {
 
     let _ = fs::write(path, pathbuf_to_string(dir));
 
+    // update base.json
     path = appdir.join("base.json");
-    get_changes(app_handle, &pathbuf_to_string(path));
+    hash_dir(app_handle, &pathbuf_to_string(path));
 }
 
 fn pathbuf_to_string(path: PathBuf) -> String {
@@ -99,13 +98,13 @@ fn greet(name: &str) -> String {
 }
 
 #[tauri::command]
-fn get_changes(app_handle: tauri::AppHandle, results_path: &str) {
+fn hash_dir(app_handle: tauri::AppHandle, results_path: &str) {
     let path: String = get_project_dir(app_handle);
     if path == "no lol" {
         return;
     }
     
-    let mut files: Vec<CADFile> = Vec::new();
+    let mut files: Vec<LocalCADFile> = Vec::new();
 
     let do_steps = || -> Result<(), Error> {
         let tree = MerkleTree::builder(path)
@@ -117,7 +116,6 @@ fn get_changes(app_handle: tauri::AppHandle, results_path: &str) {
             let pathbuf = item.path.absolute.into_string();
             let s_hash = bytes_to_hex(item.hash);
 
-            println!("{}: {}", pathbuf, s_hash);
             if pathbuf.as_str() == "" {
                 continue;
             }
@@ -128,12 +126,12 @@ fn get_changes(app_handle: tauri::AppHandle, results_path: &str) {
             if !isthisfile {
                 continue;
             }
-            
-            let file = CADFile {
+
+            println!("{}: {}", pathbuf, s_hash);
+            let file = LocalCADFile {
                 hash: s_hash,
                 path: pathbuf,
                 size: filesize,
-                is_file: isthisfile
             };
             files.push(file);
         }
@@ -146,7 +144,7 @@ fn get_changes(app_handle: tauri::AppHandle, results_path: &str) {
     };
     let _ = do_steps();
 
-    println!("fn get_changes done");
+    println!("fn hash_dir done");
 }
 
 fn main() {
@@ -170,7 +168,7 @@ fn main() {
         }
         _ => {}
         })
-        .invoke_handler(tauri::generate_handler![get_changes, greet, get_project_dir, upload_changes])
+        .invoke_handler(tauri::generate_handler![hash_dir, greet, get_project_dir, upload_changes])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

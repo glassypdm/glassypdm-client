@@ -18,7 +18,8 @@
     "@mui/material": "^5.14.10",
     "@tauri-apps/api": "^1.4.0",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "tauri-plugin-store-api": "https://github.com/tauri-apps/tauri-plugin-store#v1"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^1.4.0",
