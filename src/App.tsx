@@ -5,7 +5,7 @@ import '@fontsource/roboto/400.css';
 import '@fontsource/roboto/500.css';
 import '@fontsource/roboto/700.css';
 import { Button, Stack, TextField } from "@mui/material";
-import { useState } from "react";
+import { ReactElement, useState } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
 import { resolve, appLocalDataDir } from "@tauri-apps/api/path";
 import { readTextFile, writeTextFile, BaseDirectory } from "@tauri-apps/api/fs";
@@ -39,6 +39,8 @@ const initServerUrl: string = await invoke("get_server_url");
 function App() {
   const [projDir, setProjDir] = useState(projectPath);
   const [serverUrl, setServerUrl] = useState(initServerUrl);
+  const [upload, setUpload] = useState<LocalCADFile[]>([]);
+  const [download, setDownload] = useState<CADFile[]>([]);
 
   async function getChanges() {
     console.log("click sync");
@@ -100,6 +102,7 @@ function App() {
         }
       });
       console.log(toDownload);
+      setDownload(toDownload);
       await writeTextFile("toDownload.json", JSON.stringify(toDownload), { dir: BaseDirectory.AppLocalData });
 
       // for getting what to upload, compare base.json with compare.json
@@ -146,6 +149,7 @@ function App() {
       });
 
       console.log(toUpload);
+      setUpload(toUpload);
       await writeTextFile("toUpload.json", JSON.stringify(toUpload), { dir: BaseDirectory.AppLocalData });
     } catch(err: any) {
       console.error(err.message);
@@ -204,7 +208,7 @@ function App() {
     console.log(serverUrl)
     await invoke("update_server_url", { newUrl: serverUrl });
   }
-
+  console.log(download.length);
   return (
     <ThemeProvider theme={darkTheme}>
       <CssBaseline/>
@@ -221,6 +225,31 @@ function App() {
         <Button variant="contained" onClick={uploadChanges}>Upload</Button>
         <Button variant="contained" color="warning" onClick={resetChanges}>Reset Changes</Button>
       </Stack>
+      <Stack>
+      <p>to download:</p>
+      <ul>
+        {
+          download.map((file: CADFile) => {
+            let output: string = file.path;
+            return(
+              <li>{output}</li>
+            )
+          })
+        }
+      </ul>
+      <p>to upload:</p>
+      <ul>
+        {
+          upload.map((file: LocalCADFile) => {
+            let output: string = file.path.replace(projDir, "");
+            return(
+              <li>{output}</li>
+            )
+          })
+        }
+      </ul>
+    </Stack>
+
     </ThemeProvider>
   );
 }

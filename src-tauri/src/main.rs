@@ -2,17 +2,14 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::path::PathBuf;
-use merkle_hash::camino::Utf8PathBuf;
 use serde::{Serialize, Deserialize};
 use tauri::api::dialog;
-use tauri::{CustomMenuItem, Menu, MenuItem, Submenu, Manager};
+use tauri::{CustomMenuItem, Menu, Submenu, Manager};
 use merkle_hash::{bytes_to_hex, Algorithm, MerkleTree, anyhow::Error};
 use std::fs::{File, self};
 use std::io::prelude::*;
 use std::io::Read;
 use reqwest::multipart::Part;
-use tauri::api::path::*;
-use tauri::PathResolver;
 
 #[derive(Serialize, Deserialize)]
 struct LocalCADFile {
