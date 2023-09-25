@@ -55,20 +55,35 @@ fn upload_changes(app_handle: tauri::AppHandle, files: Vec<LocalCADFile>, commit
         let path: String = file.path;
         let relative_path = path.replace(&project_dir, "");
 
-        println!("uploading {}", path);
-        println!("relative {}", relative_path);
-        let form = reqwest::blocking::multipart::Form::new()
-            .text("commit", commit.to_string())
-            .text("path", relative_path)
-            .text("size", file.size.to_string())
-            .text("hash", file.hash)
-            .file("key", path).unwrap();
-        
-        let res = client.post(url.to_string())
-            .multipart(form)
-            .send().unwrap();
+        if file.size != 0 {
+            println!("uploading {}", path);
+            println!("relative {}", relative_path);
+            let form = reqwest::blocking::multipart::Form::new()
+                .text("commit", commit.to_string())
+                .text("path", relative_path)
+                .text("size", file.size.to_string())
+                .text("hash", file.hash)
+                .file("key", path).unwrap();
+            
+            let res = client.post(url.to_string())
+                .multipart(form)
+                .send().unwrap();
+    
+            println!("{:?}", res);
+        } else {
+            // deleted file
+            println!("relative {} (deleting!)", relative_path);
+            let form = reqwest::blocking::multipart::Form::new()
+                .text("commit", commit.to_string())
+                .text("path", relative_path)
+                .text("size", file.size.to_string())
+                .text("hash", file.hash);
+            
+            let res = client.post(url.to_string())
+                .multipart(form)
+                .send().unwrap();
+        }
 
-        println!("{:?}", res);
 
     }
     println!("upload done");

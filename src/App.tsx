@@ -165,7 +165,7 @@ function App() {
     
     // download files
     // first get s3 presigned links
-    let dlComplete = new Promise((resolve: any, reject: any) => {
+    let dlComplete = new Promise((resolve: any) => {
       download.forEach(async(file: CADFile, index: number, array: CADFile[]) => {
         let key: string = file.path.replaceAll("\\", "|");
         console.log(key);
@@ -186,6 +186,8 @@ function App() {
       const appdata = await appLocalDataDir();
       const path = await resolve(appdata, "base.json");
       await invoke("hash_dir", { resultsPath: path });
+
+      setDownload([]);
     })
   }
 
@@ -214,6 +216,8 @@ function App() {
     // update base.json
     const path = await resolve(appdata, "base.json");
     await invoke("hash_dir", { resultsPath: path });
+
+    setUpload([]);
   }
 
   // TODO: implement
