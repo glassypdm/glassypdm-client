@@ -34,11 +34,6 @@ interface ProjectState {
   files: CADFile[]
 };
 
-interface S3Map {
-  path: string,
-  url: string
-}
-
 const projectPath: string = await invoke("get_project_dir");
 const initServerUrl: string = await invoke("get_server_url");
 function App() {
@@ -55,13 +50,12 @@ function App() {
     console.log(path);
     await invoke("hash_dir", { resultsPath: path });
     try {
-      //const data = await fetch("http://localhost:5000/info/project");
       const data = await fetch(serverUrl + "/info/project");
       const remote: ProjectState = await data.json();
       console.log(remote);
 
       // write remote commit into some file
-      const commit: string = remote.commit.toString();
+      const commit: string = remote.commit?.toString() || "0";
       await writeTextFile("basecommit.txt", commit, { dir: BaseDirectory.AppLocalData });
 
       let contents = await readTextFile("base.json", { dir: BaseDirectory.AppLocalData });
@@ -171,26 +165,28 @@ function App() {
     
     // download files
     // first get s3 presigned links
-    let s3Links: S3Map[] = [];
-    download.forEach(async(file: CADFile) => {
-      let key: string = file.path.replace("\\", "|");
-      const response = await fetch(serverUrl + "/download/file/" + key);
-      const s3Url = (await response.json())["s3Url"];
-      console.log(s3Url);
-      await invoke("download_s3_file", { link: {
-        path: file.path,
-        url: s3Url
-      }});
-      s3Links.push({
-        path: file.path,
-        url: s3Url
+    let dlComplete = new Promise((resolve: any, reject: any) => {
+      download.forEach(async(file: CADFile, index: number, array: CADFile[]) => {
+        let key: string = file.path.replaceAll("\\", "|");
+        console.log(key);
+        const response = await fetch(serverUrl + "/download/file/" + key);
+        const s3Url = (await response.json())["s3Url"];
+        console.log(s3Url);
+        await invoke("download_s3_file", { link: {
+          path: file.path,
+          url: s3Url
+        }});
+        if (index === array.length -1) resolve();
       });
     });
 
-    // after download, hash dir to base.json
-    const appdata = await appLocalDataDir();
-    const path = await resolve(appdata, "base.json");
-    await invoke("hash_dir", { resultsPath: path });
+    dlComplete.then(async() => {
+      console.log("finish downloading");
+      // after download, hash dir to base.json
+      const appdata = await appLocalDataDir();
+      const path = await resolve(appdata, "base.json");
+      await invoke("hash_dir", { resultsPath: path });
+    })
   }
 
   async function uploadChanges() {
@@ -212,6 +208,7 @@ function App() {
     await invoke("upload_changes", {
       files: files,
       commit: newCommit,
+      serverUrl: serverUrl
     });
 
     // update base.json

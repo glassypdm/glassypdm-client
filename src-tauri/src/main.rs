@@ -10,10 +10,7 @@ use merkle_hash::{bytes_to_hex, Algorithm, MerkleTree, anyhow::Error};
 use std::fs::{File, self, create_dir_all};
 use std::io::{Read, Write};
 use std::io;
-use reqwest::multipart::Part;
-use reqwest::blocking::*;
-
-extern crate reqwest;
+use reqwest::blocking::multipart::*;
 
 #[derive(Serialize, Deserialize)]
 struct LocalCADFile {
@@ -35,6 +32,7 @@ fn download_s3_file(app_handle: tauri::AppHandle, link: S3FileLink) {
     let path = get_project_dir(app_handle) + link.path.as_str();
     let p: &Path = std::path::Path::new(&path);
     let prefix = p.parent().unwrap();
+    println!("prefix: {}", &prefix.display());
     fs::create_dir_all(prefix).unwrap();
 
     let mut f = File::create(&path).expect("Unable to create file");
@@ -43,19 +41,12 @@ fn download_s3_file(app_handle: tauri::AppHandle, link: S3FileLink) {
     println!("loc: {}", path);
 }
 
-fn get_file_as_byte_vec(filename: &String) -> Vec<u8> {
-    let mut f = File::open(&filename).expect("no file found");
-    let metadata = fs::metadata(&filename).expect("unable to read metadata");
-    let mut buffer = vec![0; metadata.len() as usize];
-    f.read(&mut buffer).expect("buffer overflow");
-
-    buffer
-}
-
 #[tauri::command]
-async fn upload_changes(app_handle: tauri::AppHandle, files: Vec<LocalCADFile>, commit: u64) -> Result<(), ()> {
-    let client = reqwest::Client::new();
-    println!("commit # {}", commit);
+fn upload_changes(app_handle: tauri::AppHandle, files: Vec<LocalCADFile>, commit: u64, server_url: String) -> Result<(), ()> {
+    let client = reqwest::blocking::Client::new();
+    let url = server_url.to_string() + "/ingest";
+    //let url = "http://localhost:5000/ingest";
+    println!("commit # {}; server url {}", commit, &url);
 
     let project_dir = get_project_dir(app_handle);
     println!("{}", project_dir);
@@ -66,18 +57,18 @@ async fn upload_changes(app_handle: tauri::AppHandle, files: Vec<LocalCADFile>, 
 
         println!("uploading {}", path);
         println!("relative {}", relative_path);
-        let content: Vec<u8> = get_file_as_byte_vec(&path);
-        let part = Part::bytes(content).file_name(path.clone());
-        let request = reqwest::multipart::Form::new()
-            .part("key", part)
+        let form = reqwest::blocking::multipart::Form::new()
             .text("commit", commit.to_string())
             .text("path", relative_path)
             .text("size", file.size.to_string())
-            .text("hash", file.hash);
+            .text("hash", file.hash)
+            .file("key", path).unwrap();
+        
+        let res = client.post(url.to_string())
+            .multipart(form)
+            .send().unwrap();
 
-        let _response = client.post("http://localhost:5000/ingest")
-            .multipart(request)
-            .send().await;
+        println!("{:?}", res);
 
     }
     println!("upload done");
