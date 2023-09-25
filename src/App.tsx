@@ -9,14 +9,6 @@ import { useState } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
 import { resolve, appLocalDataDir } from "@tauri-apps/api/path";
 import { readTextFile, writeTextFile, BaseDirectory } from "@tauri-apps/api/fs";
-import {
-  ClerkProvider,
-  SignedIn,
-  SignedOut,
-  UserButton,
-  useUser,
-  RedirectToSignIn,
-} from "@clerk/clerk-react";
 
 const darkTheme = createTheme({
   palette: {
@@ -42,7 +34,6 @@ interface ProjectState {
   files: CADFile[]
 };
 
-const pubkey = "";
 const projectPath: string = await invoke("get_project_dir");
 const initServerUrl: string = await invoke("get_server_url");
 function App() {
