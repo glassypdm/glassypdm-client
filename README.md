@@ -1,6 +1,4 @@
 # glassyPDM Client
-
-This template should help get you started developing with Tauri, React and Typescript in Vite.
 ## Dev Instructions
 ```bash
 $ yarn tauri dev
