@@ -1,4 +1,4 @@
-name: 'build tauri'
+name: 'test-tauri'
 on:
   push:
     branches:
