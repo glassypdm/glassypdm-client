@@ -2,11 +2,12 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::path::PathBuf;
+use std::path::Path;
 use serde::{Serialize, Deserialize};
 use tauri::api::dialog;
 use tauri::{CustomMenuItem, Menu, Submenu, Manager};
 use merkle_hash::{bytes_to_hex, Algorithm, MerkleTree, anyhow::Error};
-use std::fs::{File, self};
+use std::fs::{File, self, create_dir_all};
 use std::io::{Read, Write};
 use std::io;
 use reqwest::multipart::Part;
@@ -29,9 +30,12 @@ struct S3FileLink {
 
 #[tauri::command]
 fn download_s3_file(app_handle: tauri::AppHandle, link: S3FileLink) {
-    println!("downlad");
+    println!("download");
     let mut resp = reqwest::blocking::get(link.url).unwrap();
     let path = get_project_dir(app_handle) + link.path.as_str();
+    let p: &Path = std::path::Path::new(&path);
+    let prefix = p.parent().unwrap();
+    fs::create_dir_all(prefix).unwrap();
 
     let mut f = File::create(&path).expect("Unable to create file");
     io::copy(&mut resp, &mut f).expect("Unable to copy data");
@@ -53,7 +57,6 @@ async fn upload_changes(app_handle: tauri::AppHandle, files: Vec<LocalCADFile>, 
     let client = reqwest::Client::new();
     println!("commit # {}", commit);
 
-    // TODO: need to subtract project dir from file path
     let project_dir = get_project_dir(app_handle);
     println!("{}", project_dir);
 
