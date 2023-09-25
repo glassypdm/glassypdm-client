@@ -4,7 +4,7 @@ import '@fontsource/roboto/300.css';
 import '@fontsource/roboto/400.css';
 import '@fontsource/roboto/500.css';
 import '@fontsource/roboto/700.css';
-import { Button, Stack } from "@mui/material";
+import { Button, Stack, TextField } from "@mui/material";
 import { useState } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
 import { resolve, appLocalDataDir } from "@tauri-apps/api/path";
@@ -44,8 +44,10 @@ interface ProjectState {
 
 const pubkey = "";
 const projectPath: string = await invoke("get_project_dir");
+const initServerUrl: string = await invoke("get_server_url");
 function App() {
   const [projDir, setProjDir] = useState(projectPath);
+  const [serverUrl, setServerUrl] = useState(initServerUrl);
 
   async function getChanges() {
     console.log("click sync");
@@ -55,7 +57,8 @@ function App() {
     console.log(path);
     await invoke("hash_dir", { resultsPath: path });
     try {
-      const data = await fetch("http://localhost:5000/info/project");
+      //const data = await fetch("http://localhost:5000/info/project");
+      const data = await fetch(serverUrl + "/info/project");
       const remote: ProjectState = await data.json();
       console.log(remote);
 
@@ -106,7 +109,6 @@ function App() {
         }
       });
       console.log(toDownload);
-      console.log(JSON.stringify(toDownload));
       await writeTextFile("toDownload.json", JSON.stringify(toDownload), { dir: BaseDirectory.AppLocalData });
 
       // for getting what to upload, compare base.json with compare.json
@@ -152,7 +154,7 @@ function App() {
         }
       });
 
-      console.log(JSON.stringify(toUpload));
+      console.log(toUpload);
       await writeTextFile("toUpload.json", JSON.stringify(toUpload), { dir: BaseDirectory.AppLocalData });
     } catch(err: any) {
       console.error(err.message);
@@ -190,7 +192,7 @@ function App() {
     let newCommit: number = parseInt(commitStr);
     newCommit += 1;
 
-    
+    // upload files
     await invoke("upload_changes", {
       files: files,
       commit: newCommit,
@@ -199,17 +201,29 @@ function App() {
     // update base.json
     const path = await resolve(appdata, "base.json");
     await invoke("hash_dir", { resultsPath: path });
-    
   }
 
+  // TODO: implement
+  // could probably just download everything from server/info/project
   async function resetChanges() {
     console.log("click resetChanges");
+  }
+
+  async function onSetServerUrlClick() {
+    console.log(serverUrl)
+    await invoke("update_server_url", { newUrl: serverUrl });
   }
 
   return (
     <ThemeProvider theme={darkTheme}>
       <CssBaseline/>
-      <p>Project Directory: {projDir}</p>
+      <Stack spacing={2} sx={{ m: 2 }}>
+        <p>Project Directory: {projDir}</p>
+        <Stack direction="row" spacing={2} sx={{ m: 2 }}>
+          <TextField fullWidth id="server_url" value={serverUrl} onChange={(event: any) => {setServerUrl(event.target.value)}}label="Server URL" variant="outlined" />
+          <Button onClick={onSetServerUrlClick}>Set Server URL</Button>
+        </Stack>
+      </Stack>
       <Stack direction="row" spacing={3} justifyContent="center" alignItems="stretch">
         <Button variant="contained" onClick={downloadChanges}>Download</Button>
         <Button variant="contained" onClick={getChanges}>Sync</Button>

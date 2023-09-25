@@ -64,10 +64,32 @@ async fn upload_changes(app_handle: tauri::AppHandle, files: Vec<LocalCADFile>, 
 }
 
 #[tauri::command]
+fn update_server_url(app_handle: tauri::AppHandle, new_url: String) {
+    let appdir = app_handle.path_resolver().app_local_data_dir().unwrap();
+    let path = appdir.join("server_url.txt");
+
+    let _ = fs::write(path, new_url);
+}
+
+#[tauri::command]
+fn get_server_url(app_handle: tauri::AppHandle) -> String {
+    let appdir = app_handle.path_resolver().app_local_data_dir().unwrap();
+    let path = appdir.join("server_url.txt");
+    let output: String = match fs::read_to_string(path) {
+        Ok(contents) => return contents,
+        Err(_err) => "http://localhost:5000".to_string(),
+    };
+    return output;
+}
+
+#[tauri::command]
 fn get_project_dir(app_handle: tauri::AppHandle) -> String {
     let appdir = app_handle.path_resolver().app_local_data_dir().unwrap();
     let path = appdir.join("project_dir.txt");
-    let output = fs::read_to_string(path).expect("no lol");
+    let output: String = match fs::read_to_string(path) {
+        Ok(contents) => return contents,
+        Err(_err) => "set project directory please!!!".to_string(),
+    };
     return output;
 }
 
@@ -168,7 +190,7 @@ fn main() {
         }
         _ => {}
         })
-        .invoke_handler(tauri::generate_handler![hash_dir, greet, get_project_dir, upload_changes])
+        .invoke_handler(tauri::generate_handler![hash_dir, greet, get_project_dir, upload_changes, update_server_url, get_server_url])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
