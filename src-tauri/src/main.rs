@@ -7,15 +7,36 @@ use tauri::api::dialog;
 use tauri::{CustomMenuItem, Menu, Submenu, Manager};
 use merkle_hash::{bytes_to_hex, Algorithm, MerkleTree, anyhow::Error};
 use std::fs::{File, self};
-use std::io::prelude::*;
-use std::io::Read;
+use std::io::{Read, Write};
+use std::io;
 use reqwest::multipart::Part;
+use reqwest::blocking::*;
+
+extern crate reqwest;
 
 #[derive(Serialize, Deserialize)]
 struct LocalCADFile {
     path: String,
     size: u64,
     hash: String
+}
+
+#[derive(Serialize, Deserialize)]
+struct S3FileLink {
+    path: String,
+    url: String
+}
+
+#[tauri::command]
+fn download_s3_file(app_handle: tauri::AppHandle, link: S3FileLink) {
+    println!("downlad");
+    let mut resp = reqwest::blocking::get(link.url).unwrap();
+    let path = get_project_dir(app_handle) + link.path.as_str();
+
+    let mut f = File::create(&path).expect("Unable to create file");
+    io::copy(&mut resp, &mut f).expect("Unable to copy data");
+    println!("finish");
+    println!("loc: {}", path);
 }
 
 fn get_file_as_byte_vec(filename: &String) -> Vec<u8> {
@@ -187,7 +208,7 @@ fn main() {
         }
         _ => {}
         })
-        .invoke_handler(tauri::generate_handler![hash_dir, greet, get_project_dir, upload_changes, update_server_url, get_server_url])
+        .invoke_handler(tauri::generate_handler![hash_dir, greet, get_project_dir, upload_changes, update_server_url, get_server_url, download_s3_file])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

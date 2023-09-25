@@ -16,7 +16,7 @@
       "fs": {
         "all": true,
         "scope": {
-          "allow": ["$APPDATA", "$APPDATA/*", "$APPLOCALDATA", "$APPLOCALDATA/*"]
+          "allow": ["$APPDATA", "$APPDATA/*", "$APPLOCALDATA", "$APPLOCALDATA/**/*"]
         }
       },
       "dialog": {

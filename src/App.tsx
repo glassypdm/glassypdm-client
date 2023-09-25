@@ -5,7 +5,7 @@ import '@fontsource/roboto/400.css';
 import '@fontsource/roboto/500.css';
 import '@fontsource/roboto/700.css';
 import { Button, Stack, TextField } from "@mui/material";
-import { ReactElement, useState } from "react";
+import { useState } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
 import { resolve, appLocalDataDir } from "@tauri-apps/api/path";
 import { readTextFile, writeTextFile, BaseDirectory } from "@tauri-apps/api/fs";
@@ -33,6 +33,11 @@ interface ProjectState {
   commit: number,
   files: CADFile[]
 };
+
+interface S3Map {
+  path: string,
+  url: string
+}
 
 const projectPath: string = await invoke("get_project_dir");
 const initServerUrl: string = await invoke("get_server_url");
@@ -165,6 +170,22 @@ function App() {
     // TODO: before downloading, ensure that base.json == compare.json
     
     // download files
+    // first get s3 presigned links
+    let s3Links: S3Map[] = [];
+    download.forEach(async(file: CADFile) => {
+      let key: string = file.path.replace("\\", "|");
+      const response = await fetch(serverUrl + "/download/file/" + key);
+      const s3Url = (await response.json())["s3Url"];
+      console.log(s3Url);
+      await invoke("download_s3_file", { link: {
+        path: file.path,
+        url: s3Url
+      }});
+      s3Links.push({
+        path: file.path,
+        url: s3Url
+      });
+    });
 
     // after download, hash dir to base.json
     const appdata = await appLocalDataDir();
@@ -208,7 +229,7 @@ function App() {
     console.log(serverUrl)
     await invoke("update_server_url", { newUrl: serverUrl });
   }
-  console.log(download.length);
+
   return (
     <ThemeProvider theme={darkTheme}>
       <CssBaseline/>
