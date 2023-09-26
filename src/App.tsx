@@ -17,6 +17,7 @@ const darkTheme = createTheme({
   },
 });
 
+// TODO combine CADFile and LocalCADFile
 interface CADFile {
   path: string,
   commit: number,
@@ -24,10 +25,18 @@ interface CADFile {
   hash: string,
 };
 
+enum ChangeType {
+  CREATE,
+  UPDATE,
+  DELETE,
+  UNIDENTIFIED
+}
+
 interface LocalCADFile {
   path: string,
   size: number,
   hash: string
+  change?: ChangeType
 }
 
 interface ProjectState {
@@ -82,6 +91,7 @@ function App() {
             return true;
           });
           if (found) {
+
             toDownload.push(file); // file not deleted locally
           }
         }
@@ -117,6 +127,7 @@ function App() {
           if (bFile.path === cFile.path) {
             found = true;
             if (bFile.hash !== cFile.hash) {
+              cFile.change = ChangeType.UPDATE;
               toUpload.push(cFile);
             }
             return false;
@@ -129,7 +140,8 @@ function App() {
           toUpload.push({
             path: bFile.path,
             size: 0,
-            hash: bFile.hash
+            hash: bFile.hash,
+            change: ChangeType.DELETE
           });
         }
       });
@@ -146,6 +158,7 @@ function App() {
         });
 
         if (!found) {
+          cFile.change = ChangeType.CREATE;
           toUpload.push(cFile);
         }
       });
@@ -171,15 +184,22 @@ function App() {
     const length = download.length;
     for(let i = 0; i < length; i++){
       const file: CADFile = download[i];
-      const key: string = file.path.replaceAll("\\", "|");
-      console.log(key);
-      const response = await fetch(serverUrl + "/download/file/" + key);
-      const s3Url = (await response.json())["s3Url"];
-      console.log(s3Url);
-      await invoke("download_s3_file", { link: {
-        path: file.path,
-        url: s3Url
-      }});
+      if(file.size != 0) {
+        const key: string = file.path.replaceAll("\\", "|");
+        console.log(key);
+        const response = await fetch(serverUrl + "/download/file/" + key);
+        const s3Url = (await response.json())["s3Url"];
+        console.log(s3Url);
+        await invoke("download_s3_file", { link: {
+          path: file.path,
+          url: s3Url
+        }});
+      }
+      else {
+        console.log("deleting file " + file.path);
+        await invoke("delete_file", { file: file.path });
+      }
+
 
       // handle progress bar
       setProgress(i * 100/ length);
@@ -212,8 +232,13 @@ function App() {
     // upload files
     const length: number = files.length;
     for(let i = 0; i < length; i++) {
+      console.log(files[i]);
       await invoke("upload_changes", {
-        file: files[i],
+        file: {
+          path: files[i].path,
+          size: files[i].size,
+          hash: files[i].hash
+        },
         commit: newCommit,
         serverUrl: serverUrl
       });
@@ -299,8 +324,20 @@ function App() {
         {
           upload.map((file: LocalCADFile) => {
             let output: string = file.path.replace(projDir, "");
+            let type: string = "";
+            switch(file.change) {
+              case ChangeType.CREATE:
+                type = "(+)";
+                break;
+              case ChangeType.UPDATE:
+                type = "(+/-)";
+                break;
+              case ChangeType.DELETE:
+                type = "(-)";
+                break;
+            }
             return(
-              <li>{output}</li>
+              <li>{output} {type}</li>
             )
           })
         }

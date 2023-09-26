@@ -42,6 +42,12 @@ fn download_s3_file(app_handle: tauri::AppHandle, link: S3FileLink) {
 }
 
 #[tauri::command]
+fn delete_file(app_handle: tauri::AppHandle, file: String) {
+    let path = get_project_dir(app_handle) + file.as_str();
+    let _ = fs::remove_file(path);
+}
+
+#[tauri::command]
 fn upload_changes(app_handle: tauri::AppHandle, file: LocalCADFile, commit: u64, server_url: String) -> Result<(), ()> {
     let client = reqwest::blocking::Client::new();
     let url = server_url.to_string() + "/ingest";
@@ -54,6 +60,7 @@ fn upload_changes(app_handle: tauri::AppHandle, file: LocalCADFile, commit: u64,
     let path: String = file.path;
     let relative_path = path.replace(&project_dir, "");
 
+    // TODO optimise, lol
     if file.size != 0 {
         println!("uploading {}", path);
         println!("relative {}", relative_path);
@@ -81,6 +88,7 @@ fn upload_changes(app_handle: tauri::AppHandle, file: LocalCADFile, commit: u64,
         let res = client.post(url.to_string())
             .multipart(form)
             .send().unwrap();
+        println!("{:?}", res);
     }
 
 
@@ -197,7 +205,9 @@ fn hash_dir(app_handle: tauri::AppHandle, results_path: &str) {
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![hash_dir, greet, get_project_dir, upload_changes, update_server_url, get_server_url, download_s3_file, update_project_dir])
+        .invoke_handler(tauri::generate_handler![
+            hash_dir, greet, get_project_dir, upload_changes, update_server_url,
+            get_server_url, download_s3_file, update_project_dir, delete_file])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
