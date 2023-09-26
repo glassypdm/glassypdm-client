@@ -1,10 +1,5 @@
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
-import '@fontsource/roboto/300.css';
-import '@fontsource/roboto/400.css';
-import '@fontsource/roboto/500.css';
-import '@fontsource/roboto/700.css';
-import { Stack, TextField } from "@mui/material";
+import { ThemeProvider } from '@/components/theme-provider';
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useState } from "react";
@@ -13,12 +8,6 @@ import { resolve, appLocalDataDir } from "@tauri-apps/api/path";
 import { readTextFile, writeTextFile, BaseDirectory } from "@tauri-apps/api/fs";
 import { open } from '@tauri-apps/api/dialog';
 import '@/App.css';
-
-const darkTheme = createTheme({
-  palette: {
-    mode: 'dark',
-  },
-});
 
 // TODO combine CADFile and LocalCADFile
 interface CADFile {
@@ -291,26 +280,25 @@ function App() {
   }
 
   return (
-    <ThemeProvider theme={darkTheme}>
-      <CssBaseline/>
-      <Stack spacing={2} sx={{ m: 2 }}>
-        <Stack direction="row" spacing={2} sx={{ m: 2 }}>
+    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+      <div>
+        <div>
           <p>Project Directory: {projDir}</p>
           <Button onClick={setProjectDir}>Set Project Directory</Button>
-        </Stack>
-        <Stack direction="row" spacing={2} sx={{ m: 2 }}>
-          <TextField fullWidth id="server_url" value={serverUrl} onChange={(event: any) => {setServerUrl(event.target.value)}}label="Server URL" variant="outlined" />
+        </div>
+        <div>
+          <Input id="server_url" value={serverUrl} onChange={(event: any) => {setServerUrl(event.target.value)}}label="Server URL" variant="outlined" />
           <Button variant="outline" onClick={onSetServerUrlClick}>Set Server URL</Button>
-        </Stack>
-      </Stack>
-      <Stack direction="row" spacing={3} justifyContent="center" alignItems="stretch">
+        </div>
+      </div>
+      <div>
         <Button onClick={downloadChanges}>Download</Button>
         <Button onClick={getChanges}>Sync</Button>
         <Button onClick={uploadChanges}>Upload</Button>
         <Button variant="destructive" onClick={resetChanges}>Reset Changes</Button>
-      </Stack>
+      </div>
       <Progress value={progress} />
-      <Stack>
+      <div>
       <p>to download:</p>
       <ul>
         {
@@ -345,7 +333,7 @@ function App() {
           })
         }
       </ul>
-    </Stack>
+    </div>
     </ThemeProvider>
   );
 }
