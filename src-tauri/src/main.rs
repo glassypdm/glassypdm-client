@@ -42,7 +42,7 @@ fn download_s3_file(app_handle: tauri::AppHandle, link: S3FileLink) {
 }
 
 #[tauri::command]
-fn upload_changes(app_handle: tauri::AppHandle, files: Vec<LocalCADFile>, commit: u64, server_url: String) -> Result<(), ()> {
+fn upload_changes(app_handle: tauri::AppHandle, file: LocalCADFile, commit: u64, server_url: String) -> Result<(), ()> {
     let client = reqwest::blocking::Client::new();
     let url = server_url.to_string() + "/ingest";
     //let url = "http://localhost:5000/ingest";
@@ -51,41 +51,39 @@ fn upload_changes(app_handle: tauri::AppHandle, files: Vec<LocalCADFile>, commit
     let project_dir = get_project_dir(app_handle);
     println!("{}", project_dir);
 
-    for file in files {
-        let path: String = file.path;
-        let relative_path = path.replace(&project_dir, "");
+    let path: String = file.path;
+    let relative_path = path.replace(&project_dir, "");
 
-        if file.size != 0 {
-            println!("uploading {}", path);
-            println!("relative {}", relative_path);
-            let form = reqwest::blocking::multipart::Form::new()
-                .text("commit", commit.to_string())
-                .text("path", relative_path)
-                .text("size", file.size.to_string())
-                .text("hash", file.hash)
-                .file("key", path).unwrap();
-            
-            let res = client.post(url.to_string())
-                .multipart(form)
-                .send().unwrap();
-    
-            println!("{:?}", res);
-        } else {
-            // deleted file
-            println!("relative {} (deleting!)", relative_path);
-            let form = reqwest::blocking::multipart::Form::new()
-                .text("commit", commit.to_string())
-                .text("path", relative_path)
-                .text("size", file.size.to_string())
-                .text("hash", file.hash);
-            
-            let res = client.post(url.to_string())
-                .multipart(form)
-                .send().unwrap();
-        }
+    if file.size != 0 {
+        println!("uploading {}", path);
+        println!("relative {}", relative_path);
+        let form = reqwest::blocking::multipart::Form::new()
+            .text("commit", commit.to_string())
+            .text("path", relative_path)
+            .text("size", file.size.to_string())
+            .text("hash", file.hash)
+            .file("key", path).unwrap();
+        
+        let res = client.post(url.to_string())
+            .multipart(form)
+            .send().unwrap();
 
-
+        println!("{:?}", res);
+    } else {
+        // deleted file
+        println!("relative {} (deleting!)", relative_path);
+        let form = reqwest::blocking::multipart::Form::new()
+            .text("commit", commit.to_string())
+            .text("path", relative_path)
+            .text("size", file.size.to_string())
+            .text("hash", file.hash);
+        
+        let res = client.post(url.to_string())
+            .multipart(form)
+            .send().unwrap();
     }
+
+
     println!("upload done");
     Ok(())
 }
@@ -120,6 +118,7 @@ fn get_project_dir(app_handle: tauri::AppHandle) -> String {
     return output;
 }
 
+#[tauri::command]
 fn update_project_dir(app_handle: tauri::AppHandle, dir: PathBuf) {
     println!("new project dir: {}", dir.display());
 
@@ -197,27 +196,8 @@ fn hash_dir(app_handle: tauri::AppHandle, results_path: &str) {
 }
 
 fn main() {
-    let set_dir = CustomMenuItem::new("Set Project Directory".to_string(), "Set Project Directory");
-    let file_menu = Submenu::new("Configure", Menu::new().add_item(set_dir));
-    let menu = Menu::new()
-      .add_submenu(file_menu);
-
     tauri::Builder::default()
-        .menu(menu)
-        .on_menu_event(|event| match event.menu_item_id() {
-        "Set Project Directory" => {
-            dialog::FileDialogBuilder::default()
-            .pick_folder(move |path_buf| match path_buf {
-                Some(p) => {
-                    println!("{}", p.display());
-                    update_project_dir(event.window().app_handle(), p);
-                }
-                _ => {}
-            });
-        }
-        _ => {}
-        })
-        .invoke_handler(tauri::generate_handler![hash_dir, greet, get_project_dir, upload_changes, update_server_url, get_server_url, download_s3_file])
+        .invoke_handler(tauri::generate_handler![hash_dir, greet, get_project_dir, upload_changes, update_server_url, get_server_url, download_s3_file, update_project_dir])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

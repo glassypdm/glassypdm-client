@@ -9,6 +9,7 @@ import { useState } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
 import { resolve, appLocalDataDir } from "@tauri-apps/api/path";
 import { readTextFile, writeTextFile, BaseDirectory } from "@tauri-apps/api/fs";
+import { open } from '@tauri-apps/api/dialog';
 
 const darkTheme = createTheme({
   palette: {
@@ -73,7 +74,7 @@ function App() {
           let found: boolean = false;
           base.every( (local: any) => {
             // adjust path
-            const localPath: string = local.path.replace(projectPath, "");
+            const localPath: string = local.path.replace(projDir, "");
             if (file.path === localPath) {
               found = true;
               return false;
@@ -88,7 +89,7 @@ function App() {
           let found: boolean = false;
           base.forEach( (local: any) => {
             // adjust path
-            const localPath: string = local.path.replace(projectPath, "");
+            const localPath: string = local.path.replace(projDir, "");
             if (file.path === localPath) {
               found = true;
               if (local.hash !== file.hash || local.size != file.size) {
@@ -97,6 +98,7 @@ function App() {
             }
           });
           if (!found) {
+            console.log("not found locally")
             toDownload.push(file); // file not downloaded locally
           }
         }
@@ -208,18 +210,22 @@ function App() {
     newCommit += 1;
 
     // upload files
-    // TODO progress bar
-    await invoke("upload_changes", {
-      files: files,
-      commit: newCommit,
-      serverUrl: serverUrl
-    });
+    const length: number = files.length;
+    for(let i = 0; i < length; i++) {
+      await invoke("upload_changes", {
+        file: files[i],
+        commit: newCommit,
+        serverUrl: serverUrl
+      });
+      setProgress(i * 100 / length);
+    }
 
     // update base.json
     const path = await resolve(appdata, "base.json");
     await invoke("hash_dir", { resultsPath: path });
 
     setUpload([]);
+    setProgress(0);
   }
 
   // TODO: implement
@@ -230,15 +236,40 @@ function App() {
 
   async function onSetServerUrlClick() {
     console.log(serverUrl)
+    let newUrl: string = serverUrl;
+    if(serverUrl.endsWith('/')) {
+      newUrl = serverUrl.substring(0, serverUrl.length - 1)
+      setServerUrl(newUrl);
+    }
     // TODO: if the end of serverURL is /, we want to remove it
-    await invoke("update_server_url", { newUrl: serverUrl });
+    await invoke("update_server_url", { newUrl: newUrl });
+  }
+
+  async function setProjectDir() {
+    const selected = await open({
+      multiple: false,
+      directory: true,
+    });
+
+    if(selected === null) {
+      // user cancelled selection
+    }
+    else {
+      // user selected a directory
+      console.log(selected)
+      setProjDir(selected as string);
+      await invoke("update_project_dir", { dir: selected as string });
+    }
   }
 
   return (
     <ThemeProvider theme={darkTheme}>
       <CssBaseline/>
       <Stack spacing={2} sx={{ m: 2 }}>
-        <p>Project Directory: {projDir}</p>
+        <Stack direction="row" spacing={2} sx={{ m: 2 }}>
+          <p>Project Directory: {projDir}</p>
+          <Button variant="contained" onClick={setProjectDir}>Set Project Directory</Button>
+        </Stack>
         <Stack direction="row" spacing={2} sx={{ m: 2 }}>
           <TextField fullWidth id="server_url" value={serverUrl} onChange={(event: any) => {setServerUrl(event.target.value)}}label="Server URL" variant="outlined" />
           <Button onClick={onSetServerUrlClick}>Set Server URL</Button>
@@ -275,7 +306,6 @@ function App() {
         }
       </ul>
     </Stack>
-
     </ThemeProvider>
   );
 }
