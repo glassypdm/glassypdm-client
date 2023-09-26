@@ -4,12 +4,15 @@ import '@fontsource/roboto/300.css';
 import '@fontsource/roboto/400.css';
 import '@fontsource/roboto/500.css';
 import '@fontsource/roboto/700.css';
-import { Button, LinearProgress, Stack, TextField } from "@mui/material";
+import { Stack, TextField } from "@mui/material";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 import { useState } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
 import { resolve, appLocalDataDir } from "@tauri-apps/api/path";
 import { readTextFile, writeTextFile, BaseDirectory } from "@tauri-apps/api/fs";
 import { open } from '@tauri-apps/api/dialog';
+import '@/App.css';
 
 const darkTheme = createTheme({
   palette: {
@@ -293,20 +296,20 @@ function App() {
       <Stack spacing={2} sx={{ m: 2 }}>
         <Stack direction="row" spacing={2} sx={{ m: 2 }}>
           <p>Project Directory: {projDir}</p>
-          <Button variant="contained" onClick={setProjectDir}>Set Project Directory</Button>
+          <Button onClick={setProjectDir}>Set Project Directory</Button>
         </Stack>
         <Stack direction="row" spacing={2} sx={{ m: 2 }}>
           <TextField fullWidth id="server_url" value={serverUrl} onChange={(event: any) => {setServerUrl(event.target.value)}}label="Server URL" variant="outlined" />
-          <Button onClick={onSetServerUrlClick}>Set Server URL</Button>
+          <Button variant="outline" onClick={onSetServerUrlClick}>Set Server URL</Button>
         </Stack>
       </Stack>
       <Stack direction="row" spacing={3} justifyContent="center" alignItems="stretch">
-        <Button variant="contained" onClick={downloadChanges}>Download</Button>
-        <Button variant="contained" onClick={getChanges}>Sync</Button>
-        <Button variant="contained" onClick={uploadChanges}>Upload</Button>
-        <Button variant="contained" color="warning" onClick={resetChanges}>Reset Changes</Button>
+        <Button onClick={downloadChanges}>Download</Button>
+        <Button onClick={getChanges}>Sync</Button>
+        <Button onClick={uploadChanges}>Upload</Button>
+        <Button variant="destructive" onClick={resetChanges}>Reset Changes</Button>
       </Stack>
-      <LinearProgress variant="determinate" value={progress} />
+      <Progress value={progress} />
       <Stack>
       <p>to download:</p>
       <ul>
