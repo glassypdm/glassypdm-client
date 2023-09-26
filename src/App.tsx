@@ -4,7 +4,7 @@ import '@fontsource/roboto/300.css';
 import '@fontsource/roboto/400.css';
 import '@fontsource/roboto/500.css';
 import '@fontsource/roboto/700.css';
-import { Button, Stack, TextField } from "@mui/material";
+import { Button, LinearProgress, Stack, TextField } from "@mui/material";
 import { useState } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
 import { resolve, appLocalDataDir } from "@tauri-apps/api/path";
@@ -41,6 +41,7 @@ function App() {
   const [serverUrl, setServerUrl] = useState(initServerUrl);
   const [upload, setUpload] = useState<LocalCADFile[]>([]);
   const [download, setDownload] = useState<CADFile[]>([]);
+  const [progress, setProgress] = useState(0);
 
   async function getChanges() {
     console.log("click sync");
@@ -165,30 +166,30 @@ function App() {
     
     // download files
     // first get s3 presigned links
-    let dlComplete = new Promise((resolve: any) => {
-      download.forEach(async(file: CADFile, index: number, array: CADFile[]) => {
-        let key: string = file.path.replaceAll("\\", "|");
-        console.log(key);
-        const response = await fetch(serverUrl + "/download/file/" + key);
-        const s3Url = (await response.json())["s3Url"];
-        console.log(s3Url);
-        await invoke("download_s3_file", { link: {
-          path: file.path,
-          url: s3Url
-        }});
-        if (index === array.length -1) resolve();
-      });
-    });
+    const length = download.length;
+    for(let i = 0; i < length; i++){
+      const file: CADFile = download[i];
+      const key: string = file.path.replaceAll("\\", "|");
+      console.log(key);
+      const response = await fetch(serverUrl + "/download/file/" + key);
+      const s3Url = (await response.json())["s3Url"];
+      console.log(s3Url);
+      await invoke("download_s3_file", { link: {
+        path: file.path,
+        url: s3Url
+      }});
 
-    dlComplete.then(async() => {
-      console.log("finish downloading");
-      // after download, hash dir to base.json
-      const appdata = await appLocalDataDir();
-      const path = await resolve(appdata, "base.json");
-      await invoke("hash_dir", { resultsPath: path });
+      // handle progress bar
+      setProgress(i * 100/ length);
+    }
 
-      setDownload([]);
-    })
+    console.log("finish downloading");
+    // after download, hash dir to base.json
+    const appdata = await appLocalDataDir();
+    const path = await resolve(appdata, "base.json");
+    await invoke("hash_dir", { resultsPath: path });
+    setDownload([]);
+    setProgress(0);
   }
 
   async function uploadChanges() {
@@ -207,6 +208,7 @@ function App() {
     newCommit += 1;
 
     // upload files
+    // TODO progress bar
     await invoke("upload_changes", {
       files: files,
       commit: newCommit,
@@ -228,6 +230,7 @@ function App() {
 
   async function onSetServerUrlClick() {
     console.log(serverUrl)
+    // TODO: if the end of serverURL is /, we want to remove it
     await invoke("update_server_url", { newUrl: serverUrl });
   }
 
@@ -247,6 +250,7 @@ function App() {
         <Button variant="contained" onClick={uploadChanges}>Upload</Button>
         <Button variant="contained" color="warning" onClick={resetChanges}>Reset Changes</Button>
       </Stack>
+      <LinearProgress variant="determinate" value={progress} />
       <Stack>
       <p>to download:</p>
       <ul>
