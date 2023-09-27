@@ -15,6 +15,25 @@ import { Progress } from "./ui/progress"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "./ui/label"
 import { useState } from "react"
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
+import { useForm } from "react-hook-form" 
+import { Checkbox } from "./ui/checkbox"
+import { CheckboxReactHookFormMultiple } from "./CheckboxReactHookFormMultiple"
+
+const formSchema = z.object({
+  items: z.array(z.string()).refine((value) => value.some((item) => item)),
+});
 
 enum ChangeType {
     CREATE,
@@ -47,6 +66,21 @@ export function LocalChanges() {
     function onCheck(event: any) {
         console.log(event)
     }
+
+
+    const form = useForm<z.infer<typeof formSchema>>({
+      resolver: zodResolver(formSchema),
+      defaultValues: {
+        items: [],
+      },
+    })
+   
+    // 2. Define a submit handler.
+    function onSubmit(values: z.infer<typeof formSchema>) {
+      // Do something with the form values.
+      console.log(values)
+    }
+
     // TODO: probably need to yarn shadcn add form so we get name/value pairs
     // or look at gridlist in react aria
   return (
@@ -60,23 +94,9 @@ export function LocalChanges() {
             <DialogDescription>
             </DialogDescription>
             <div className="flex items-center space-x-2">
-                <Switch id="sfr" onClick={onCheckAll}/>
-                <Label htmlFor="sfr">Select All</Label>
             </div>
         </DialogHeader>
-        <div className="grid gap-4">
-        <ScrollArea className="h-72 rounded-md border">
-      <div className="p-4">
-        <h4 className="mb-4 text-sm font-medium leading-none">Changes</h4>
-            <PendingFile key="sf" path="/kanguwu.txt" change={ChangeType.CREATE} checked={allChecked} handleCheck={onCheck}/>
-            <Separator className="my-2" />
-            <PendingFile path="/kangufwu.txt" change={ChangeType.UPDATE} checked={allChecked} handleCheck={onCheck}/>
-            <Separator className="my-2" />
-            <PendingFile path="/kanguwssu.txt" change={ChangeType.DELETE} checked={allChecked} handleCheck={onCheck}/>
-            <Separator className="my-2" />
-      </div>
-    </ScrollArea>
-    </div>
+          <CheckboxReactHookFormMultiple />
         <DialogFooter>
             <Progress value={0}/>
             <Button type="submit">Upload</Button>

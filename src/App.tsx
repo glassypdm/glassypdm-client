@@ -9,6 +9,7 @@ import { readTextFile, writeTextFile, BaseDirectory } from "@tauri-apps/api/fs";
 import { open } from '@tauri-apps/api/dialog';
 import '@/App.css';
 import { LocalChanges } from './components/LocalChanges';
+import { Toaster } from './components/ui/toaster';
 
 // TODO combine CADFile and LocalCADFile
 interface CADFile {
@@ -336,6 +337,7 @@ function App() {
       </ul>
     </div>
     <LocalChanges/>
+    <Toaster/>
     </ThemeProvider>
   );
 }
