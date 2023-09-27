@@ -52,13 +52,14 @@ const items = [
   },
 ]
 
-const FormSchema = z.object({
-  items: z.array(z.string()).refine((value) => true, {
-  }),
-})
-
 export function CheckboxReactHookFormMultiple() {
     const { toast } = useToast();
+
+    const FormSchema = z.object({
+      items: z.array(z.string()).refine((value) => true, {
+      }),
+    })
+
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
