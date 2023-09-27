@@ -9,12 +9,16 @@ import '@/App.css';
 import { LocalChanges } from '@/components/LocalChanges';
 import { Toaster } from '@/components/ui/toaster';
 import { LocalCADFile, CADFile, ProjectState, ChangeType } from '@/lib/types';
-import { Sidebar } from '@/components/Sidebar';
-
+import { cn } from "@/lib/utils"
 
 const projectPath: string = await invoke("get_project_dir");
 const initServerUrl: string = await invoke("get_server_url");
-export function Workbench() {
+
+interface WorkbenchProps extends React.HTMLAttributes<HTMLDivElement> {
+    
+}
+
+export function Workbench({ className }: WorkbenchProps) {
   const [projDir, setProjDir] = useState(projectPath);
   const [serverUrl, setServerUrl] = useState(initServerUrl);
   const [upload, setUpload] = useState(false);
@@ -243,8 +247,8 @@ export function Workbench() {
     }
   }
 
-  return (
-    <div>
+  return(
+    <div className={cn("", className)}>
       <div>
         <div>
           <p>Project Directory: {projDir}</p>
