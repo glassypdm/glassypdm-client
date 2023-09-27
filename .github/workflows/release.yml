@@ -9,7 +9,6 @@ jobs:
     steps:
       - uses: google-github-actions/release-please-action@v3
         with:
-          token: ${{ secrets.RELEASE_PLEASE_PAT }}
           release-type: simple
           package-name: suez
           release-as: 0.1.0-alpha.1
