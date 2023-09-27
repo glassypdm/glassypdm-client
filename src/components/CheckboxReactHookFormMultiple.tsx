@@ -17,36 +17,43 @@ import {
 } from "@/components/ui/form"
 import { useToast } from "@/components/ui/use-toast"
 
+// TODO move ChangeType, LocalCADFile into some types.tsx thing
+enum ChangeType {
+  CREATE,
+  UPDATE,
+  DELETE,
+  UNIDENTIFIED
+}
+
 const items = [
   {
-    id: "recents",
-    label: "Recents",
+    path: "\\kanguwu.txt",
+    status: ChangeType.UPDATE,
   },
   {
-    id: "home",
-    label: "Home",
+    path: "home",
+    status: ChangeType.DELETE,
   },
   {
-    id: "applications",
-    label: "Applications",
+    path: "applications",
+    status: ChangeType.UPDATE,
   },
   {
-    id: "desktop",
-    label: "Desktop",
+    path: "desktop",
+    status: ChangeType.CREATE,
   },
   {
-    id: "downloads",
-    label: "Downloads",
+    path: "downloads",
+    status: ChangeType.UPDATE,
   },
   {
-    id: "documents",
-    label: "Documents",
+    path: "documents",
+    status: ChangeType.CREATE,
   },
-] as const
+]
 
 const FormSchema = z.object({
-  items: z.array(z.string()).refine((value) => value.some((item) => item), {
-    message: "You have to select at least one item.",
+  items: z.array(z.string()).refine((value) => true, {
   }),
 })
 
@@ -55,7 +62,7 @@ export function CheckboxReactHookFormMultiple() {
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
-      items: ["recents", "home"],
+      items: [],
     },
   })
 
@@ -87,33 +94,50 @@ export function CheckboxReactHookFormMultiple() {
               </div>
               {items.map((item) => (
                 <FormField
-                  key={item.id}
+                  key={item.path}
                   control={form.control}
                   name="items"
                   render={({ field }) => {
+                    let text: string = "";
+                    let color: string = "";
+                    switch(item.status) {
+                      case ChangeType.CREATE:
+                        color = "text-green-400";
+                        text = "new";
+                        break;
+                      case ChangeType.UPDATE:
+                        color = "text-blue-300";
+                        text = "updated";
+                        break;
+                        case ChangeType.DELETE:
+                        color = "text-red-400";
+                        text = "deleted"
+                        break;
+                    }
+                  
                     return (
                       <FormItem
-                        key={item.id}
+                        key={item.path}
                         className="flex flex-row items-start space-x-3 space-y-0"
                       >
                         <div className="flex items-center space-x-2">
                         <FormControl>
                           <Checkbox
-                            checked={field.value?.includes(item.id)}
+                            checked={field.value?.includes(item.path)}
                             onCheckedChange={(checked) => {
                               return checked
-                                ? field.onChange([...field.value, item.id])
+                                ? field.onChange([...field.value, item.path])
                                 : field.onChange(
                                     field.value?.filter(
-                                      (value) => value !== item.id
+                                      (value) => value !== item.path
                                     )
                                   )
                             }}
                           />
                         </FormControl>
-                        <FormLabel className="font-normal">{item.label}
+                        <FormLabel className="font-normal">{item.path}
                         </FormLabel>
-                        <FormLabel className="font-normal text-green-300">created
+                        <FormLabel className={color}>{text}
                         </FormLabel>
                         </div>
                       </FormItem>
