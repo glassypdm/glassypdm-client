@@ -2,6 +2,11 @@ on:
   push:
     branches:
       - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
 name: release-please
 jobs:
   release-please:
@@ -11,4 +16,4 @@ jobs:
         with:
           release-type: simple
           package-name: glassyPDM
-          release-as: 0.1.0-alpha.1
+          release-as: 0.1.0-1
