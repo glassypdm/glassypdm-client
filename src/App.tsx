@@ -1,7 +1,6 @@
 import { ThemeProvider } from '@/components/theme-provider';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { useState } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
 import { resolve, appLocalDataDir } from "@tauri-apps/api/path";
@@ -10,42 +9,16 @@ import { open } from '@tauri-apps/api/dialog';
 import '@/App.css';
 import { LocalChanges } from './components/LocalChanges';
 import { Toaster } from './components/ui/toaster';
+import { LocalCADFile, CADFile, ProjectState, ChangeType } from './lib/types';
 
-// TODO combine CADFile and LocalCADFile
-interface CADFile {
-  path: string,
-  commit: number,
-  size: number,
-  hash: string,
-};
-
-enum ChangeType {
-  CREATE,
-  UPDATE,
-  DELETE,
-  UNIDENTIFIED
-}
-
-interface LocalCADFile {
-  path: string,
-  size: number,
-  hash: string
-  change?: ChangeType
-}
-
-interface ProjectState {
-  commit: number,
-  files: CADFile[]
-};
 
 const projectPath: string = await invoke("get_project_dir");
 const initServerUrl: string = await invoke("get_server_url");
 function App() {
   const [projDir, setProjDir] = useState(projectPath);
   const [serverUrl, setServerUrl] = useState(initServerUrl);
-  const [upload, setUpload] = useState<LocalCADFile[]>([]);
+  const [upload, setUpload] = useState(false);
   const [download, setDownload] = useState<CADFile[]>([]);
-  const [progress, setProgress] = useState(0);
 
   async function getChanges() {
     console.log("click sync");
@@ -158,7 +131,7 @@ function App() {
       });
 
       console.log(toUpload);
-      setUpload(toUpload);
+      setUpload(toUpload.length != 0);
       await writeTextFile("toUpload.json", JSON.stringify(toUpload), { dir: BaseDirectory.AppLocalData });
     } catch(err: any) {
       console.error(err.message);
@@ -196,7 +169,6 @@ function App() {
 
 
       // handle progress bar
-      setProgress(i * 100/ length);
     }
 
     console.log("finish downloading");
@@ -205,7 +177,6 @@ function App() {
     const path = await resolve(appdata, "base.json");
     await invoke("hash_dir", { resultsPath: path });
     setDownload([]);
-    setProgress(0);
   }
 
   async function uploadChanges() {
@@ -226,7 +197,6 @@ function App() {
     // upload files
     const length: number = files.length;
     for(let i = 0; i < length; i++) {
-      console.log(files[i]);
       await invoke("upload_changes", {
         file: {
           path: files[i].path,
@@ -236,21 +206,13 @@ function App() {
         commit: newCommit,
         serverUrl: serverUrl
       });
-      setProgress(i * 100 / length);
     }
 
     // update base.json
     const path = await resolve(appdata, "base.json");
     await invoke("hash_dir", { resultsPath: path });
 
-    setUpload([]);
-    setProgress(0);
-  }
-
-  // TODO: implement
-  // could probably just download everything from server/info/project
-  async function resetChanges() {
-    console.log("click resetChanges");
+    setUpload(false);
   }
 
   async function onSetServerUrlClick() {
@@ -290,16 +252,14 @@ function App() {
         </div>
         <div>
           <Input id="server_url" value={serverUrl} onChange={(event: any) => {setServerUrl(event.target.value)}}/>
-          <Button variant="outline" onClick={onSetServerUrlClick}>Set Server URL</Button>
+          <Button variant="secondary" onClick={onSetServerUrlClick}>Set Server URL</Button>
         </div>
       </div>
       <div>
         <Button onClick={downloadChanges}>Download</Button>
         <Button onClick={getChanges}>Sync</Button>
         <Button onClick={uploadChanges}>Upload</Button>
-        <Button variant="destructive" onClick={resetChanges}>Reset Changes</Button>
       </div>
-      <Progress value={progress} />
       <div>
       <p>to download:</p>
       <ul>
@@ -312,31 +272,8 @@ function App() {
           })
         }
       </ul>
-      <p>to upload:</p>
-      <ul>
-        {
-          upload.map((file: LocalCADFile) => {
-            let output: string = file.path.replace(projDir, "");
-            let type: string = "";
-            switch(file.change) {
-              case ChangeType.CREATE:
-                type = "(+)";
-                break;
-              case ChangeType.UPDATE:
-                type = "(+/-)";
-                break;
-              case ChangeType.DELETE:
-                type = "(-)";
-                break;
-            }
-            return(
-              <li>{output} {type}</li>
-            )
-          })
-        }
-      </ul>
     </div>
-    <LocalChanges/>
+    <LocalChanges upload={upload} />
     <Toaster/>
     </ThemeProvider>
   );
