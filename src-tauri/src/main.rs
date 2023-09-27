@@ -179,7 +179,13 @@ fn hash_dir(app_handle: tauri::AppHandle, results_path: &str) {
             let isthisfile = metadata.is_file();
             let filesize = metadata.len();
 
+            // ignore if directory
             if !isthisfile {
+                continue;
+            }
+
+            // ignore temporary solidworks file
+            if pathbuf.as_str().contains("~$") {
                 continue;
             }
 

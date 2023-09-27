@@ -8,6 +8,7 @@ import { resolve, appLocalDataDir } from "@tauri-apps/api/path";
 import { readTextFile, writeTextFile, BaseDirectory } from "@tauri-apps/api/fs";
 import { open } from '@tauri-apps/api/dialog';
 import '@/App.css';
+import { LocalChanges } from './components/LocalChanges';
 
 // TODO combine CADFile and LocalCADFile
 interface CADFile {
@@ -287,7 +288,7 @@ function App() {
           <Button onClick={setProjectDir}>Set Project Directory</Button>
         </div>
         <div>
-          <Input id="server_url" value={serverUrl} onChange={(event: any) => {setServerUrl(event.target.value)}}label="Server URL" variant="outlined" />
+          <Input id="server_url" value={serverUrl} onChange={(event: any) => {setServerUrl(event.target.value)}}/>
           <Button variant="outline" onClick={onSetServerUrlClick}>Set Server URL</Button>
         </div>
       </div>
@@ -334,6 +335,7 @@ function App() {
         }
       </ul>
     </div>
+    <LocalChanges/>
     </ThemeProvider>
   );
 }

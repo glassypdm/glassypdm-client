@@ -8,10 +8,10 @@
 - [x] improve feedback for knowing when files have downloaded/uploaded successfully/failed
 - [ ] replace default Tauri icon, GPL compliance
 - [ ] better config experience
-- [ ] ignore `$~` or `~$` files that solidworks makes
+- [x] ignore `$~` or `~$` files that solidworks makes
 - [ ] auth, commit messages, view commit history
 - [ ] download older revisions
-- [ ] reset change by file
+- [ ] discard changes
 ## Dev Instructions
 ```bash
 # for development
