@@ -183,6 +183,11 @@ fn hash_dir(app_handle: tauri::AppHandle, results_path: &str) {
                 continue;
             }
 
+            // ignore temporary solidworks files
+            if pathbuf.as_str().contains("~$") {
+                continue;
+            }
+
             println!("{}: {}", pathbuf, s_hash);
             let file = LocalCADFile {
                 hash: s_hash,
