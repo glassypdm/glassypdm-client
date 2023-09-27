@@ -180,7 +180,7 @@ fn hash_dir(app_handle: tauri::AppHandle, results_path: &str) {
                 continue;
             }
 
-            // ignore temporary solidworks file
+            // ignore temporary solidworks files
             if pathbuf.as_str().contains("~$") {
                 continue;
             }
