@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 // TODO look into redirect in loaders and actions
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
 
@@ -14,26 +14,46 @@ export function Sidebar({ className }: SidebarProps) {
           SDM-24
         </h2>
         <div className="space-y-1">
-          <Link to="/">
-            <Button variant="ghost" className="w-full justify-start">
-              Workspace
-            </Button>
-          </Link>
-          <Link to="/">
-            <Button variant="ghost" className="w-full justify-start">
-              Project History
-            </Button>
-          </Link>
-          <Link to="/settings">
-            <Button variant="ghost" className="w-full justify-start">
-              Client Settings
-            </Button>
-          </Link>
-          <Link to="/account">
-            <Button variant="ghost" className="w-full justify-start">
-              Account
-            </Button>
-          </Link>
+          <NavLink to="/">
+            {({ isActive }) => (
+              <Button
+                variant={isActive ? "secondary" : "ghost"}
+                className="w-full justify-start"
+              >
+                Workspace
+              </Button>
+            )}
+          </NavLink>
+          <NavLink to="/">
+            {({ isActive }) => (
+              <Button
+                variant={isActive ? "secondary" : "ghost"}
+                className="w-full justify-start"
+              >
+                Project History
+              </Button>
+            )}
+          </NavLink>
+          <NavLink to="/settings">
+            {({ isActive }) => (
+              <Button
+                variant={isActive ? "secondary" : "ghost"}
+                className="w-full justify-start"
+              >
+                Client Settings
+              </Button>
+            )}
+          </NavLink>
+          <NavLink to="/account">
+            {({ isActive }) => (
+              <Button
+                variant={isActive ? "secondary" : "ghost"}
+                className="w-full justify-start"
+              >
+                Account
+              </Button>
+            )}
+          </NavLink>
         </div>
       </div>
     </div>
