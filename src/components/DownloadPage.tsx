@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { RowSelectionState } from "@tanstack/react-table";
 import { cn } from "@/lib/utils";
@@ -35,17 +35,6 @@ export function DownloadPage(props: DownloadPageProps) {
   const [selection, setSelection] = useState<RowSelectionState>({});
   const [progress, setProgress] = useState(0);
   const navigate = useNavigate();
-
-  // TODO do something better
-  // using data API w/ createHashRouter
-  // and loaders is likely better
-  useEffect(() => {
-    let ignore = false;
-
-    return () => {
-      ignore = true;
-    };
-  }, []);
 
   return (
     <div className={cn("", props.className)}>
