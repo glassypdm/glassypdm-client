@@ -1,4 +1,4 @@
-name: 'test-tauri'
+name: "test-tauri"
 on:
   push:
     branches:
@@ -9,7 +9,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [windows-latest] # macos-latest, ubuntu-20.04, 
+        platform: [windows-latest] # macos-latest, ubuntu-20.04,
 
     runs-on: ${{ matrix.platform }}
     steps:
