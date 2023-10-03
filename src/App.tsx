@@ -13,6 +13,7 @@ import { Sidebar } from "./components/Sidebar";
 import "@/App.css";
 import { Settings } from "./components/Settings";
 import { Account } from "./components/Account";
+import { History } from "./components/History";
 
 const clerkPath = await resolveResource("resources/clerk.txt");
 const REACT_APP_CLERK_PUBLISHABLE_KEY = await readTextFile(clerkPath);
@@ -32,6 +33,10 @@ function App() {
                 <Route
                   path="/"
                   element={<Workbench className="col-span-3" />}
+                />
+                <Route
+                  path="/history"
+                  element={<History className="col-span-3" />}
                 />
                 <Route
                   path="/settings"

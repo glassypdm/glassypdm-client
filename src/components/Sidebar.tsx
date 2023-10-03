@@ -24,7 +24,7 @@ export function Sidebar({ className }: SidebarProps) {
               </Button>
             )}
           </NavLink>
-          <NavLink to="/">
+          <NavLink to="/history">
             {({ isActive }) => (
               <Button
                 variant={isActive ? "secondary" : "ghost"}
