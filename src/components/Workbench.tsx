@@ -152,47 +152,6 @@ export function Workbench({ className }: WorkbenchProps) {
     }
   }
 
-  async function downloadChanges() {
-    console.log("click downloadChanges");
-    const projectDir: string = await invoke("get_project_dir");
-    console.log(projectDir);
-    setProjDir(projectDir);
-
-    // TODO: before downloading, ensure that base.json == compare.json
-
-    // download files
-    // first get s3 presigned links
-    const length = download.length;
-    for (let i = 0; i < length; i++) {
-      const file: CADFile = download[i];
-      if (file.size != 0) {
-        const key: string = file.path.replaceAll("\\", "|");
-        console.log(key);
-        const response = await fetch(serverUrl + "/download/file/" + key);
-        const s3Url = (await response.json())["s3Url"];
-        console.log(s3Url);
-        await invoke("download_s3_file", {
-          link: {
-            path: file.path,
-            url: s3Url,
-          },
-        });
-      } else {
-        console.log("deleting file " + file.path);
-        await invoke("delete_file", { file: file.path });
-      }
-
-      // handle progress bar
-    }
-
-    console.log("finish downloading");
-    // after download, hash dir to base.json
-    const appdata = await appLocalDataDir();
-    const path = await resolve(appdata, "base.json");
-    await invoke("hash_dir", { resultsPath: path });
-    setDownload([]);
-  }
-
   async function uploadChanges() {
     console.log("click uploadChanges");
     const appdata = await appLocalDataDir();
@@ -283,7 +242,12 @@ export function Workbench({ className }: WorkbenchProps) {
       </div>
       <div>
         {/*<Button onClick={downloadChanges}>Download</Button>*/}
-        <Button onClick={() => navigate("/download")}>Download</Button>
+        <Button
+          onClick={() => navigate("/download")}
+          disabled={download.length === 0 ? true : false}
+        >
+          {download.length === 0 ? "Up to date" : "Downloads available"}
+        </Button>
         <Button onClick={getChanges}>Sync</Button>
         <Button onClick={() => console.log("upload lol")}>Upload</Button>
       </div>

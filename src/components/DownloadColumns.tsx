@@ -82,8 +82,9 @@ export async function downloadPageLoader() {
     output.files.push({
       file: {
         path: data[i].path,
+        size: data[i].size,
         relativePath: data[i].path,
-        change: data[i].change ?? ChangeType.UNIDENTIFIED,
+        change: data[i].change,
       },
     });
   }

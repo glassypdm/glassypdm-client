@@ -13,6 +13,11 @@ export interface CADFile {
   change: ChangeType;
 }
 
+export interface DownloadFile {
+  path: string;
+  size: number;
+}
+
 export interface LocalCADFile {
   path: string;
   size: number;
@@ -27,6 +32,7 @@ export interface ProjectState {
 
 export interface UpdatedCADFile {
   path: string;
+  size: number;
   relativePath: string;
   change: ChangeType;
 }
