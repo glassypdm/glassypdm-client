@@ -10,6 +10,7 @@ export interface CADFile {
   commit: number;
   size: number;
   hash: string;
+  change: ChangeType;
 }
 
 export interface LocalCADFile {
@@ -26,6 +27,7 @@ export interface ProjectState {
 
 export interface UpdatedCADFile {
   path: string;
+  relativePath: string;
   change: ChangeType;
 }
 

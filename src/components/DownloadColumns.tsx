@@ -1,9 +1,15 @@
 "use client";
 
-import { ColumnDef } from "@tanstack/react-table";
-import { CADFileColumn, UpdatedCADFile, ChangeType } from "@/lib/types";
+import { ColumnDef, RowSelectionState } from "@tanstack/react-table";
+import {
+  CADFileColumn,
+  UpdatedCADFile,
+  ChangeType,
+  CADFile,
+} from "@/lib/types";
 import { Checkbox } from "./ui/checkbox";
-
+import { invoke } from "@tauri-apps/api/tauri";
+import { BaseDirectory, readTextFile } from "@tauri-apps/api/fs";
 export const columns: ColumnDef<CADFileColumn>[] = [
   {
     id: "select",
@@ -42,14 +48,50 @@ export const columns: ColumnDef<CADFileColumn>[] = [
           break;
         case ChangeType.DELETE:
           color = "text-red-400";
-          symbol = "(-)\t";
+          symbol = "(-)";
+          break;
+        default:
+          symbol = "(?)";
           break;
       }
       return (
         <p className={color}>
-          {symbol} {file.path}{" "}
+          {symbol} {file.relativePath}
         </p>
       );
     },
   },
 ];
+
+export async function downloadPageLoader() {
+  let output: DownloadLoaderProps = {
+    files: [],
+    selectionList: {},
+  };
+  const str = await readTextFile("toDownload.json", {
+    dir: BaseDirectory.AppLocalData,
+  });
+  const data: CADFile[] = JSON.parse(str);
+  console.log(data);
+
+  for (let i = 0; i < data.length; i++) {
+    // enable selected by default
+    output.selectionList[i.toString()] = true;
+
+    // path, relativePath, change
+    output.files.push({
+      file: {
+        path: data[i].path,
+        relativePath: data[i].path,
+        change: data[i].change ?? ChangeType.UNIDENTIFIED,
+      },
+    });
+  }
+
+  return output;
+}
+
+export interface DownloadLoaderProps {
+  files: CADFileColumn[];
+  selectionList: RowSelectionState;
+}

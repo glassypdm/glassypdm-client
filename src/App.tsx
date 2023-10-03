@@ -4,14 +4,7 @@ import {
   SignedIn,
   SignedOut,
 } from "@clerk/clerk-react";
-import {
-  HashRouter,
-  Routes,
-  Route,
-  createHashRouter,
-  Outlet,
-  RouterProvider,
-} from "react-router-dom";
+import { createHashRouter, Outlet, RouterProvider } from "react-router-dom";
 import { resolveResource } from "@tauri-apps/api/path";
 import { readTextFile } from "@tauri-apps/api/fs";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -23,6 +16,7 @@ import { Account } from "./components/Account";
 import { History } from "./components/History";
 import { About } from "./components/About";
 import { DownloadPage } from "./components/DownloadPage";
+import { downloadPageLoader } from "./components/DownloadColumns";
 
 const clerkPath = await resolveResource("resources/clerk.txt");
 const REACT_APP_CLERK_PUBLISHABLE_KEY = await readTextFile(clerkPath);
@@ -55,6 +49,7 @@ const router = createHashRouter([
       {
         path: "/download",
         element: <DownloadPage className="col-span-3" />,
+        loader: downloadPageLoader,
       },
     ],
   },

@@ -67,6 +67,7 @@ export function Workbench({ className }: WorkbenchProps) {
             return true;
           });
           if (found) {
+            file.change = ChangeType.DELETE;
             toDownload.push(file); // file not deleted locally
           }
         } else {
@@ -77,12 +78,14 @@ export function Workbench({ className }: WorkbenchProps) {
             if (file.path === localPath) {
               found = true;
               if (local.hash !== file.hash || local.size != file.size) {
+                file.change = ChangeType.UPDATE;
                 toDownload.push(file); // file has been updated
               }
             }
           });
           if (!found) {
             console.log("not found locally");
+            file.change = ChangeType.CREATE;
             toDownload.push(file); // file not downloaded locally
           }
         }
