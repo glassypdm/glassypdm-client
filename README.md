@@ -12,8 +12,19 @@
 - [ ] auth, commit messages, view commit history
 - [ ] download older revisions
 - [ ] discard changes
+## Support
+
 ## Dev Instructions
+### Prerequisites
+- Yarn classic. [link](https://classic.yarnpkg.com/en/docs/install#windows-stable)
+- Windows computer setup for Tauri development. [link](https://tauri.app/v1/guides/getting-started/prerequisites)
+- Clerk account setup. [link](https://clerk.com/)
+### CLI
 ```bash
+# create clerk files
+$ echo -n "PK_FROM_CLERK" >> src-tauri/resources/clerk.txt
+$ echo -n "https://link.to.clerk.userprofile.example.com" >> src-tauri/resources/clerk-profile.txt
+
 # for development
 $ yarn tauri dev
 
