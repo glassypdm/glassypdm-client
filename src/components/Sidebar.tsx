@@ -54,6 +54,16 @@ export function Sidebar({ className }: SidebarProps) {
               </Button>
             )}
           </NavLink>
+          <NavLink to="/about">
+            {({ isActive }) => (
+              <Button
+                variant={isActive ? "secondary" : "ghost"}
+                className="w-full justify-start"
+              >
+                About
+              </Button>
+            )}
+          </NavLink>
         </div>
       </div>
     </div>
