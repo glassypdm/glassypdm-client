@@ -59,7 +59,7 @@ fn upload_changes(app_handle: tauri::AppHandle, file: LocalCADFile, commit: u64,
     let path: String = file.path;
     let relative_path = path.replace(&project_dir, "");
 
-    let mut form;
+    let mut form: Form;
 
     // TODO optimise, lol
     if file.size != 0 {
@@ -70,8 +70,8 @@ fn upload_changes(app_handle: tauri::AppHandle, file: LocalCADFile, commit: u64,
             .text("path", relative_path)
             .text("size", file.size.to_string())
             .text("hash", file.hash)
+            .text("project", 0.to_string())
             .file("key", path).unwrap();
-
     } else {
         // deleted file
         println!("relative {} (deleting!)", relative_path);
@@ -79,6 +79,7 @@ fn upload_changes(app_handle: tauri::AppHandle, file: LocalCADFile, commit: u64,
             .text("commit", commit.to_string())
             .text("path", relative_path)
             .text("size", file.size.to_string())
+            .text("project", 0.to_string())
             .text("hash", file.hash);
     }
 
