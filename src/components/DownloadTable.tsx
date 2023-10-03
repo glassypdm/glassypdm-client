@@ -14,35 +14,30 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useState } from "react";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
   data: TData[];
+  selection: RowSelectionState;
+  setSelection: any;
 }
 
-// TODO: lift rowSelection state up
 export function DownloadTable<TData, TValue>({
   columns,
   data,
+  selection,
+  setSelection,
 }: DataTableProps<TData, TValue>) {
-  const [rowSelection, setRowSelection] = useState<RowSelectionState>({
-    "0": true,
-    "1": true,
-    "2": true,
-  });
-
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    onRowSelectionChange: setRowSelection,
+    onRowSelectionChange: setSelection,
     state: {
-      rowSelection,
+      rowSelection: selection,
     },
   });
 
-  console.log(rowSelection);
   return (
     <div className="rounded-md border">
       <Table>

@@ -1,6 +1,7 @@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/tauri";
 import { resolve, appLocalDataDir } from "@tauri-apps/api/path";
 import { readTextFile, writeTextFile, BaseDirectory } from "@tauri-apps/api/fs";
@@ -9,7 +10,6 @@ import "@/App.css";
 import { Toaster } from "@/components/ui/toaster";
 import { LocalCADFile, CADFile, ProjectState, ChangeType } from "@/lib/types";
 import { cn } from "@/lib/utils";
-import { useNavigate } from "react-router-dom";
 
 const projectPath: string = await invoke("get_project_dir");
 const initServerUrl: string = await invoke("get_server_url");
