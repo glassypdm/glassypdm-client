@@ -939,6 +939,18 @@
   resolved "https://registry.yarnpkg.com/@remix-run/router/-/router-1.9.0.tgz#9033238b41c4cbe1e961eccb3f79e2c588328cf6"
   integrity sha512-bV63itrKBC0zdT27qYm6SDZHlkXwFL1xMBuhkn+X7l0+IIhNaH5wuuvZKp6eKhCD4KFhujhfhCT1YxXW6esUIA==
 
+"@tanstack/react-table@^8.10.3":
+  version "8.10.3"
+  resolved "https://registry.yarnpkg.com/@tanstack/react-table/-/react-table-8.10.3.tgz#d109be13ffca4085336e92b4a856bddc1ddfebd8"
+  integrity sha512-Qya1cJ+91arAlW7IRDWksRDnYw28O446jJ/ljkRSc663EaftJoBCAU10M+VV1K6MpCBLrXq1BD5IQc1zj/ZEjA==
+  dependencies:
+    "@tanstack/table-core" "8.10.3"
+
+"@tanstack/table-core@8.10.3":
+  version "8.10.3"
+  resolved "https://registry.yarnpkg.com/@tanstack/table-core/-/table-core-8.10.3.tgz#7f7a0753645e05bb15c97512785abbae7b626ee3"
+  integrity sha512-hJ55YfJlWbfzRROfcyA/kC1aZr/shsLA8XNAwN8jXylhYWGLnPmiJJISrUfj4dMMWRiFi0xBlnlC7MLH+zSrcw==
+
 "@tauri-apps/api@1.4.0", "@tauri-apps/api@^1.4.0":
   version "1.4.0"
   resolved "https://registry.yarnpkg.com/@tauri-apps/api/-/api-1.4.0.tgz#b4013ca3d17b853f7df29fe14079ebb4d52dbffa"

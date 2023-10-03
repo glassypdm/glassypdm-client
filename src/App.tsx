@@ -15,6 +15,7 @@ import { Settings } from "./components/Settings";
 import { Account } from "./components/Account";
 import { History } from "./components/History";
 import { About } from "./components/About";
+import { DownloadPage } from "./components/DownloadPage";
 
 const clerkPath = await resolveResource("resources/clerk.txt");
 const REACT_APP_CLERK_PUBLISHABLE_KEY = await readTextFile(clerkPath);
@@ -50,6 +51,10 @@ function App() {
                 <Route
                   path="/about"
                   element={<About className="col-span-3" />}
+                />
+                <Route
+                  path="/download"
+                  element={<DownloadPage className="col-span-3" />}
                 />
               </Routes>
             </div>

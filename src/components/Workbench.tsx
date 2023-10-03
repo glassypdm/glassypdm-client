@@ -9,6 +9,7 @@ import "@/App.css";
 import { Toaster } from "@/components/ui/toaster";
 import { LocalCADFile, CADFile, ProjectState, ChangeType } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { useNavigate } from "react-router-dom";
 
 const projectPath: string = await invoke("get_project_dir");
 const initServerUrl: string = await invoke("get_server_url");
@@ -20,6 +21,7 @@ export function Workbench({ className }: WorkbenchProps) {
   const [serverUrl, setServerUrl] = useState(initServerUrl);
   const [upload, setUpload] = useState<LocalCADFile[]>([]);
   const [download, setDownload] = useState<CADFile[]>([]);
+  const navigate = useNavigate();
 
   async function getChanges() {
     console.log("click sync");
@@ -277,18 +279,10 @@ export function Workbench({ className }: WorkbenchProps) {
         </div>
       </div>
       <div>
-        <Button onClick={downloadChanges}>Download</Button>
+        {/*<Button onClick={downloadChanges}>Download</Button>*/}
+        <Button onClick={() => navigate("/download")}>Download</Button>
         <Button onClick={getChanges}>Sync</Button>
-        <Button onClick={uploadChanges}>Upload</Button>
-      </div>
-      <div>
-        <p>to download:</p>
-        <ul>
-          {download.map((file: CADFile) => {
-            let output: string = file.path;
-            return <li>{output}</li>;
-          })}
-        </ul>
+        <Button onClick={() => console.log("upload lol")}>Upload</Button>
       </div>
       <Toaster />
     </div>

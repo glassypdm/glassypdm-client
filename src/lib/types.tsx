@@ -23,3 +23,12 @@ export interface ProjectState {
   commit: number;
   files: CADFile[];
 }
+
+export interface UpdatedCADFile {
+  path: string;
+  change: ChangeType;
+}
+
+export interface CADFileColumn {
+  file: UpdatedCADFile;
+}
