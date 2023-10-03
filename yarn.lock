@@ -245,6 +245,13 @@
   dependencies:
     csstype "3.1.1"
 
+"@clerk/types@^3.53.0":
+  version "3.53.0"
+  resolved "https://registry.yarnpkg.com/@clerk/types/-/types-3.53.0.tgz#5a7436e0ff89134401edafef7d50557e626a928f"
+  integrity sha512-V+9BvKAo9f2ShgP+RpQ/MgJTbx4ayk3sYiFbMtLYlmtLCsn0xwglfP7i++7640d6+MAtCnMTAcrTp61IvUxSFw==
+  dependencies:
+    csstype "3.1.1"
+
 "@emotion/babel-plugin@^11.11.0":
   version "11.11.0"
   resolved "https://registry.yarnpkg.com/@emotion/babel-plugin/-/babel-plugin-11.11.0.tgz#c2d872b6a7767a9d176d007f5b31f7d504bb5d6c"

@@ -6,7 +6,6 @@ import { resolve, appLocalDataDir } from "@tauri-apps/api/path";
 import { readTextFile, writeTextFile, BaseDirectory } from "@tauri-apps/api/fs";
 import { open } from "@tauri-apps/api/dialog";
 import "@/App.css";
-import { LocalChanges } from "@/components/LocalChanges";
 import { Toaster } from "@/components/ui/toaster";
 import { LocalCADFile, CADFile, ProjectState, ChangeType } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -19,7 +18,7 @@ interface WorkbenchProps extends React.HTMLAttributes<HTMLDivElement> {}
 export function Workbench({ className }: WorkbenchProps) {
   const [projDir, setProjDir] = useState(projectPath);
   const [serverUrl, setServerUrl] = useState(initServerUrl);
-  const [upload, setUpload] = useState(false);
+  const [upload, setUpload] = useState<LocalCADFile[]>([]);
   const [download, setDownload] = useState<CADFile[]>([]);
 
   async function getChanges() {
@@ -139,7 +138,7 @@ export function Workbench({ className }: WorkbenchProps) {
       });
 
       console.log(toUpload);
-      setUpload(toUpload.length != 0);
+      setUpload(toUpload);
       await writeTextFile("toUpload.json", JSON.stringify(toUpload), {
         dir: BaseDirectory.AppLocalData,
       });
@@ -226,7 +225,8 @@ export function Workbench({ className }: WorkbenchProps) {
     const path = await resolve(appdata, "base.json");
     await invoke("hash_dir", { resultsPath: path });
 
-    setUpload(false);
+    setUpload([]);
+    console.log(upload); // TODO temporary
   }
 
   async function onSetServerUrlClick() {
@@ -290,7 +290,6 @@ export function Workbench({ className }: WorkbenchProps) {
           })}
         </ul>
       </div>
-      <LocalChanges upload={upload} />
       <Toaster />
     </div>
   );

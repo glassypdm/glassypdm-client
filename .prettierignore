@@ -3,3 +3,4 @@ coverage
 src-tauri
 dist
 *.md
+*.txt

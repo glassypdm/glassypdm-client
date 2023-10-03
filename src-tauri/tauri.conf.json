@@ -16,7 +16,9 @@
       "fs": {
         "all": true,
         "scope": {
-          "allow": ["$APPDATA", "$APPDATA/*", "$APPLOCALDATA", "$APPLOCALDATA/**/*"]
+          "allow": [
+            "$APPDATA", "$APPDATA/*", "$APPLOCALDATA", "$APPLOCALDATA/**/*", "$RESOURCE/resources/*"
+          ]
         }
       },
       "dialog": {
@@ -40,6 +42,10 @@
         "icons/128x128@2x.png",
         "icons/icon.icns",
         "icons/icon.ico"
+      ],
+      "resources": [
+        "resources/clerk.txt",
+        "resources/clerk-profile.txt"
       ]
     },
     "security": {

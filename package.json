@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@clerk/clerk-react": "^4.24.2",
+    "@clerk/types": "^3.53.0",
     "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.11.0",
     "@fontsource/roboto": "^5.0.8",
