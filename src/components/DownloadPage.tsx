@@ -22,7 +22,6 @@ export function DownloadPage(props: DownloadPageProps) {
   const navigate = useNavigate();
 
   async function handleDownload() {
-    const projectDir: string = await invoke("get_project_dir");
     const serverUrl: string = await invoke("get_server_url");
     console.log("downloading files");
     console.log(selection);

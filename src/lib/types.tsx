@@ -22,7 +22,7 @@ export interface LocalCADFile {
   path: string;
   size: number;
   hash: string;
-  change?: ChangeType;
+  change: ChangeType;
 }
 
 export interface ProjectState {

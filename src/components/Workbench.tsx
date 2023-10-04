@@ -241,7 +241,6 @@ export function Workbench({ className }: WorkbenchProps) {
         </div>
       </div>
       <div>
-        {/*<Button onClick={downloadChanges}>Download</Button>*/}
         <Button
           onClick={() => navigate("/download")}
           disabled={download.length === 0 ? true : false}
@@ -249,7 +248,10 @@ export function Workbench({ className }: WorkbenchProps) {
           {download.length === 0 ? "Up to date" : "Downloads available"}
         </Button>
         <Button onClick={getChanges}>Sync</Button>
-        <Button onClick={() => console.log("upload lol")}>Upload</Button>
+        {
+          // TODO do we want to disable uploads if downloads are available?
+        }
+        <Button onClick={() => navigate("/upload")}>Upload</Button>
       </div>
       <Toaster />
     </div>

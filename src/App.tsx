@@ -16,7 +16,11 @@ import { Account } from "./components/Account";
 import { History } from "./components/History";
 import { About } from "./components/About";
 import { DownloadPage } from "./components/DownloadPage";
-import { downloadPageLoader } from "./components/DownloadColumns";
+import {
+  downloadPageLoader,
+  uploadPageLoader,
+} from "./components/DownloadColumns";
+import { UploadPage } from "./components/UploadPage";
 
 const clerkPath = await resolveResource("resources/clerk.txt");
 const REACT_APP_CLERK_PUBLISHABLE_KEY = await readTextFile(clerkPath);
@@ -50,6 +54,11 @@ const router = createHashRouter([
         path: "/download",
         element: <DownloadPage className="col-span-3" />,
         loader: downloadPageLoader,
+      },
+      {
+        path: "/upload",
+        element: <UploadPage className="col-span-3" />,
+        loader: uploadPageLoader,
       },
     ],
   },

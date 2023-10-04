@@ -6,9 +6,9 @@ import {
   UpdatedCADFile,
   ChangeType,
   CADFile,
+  LocalCADFile,
 } from "@/lib/types";
 import { Checkbox } from "./ui/checkbox";
-import { invoke } from "@tauri-apps/api/tauri";
 import { BaseDirectory, readTextFile } from "@tauri-apps/api/fs";
 export const columns: ColumnDef<CADFileColumn>[] = [
   {
@@ -93,6 +93,40 @@ export async function downloadPageLoader() {
 }
 
 export interface DownloadLoaderProps {
+  files: CADFileColumn[];
+  selectionList: RowSelectionState;
+}
+
+export async function uploadPageLoader() {
+  let output: DownloadLoaderProps = {
+    files: [],
+    selectionList: {},
+  };
+  const str = await readTextFile("toUpload.json", {
+    dir: BaseDirectory.AppLocalData,
+  });
+  const data: LocalCADFile[] = JSON.parse(str);
+  console.log(data);
+
+  for (let i = 0; i < data.length; i++) {
+    // enable selected by default
+    output.selectionList[i.toString()] = true;
+
+    // path, relativePath, change
+    output.files.push({
+      file: {
+        path: data[i].path,
+        size: data[i].size,
+        relativePath: data[i].path, // TODO address
+        change: data[i].change,
+      },
+    });
+  }
+
+  return output;
+}
+
+export interface UploadLoaderProps {
   files: CADFileColumn[];
   selectionList: RowSelectionState;
 }
