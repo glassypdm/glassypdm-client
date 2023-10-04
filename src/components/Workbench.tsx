@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/tauri";
 import { resolve, appLocalDataDir } from "@tauri-apps/api/path";
 import { readTextFile, writeTextFile, BaseDirectory } from "@tauri-apps/api/fs";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/toaster";
 import { LocalCADFile, CADFile, ProjectState, ChangeType } from "@/lib/types";
@@ -14,10 +15,12 @@ interface WorkbenchProps extends React.HTMLAttributes<HTMLDivElement> {}
 export function Workbench({ className }: WorkbenchProps) {
   const [upload, setUpload] = useState<LocalCADFile[]>([]);
   const [download, setDownload] = useState<CADFile[]>([]);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   async function getChanges() {
     console.log("click sync");
+    setLoading(true);
     let serverUrl: string = await invoke("get_server_url");
     let projDir: string = await invoke("get_project_dir");
 
@@ -145,6 +148,8 @@ export function Workbench({ className }: WorkbenchProps) {
     } catch (err: any) {
       console.error(err.message);
     }
+
+    setLoading(false);
   }
 
   async function uploadChanges() {
@@ -199,7 +204,10 @@ export function Workbench({ className }: WorkbenchProps) {
         >
           {download.length === 0 ? "Up to date" : "Downloads available"}
         </Button>
-        <Button onClick={getChanges}>Sync</Button>
+        <Button onClick={getChanges} disabled={loading}>
+          {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <></>}
+          Sync
+        </Button>
         {
           // TODO do we want to disable uploads if downloads are available?
         }
