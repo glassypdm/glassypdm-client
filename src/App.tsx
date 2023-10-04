@@ -21,6 +21,7 @@ import {
   uploadPageLoader,
 } from "./components/DownloadColumns";
 import { UploadPage } from "./components/UploadPage";
+import { settingsLoader } from "./components/SettingsLoader";
 
 const clerkPath = await resolveResource("resources/clerk.txt");
 const REACT_APP_CLERK_PUBLISHABLE_KEY = await readTextFile(clerkPath);
@@ -41,6 +42,7 @@ const router = createHashRouter([
       {
         path: "/settings",
         element: <Settings className="col-span-3" />,
+        loader: settingsLoader,
       },
       {
         path: "/account",

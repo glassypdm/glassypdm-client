@@ -4,7 +4,7 @@
 - [x] upload a deleted file
 - [x] don't download deleted files
 - [x] delete a file if server says it was deleted
-- [ ] for download/upload list: say if it is new file, updated file, or deleted
+- [x] for download/upload list: say if it is new file, updated file, or deleted
 - [x] improve feedback for knowing when files have downloaded/uploaded successfully/failed
 - [ ] replace default Tauri icon, GPL compliance
 - [ ] better config experience

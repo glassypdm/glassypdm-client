@@ -1,30 +1,25 @@
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import "@/App.css";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/tauri";
 import { resolve, appLocalDataDir } from "@tauri-apps/api/path";
 import { readTextFile, writeTextFile, BaseDirectory } from "@tauri-apps/api/fs";
-import { open } from "@tauri-apps/api/dialog";
-import "@/App.css";
+import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/toaster";
 import { LocalCADFile, CADFile, ProjectState, ChangeType } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-const projectPath: string = await invoke("get_project_dir");
-const initServerUrl: string = await invoke("get_server_url");
-
 interface WorkbenchProps extends React.HTMLAttributes<HTMLDivElement> {}
 
 export function Workbench({ className }: WorkbenchProps) {
-  const [projDir, setProjDir] = useState(projectPath);
-  const [serverUrl, setServerUrl] = useState(initServerUrl);
   const [upload, setUpload] = useState<LocalCADFile[]>([]);
   const [download, setDownload] = useState<CADFile[]>([]);
   const navigate = useNavigate();
 
   async function getChanges() {
     console.log("click sync");
+    let serverUrl: string = await invoke("get_server_url");
+    let projDir: string = await invoke("get_project_dir");
 
     const appdata = await appLocalDataDir();
     const path = await resolve(appdata, "compare.json");
@@ -153,6 +148,7 @@ export function Workbench({ className }: WorkbenchProps) {
   }
 
   async function uploadChanges() {
+    let serverUrl: string = await invoke("get_server_url");
     console.log("click uploadChanges");
     const appdata = await appLocalDataDir();
     console.log(appdata);
@@ -193,54 +189,10 @@ export function Workbench({ className }: WorkbenchProps) {
     console.log(upload); // TODO temporary
   }
 
-  async function onSetServerUrlClick() {
-    console.log(serverUrl);
-    let newUrl: string = serverUrl;
-    if (serverUrl.endsWith("/")) {
-      newUrl = serverUrl.substring(0, serverUrl.length - 1);
-      setServerUrl(newUrl);
-    }
-    // TODO: if the end of serverURL is /, we want to remove it
-    await invoke("update_server_url", { newUrl: newUrl });
-  }
-
-  async function setProjectDir() {
-    const selected = await open({
-      multiple: false,
-      directory: true,
-    });
-
-    if (selected === null) {
-      // user cancelled selection
-    } else {
-      // user selected a directory
-      console.log(selected);
-      setProjDir(selected as string);
-      await invoke("update_project_dir", { dir: selected as string });
-    }
-  }
-
   return (
     <div className={cn("", className)}>
-      <div>
-        <div>
-          <p>Project Directory: {projDir}</p>
-          <Button onClick={setProjectDir}>Set Project Directory</Button>
-        </div>
-        <div>
-          <Input
-            id="server_url"
-            value={serverUrl}
-            onChange={(event: any) => {
-              setServerUrl(event.target.value);
-            }}
-          />
-          <Button variant="secondary" onClick={onSetServerUrlClick}>
-            Set Server URL
-          </Button>
-        </div>
-      </div>
-      <div>
+      <h1 className="text-2xl">SDM-24</h1>
+      <div className="space-x-4">
         <Button
           onClick={() => navigate("/download")}
           disabled={download.length === 0 ? true : false}
