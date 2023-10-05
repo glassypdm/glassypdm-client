@@ -44,4 +44,18 @@ export interface CADFileColumn {
 
 export interface WorkbenchLoaderProps {
   toDownload: CADFile[];
+  toUpload: LocalCADFile[];
+}
+
+export interface Commit {
+  id: number;
+  projectID: number;
+  authorID: string;
+  message: string;
+  fileCount: number;
+  timestamp: number;
+}
+
+export interface HistoryLoaderProps {
+  recentCommits: Commit[];
 }

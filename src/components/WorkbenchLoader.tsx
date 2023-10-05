@@ -1,4 +1,4 @@
-import { CADFile, WorkbenchLoaderProps } from "@/lib/types";
+import { CADFile, LocalCADFile, WorkbenchLoaderProps } from "@/lib/types";
 import { BaseDirectory, readTextFile } from "@tauri-apps/api/fs";
 import { invoke } from "@tauri-apps/api/tauri";
 import { redirect } from "react-router-dom";
@@ -16,14 +16,21 @@ export async function workbenchLoader() {
 
   let output: WorkbenchLoaderProps = {
     toDownload: [],
+    toUpload: [],
   };
 
   try {
-    const str = await readTextFile("toDownload.json", {
+    const downloadStr = await readTextFile("toDownload.json", {
       dir: BaseDirectory.AppLocalData,
     });
-    const data: CADFile[] = JSON.parse(str);
-    output.toDownload = data;
+    const downloadData: CADFile[] = JSON.parse(downloadStr);
+    output.toDownload = downloadData;
+
+    const uploadStr = await readTextFile("toUpload.json", {
+      dir: BaseDirectory.AppLocalData,
+    });
+    const uploadData: LocalCADFile[] = JSON.parse(uploadStr);
+    output.toUpload = uploadData;
   } catch (err: any) {
     console.error(err);
   }

@@ -20,7 +20,7 @@ interface WorkbenchProps extends React.HTMLAttributes<HTMLDivElement> {}
 export function Workbench({ className }: WorkbenchProps) {
   const loaderData: WorkbenchLoaderProps =
     useLoaderData() as WorkbenchLoaderProps;
-  const [upload, setUpload] = useState<LocalCADFile[]>([]);
+  const [upload, setUpload] = useState<LocalCADFile[]>(loaderData.toUpload);
   const [download, setDownload] = useState<CADFile[]>(loaderData.toDownload);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -154,6 +154,8 @@ export function Workbench({ className }: WorkbenchProps) {
       });
 
       // TODO: compare remote with compare.json for file conflicts
+      // nvm, if we compare upload w/ download then things in both
+      // should suffice
     } catch (err: any) {
       console.error(err.message);
     }
@@ -169,7 +171,9 @@ export function Workbench({ className }: WorkbenchProps) {
           onClick={() => navigate("/download")}
           disabled={download.length === 0 ? true : false}
         >
-          {download.length === 0 ? "Up to date" : "Files ready to download"}
+          {download.length === 0
+            ? "Up to date"
+            : download.length + " files ready to download"}
         </Button>
         <Button onClick={getChanges} disabled={loading}>
           {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Sync"}
@@ -181,7 +185,9 @@ export function Workbench({ className }: WorkbenchProps) {
           onClick={() => navigate("/upload")}
           disabled={upload.length === 0 ? true : false}
         >
-          {upload.length === 0 ? "Up to date" : "Files ready for upload"}
+          {upload.length === 0
+            ? "Up to date"
+            : upload.length + " files ready for upload"}
         </Button>
       </div>
     </div>

@@ -124,8 +124,6 @@ export function UploadPage({ className }: UploadPageProps) {
           }
         }
         // ignore files that we did not upload
-        // TODO: ignore list doesn't work
-        // for files we want to ignore, we need to reuse the old hash/size info
         let ignoreList: string[] = [];
         for (let i = 0; i < initUpload.length; i++) {
           ignoreList.push(initUpload[i].path);
