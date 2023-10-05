@@ -7,7 +7,7 @@
 - [x] for download/upload list: say if it is new file, updated file, or deleted
 - [x] improve feedback for knowing when files have downloaded/uploaded successfully/failed
 - [ ] replace default Tauri icon, GPL compliance
-- [ ] better config experience
+- [x] better config experience
 - [x] ignore `$~` or `~$` files that solidworks makes
 - [ ] auth, commit messages, view commit history
 - [ ] download older revisions
