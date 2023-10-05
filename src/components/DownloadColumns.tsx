@@ -83,6 +83,7 @@ export async function downloadPageLoader() {
       file: {
         path: data[i].path,
         size: data[i].size,
+        hash: data[i].hash,
         relativePath: data[i].path,
         change: data[i].change,
       },
@@ -105,6 +106,9 @@ export async function uploadPageLoader() {
   const str = await readTextFile("toUpload.json", {
     dir: BaseDirectory.AppLocalData,
   });
+  const projDir = await readTextFile("project_dir.txt", {
+    dir: BaseDirectory.AppLocalData,
+  });
   const data: LocalCADFile[] = JSON.parse(str);
   console.log(data);
 
@@ -117,7 +121,8 @@ export async function uploadPageLoader() {
       file: {
         path: data[i].path,
         size: data[i].size,
-        relativePath: data[i].path, // TODO address
+        hash: data[i].hash,
+        relativePath: data[i].path.replace(projDir, ""),
         change: data[i].change,
       },
     });

@@ -134,7 +134,7 @@ fn update_project_dir(app_handle: tauri::AppHandle, dir: PathBuf) {
 
     // update base.json
     path = appdir.join("base.json");
-    hash_dir(app_handle, &pathbuf_to_string(path));
+    hash_dir(app_handle, &pathbuf_to_string(path), Vec::new());
 }
 
 fn pathbuf_to_string(path: PathBuf) -> String {
@@ -150,8 +150,17 @@ fn greet(name: &str) -> String {
     return output;
 }
 
+fn is_key_in_list(key: String, list: Vec<String>) -> bool {
+    for str in list {
+        if key == str {
+            return true;
+        }
+    }
+    return false;
+}
+
 #[tauri::command]
-fn hash_dir(app_handle: tauri::AppHandle, results_path: &str) {
+fn hash_dir(app_handle: tauri::AppHandle, results_path: &str, ignore_list: Vec<String>) {
     let path: String = get_project_dir(app_handle);
     if path == "no lol" {
         return;
@@ -159,11 +168,34 @@ fn hash_dir(app_handle: tauri::AppHandle, results_path: &str) {
     
     let mut files: Vec<LocalCADFile> = Vec::new();
 
+    // first, handle ignorelist
+    let base_data: String = match fs::read_to_string(results_path) {
+        Ok(content) => content,
+        Err(_error) => "bruh".to_string(),
+    };
+    if base_data != "bruh" {
+        let base_json: Vec<LocalCADFile> = serde_json::from_str(&base_data).expect("base.json not formatted");
+        for ignored_file in &ignore_list {
+            println!("ignoring a file! {}", ignored_file);
+            for file in &base_json {
+                if file.path == ignored_file.clone() {
+                    let output: LocalCADFile = LocalCADFile {
+                        path: ignored_file.clone(),
+                        size: file.size,
+                        hash: file.hash.clone()
+                    };
+                    files.push(output);
+                }
+            }
+        }
+    }
+
+
     let do_steps = || -> Result<(), Error> {
         let tree = MerkleTree::builder(path)
         .algorithm(Algorithm::Blake3)
         .hash_names(true)
-        .build()?;
+        .build().unwrap();
 
         for item in tree {
             let pathbuf = item.path.absolute.into_string();
@@ -178,6 +210,12 @@ fn hash_dir(app_handle: tauri::AppHandle, results_path: &str) {
 
             // ignore if directory
             if !isthisfile {
+                continue;
+            }
+
+            // if file is in ignorelist, we already handled it
+            // so ignore it
+            if is_key_in_list(pathbuf.clone(), ignore_list.clone()) {
                 continue;
             }
 

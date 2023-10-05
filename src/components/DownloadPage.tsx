@@ -69,7 +69,7 @@ export function DownloadPage(props: DownloadPageProps) {
     // after download, hash dir to base.json
     const appdata = await appLocalDataDir();
     const path = await resolve(appdata, "base.json");
-    await invoke("hash_dir", { resultsPath: path });
+    await invoke("hash_dir", { resultsPath: path, ignoreList: [] });
 
     // remove items that were in toDownload from toDownload.json
     const str = await readTextFile("toDownload.json", {

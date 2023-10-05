@@ -34,7 +34,7 @@ export function Workbench({ className }: WorkbenchProps) {
     const appdata = await appLocalDataDir();
     const path = await resolve(appdata, "compare.json");
     console.log(path);
-    await invoke("hash_dir", { resultsPath: path });
+    await invoke("hash_dir", { resultsPath: path, ignoreList: [] });
     try {
       const data = await fetch(serverUrl + "/info/project");
       const remote: ProjectState = await data.json();
@@ -152,53 +152,13 @@ export function Workbench({ className }: WorkbenchProps) {
       await writeTextFile("toUpload.json", JSON.stringify(toUpload), {
         dir: BaseDirectory.AppLocalData,
       });
+
+      // TODO: compare remote with compare.json for file conflicts
     } catch (err: any) {
       console.error(err.message);
     }
 
     setLoading(false);
-  }
-
-  async function uploadChanges() {
-    let serverUrl: string = await invoke("get_server_url");
-    console.log("click uploadChanges");
-    const appdata = await appLocalDataDir();
-    console.log(appdata);
-    const contents = await readTextFile("toUpload.json", {
-      dir: BaseDirectory.AppLocalData,
-    });
-    const files = JSON.parse(contents);
-
-    // TODO ensure base == remote before uploading
-    // TODO mutex?
-
-    // get commit of base
-    const commitStr = await readTextFile("basecommit.txt", {
-      dir: BaseDirectory.AppLocalData,
-    });
-    let newCommit: number = parseInt(commitStr);
-    newCommit += 1;
-
-    // upload files
-    const length: number = files.length;
-    for (let i = 0; i < length; i++) {
-      await invoke("upload_changes", {
-        file: {
-          path: files[i].path,
-          size: files[i].size,
-          hash: files[i].hash,
-        },
-        commit: newCommit,
-        serverUrl: serverUrl,
-      });
-    }
-
-    // update base.json
-    const path = await resolve(appdata, "base.json");
-    await invoke("hash_dir", { resultsPath: path });
-
-    setUpload([]);
-    console.log(upload); // TODO temporary
   }
 
   return (
@@ -209,7 +169,7 @@ export function Workbench({ className }: WorkbenchProps) {
           onClick={() => navigate("/download")}
           disabled={download.length === 0 ? true : false}
         >
-          {download.length === 0 ? "Up to date" : "Downloads available"}
+          {download.length === 0 ? "Up to date" : "Files ready to download"}
         </Button>
         <Button onClick={getChanges} disabled={loading}>
           {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Sync"}
@@ -217,7 +177,12 @@ export function Workbench({ className }: WorkbenchProps) {
         {
           // TODO do we want to disable uploads if downloads are available?
         }
-        <Button onClick={() => navigate("/upload")}>Upload</Button>
+        <Button
+          onClick={() => navigate("/upload")}
+          disabled={upload.length === 0 ? true : false}
+        >
+          {upload.length === 0 ? "Up to date" : "Files ready for upload"}
+        </Button>
       </div>
     </div>
   );

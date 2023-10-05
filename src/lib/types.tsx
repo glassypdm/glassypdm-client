@@ -33,6 +33,7 @@ export interface ProjectState {
 export interface UpdatedCADFile {
   path: string;
   size: number;
+  hash: string;
   relativePath: string;
   change: ChangeType;
 }
