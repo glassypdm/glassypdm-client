@@ -1,11 +1,4 @@
-import {
-  CADFile,
-  Commit,
-  HistoryLoaderProps,
-  LocalCADFile,
-  WorkbenchLoaderProps,
-} from "@/lib/types";
-import { BaseDirectory, readTextFile } from "@tauri-apps/api/fs";
+import { HistoryLoaderProps } from "@/lib/types";
 import { invoke } from "@tauri-apps/api/tauri";
 import { redirect } from "react-router-dom";
 

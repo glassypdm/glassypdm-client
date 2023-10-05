@@ -15,6 +15,8 @@ export function History({ className }: HistoryProps) {
       <ul>
         {loaderData.recentCommits.map(
           (val: Commit, index: number, array: Commit[]) => {
+            index;
+            array;
             const d = new Date(0);
             d.setUTCSeconds(val.timestamp);
             return (
