@@ -40,3 +40,7 @@ export interface UpdatedCADFile {
 export interface CADFileColumn {
   file: UpdatedCADFile;
 }
+
+export interface WorkbenchLoaderProps {
+  toDownload: CADFile[];
+}
