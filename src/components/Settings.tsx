@@ -7,6 +7,7 @@ import { open } from "@tauri-apps/api/dialog";
 import { Separator } from "./ui/separator";
 import { SettingsLoaderProps } from "./SettingsLoader";
 import { useLoaderData } from "react-router-dom";
+import { useToast } from "./ui/use-toast";
 
 interface SettingsProps extends React.HTMLAttributes<HTMLDivElement> {}
 
@@ -14,6 +15,7 @@ export function Settings({ className }: SettingsProps) {
   const defaults: SettingsLoaderProps = useLoaderData() as SettingsLoaderProps;
   const [serverURL, setServerURL] = useState(defaults.serverURL);
   const [projDir, setProjDir] = useState(defaults.projectDir);
+  const { toast } = useToast();
 
   async function findProjectDir() {
     const selected = await open({
@@ -37,7 +39,9 @@ export function Settings({ className }: SettingsProps) {
     await invoke("update_server_url", { newUrl: newUrl });
     await invoke("update_project_dir", { dir: projDir as string });
 
-    // TODO toast notification
+    toast({
+      title: "Settings saved.",
+    });
   }
 
   return (

@@ -6,7 +6,6 @@ import { resolve, appLocalDataDir } from "@tauri-apps/api/path";
 import { readTextFile, writeTextFile, BaseDirectory } from "@tauri-apps/api/fs";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Toaster } from "@/components/ui/toaster";
 import { LocalCADFile, CADFile, ProjectState, ChangeType } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -213,7 +212,6 @@ export function Workbench({ className }: WorkbenchProps) {
         }
         <Button onClick={() => navigate("/upload")}>Upload</Button>
       </div>
-      <Toaster />
     </div>
   );
 }

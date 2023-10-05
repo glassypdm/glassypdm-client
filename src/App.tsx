@@ -23,6 +23,7 @@ import {
 import { UploadPage } from "./components/UploadPage";
 import { settingsLoader } from "./components/SettingsLoader";
 import { workbenchLoader } from "./components/WorkbenchLoader";
+import { Toaster } from "./components/ui/toaster";
 
 const clerkPath = await resolveResource("resources/clerk.txt");
 const REACT_APP_CLERK_PUBLISHABLE_KEY = await readTextFile(clerkPath);
@@ -77,6 +78,7 @@ export default function App() {
       <SignedIn>
         <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
           <RouterProvider router={router} />
+          <Toaster />
         </ThemeProvider>
       </SignedIn>
     </ClerkProvider>
