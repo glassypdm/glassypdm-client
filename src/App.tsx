@@ -22,6 +22,7 @@ import {
 } from "./components/DownloadColumns";
 import { UploadPage } from "./components/UploadPage";
 import { settingsLoader } from "./components/SettingsLoader";
+import { workbenchLoader } from "./components/WorkbenchLoader";
 
 const clerkPath = await resolveResource("resources/clerk.txt");
 const REACT_APP_CLERK_PUBLISHABLE_KEY = await readTextFile(clerkPath);
@@ -34,6 +35,7 @@ const router = createHashRouter([
       {
         path: "/",
         element: <Workbench className="col-span-3" />,
+        loader: workbenchLoader,
       },
       {
         path: "/history",

@@ -107,7 +107,7 @@ fn get_server_url(app_handle: tauri::AppHandle) -> String {
     let path = appdir.join("server_url.txt");
     let output: String = match fs::read_to_string(path) {
         Ok(contents) => return contents,
-        Err(_err) => "http://localhost:5000".to_string(),
+        Err(_err) => "http://example.com/".to_string(),
     };
     return output;
 }
@@ -118,7 +118,7 @@ fn get_project_dir(app_handle: tauri::AppHandle) -> String {
     let path = appdir.join("project_dir.txt");
     let output: String = match fs::read_to_string(path) {
         Ok(contents) => return contents,
-        Err(_err) => "set project directory please!!!".to_string(),
+        Err(_err) => "no project directory set".to_string(),
     };
     return output;
 }
