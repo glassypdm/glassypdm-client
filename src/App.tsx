@@ -35,6 +35,11 @@ const router = createHashRouter([
     element: <Layout />,
     children: [
       {
+        path: "*",
+        element: <Workbench className="col-span-3" />,
+        loader: workbenchLoader,
+      },
+      {
         path: "/",
         element: <Workbench className="col-span-3" />,
         loader: workbenchLoader,
