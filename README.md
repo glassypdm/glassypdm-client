@@ -9,9 +9,9 @@
 - [ ] replace default Tauri icon, GPL compliance
 - [x] better config experience
 - [x] ignore `$~` or `~$` files that solidworks makes
-- [ ] auth, commit messages, view commit history
+- [x] auth, commit messages, view commit history
 - [ ] download older revisions
-- [ ] discard changes
+- [x] discard changes
 ## Support
 
 ## Dev Instructions

@@ -8,7 +8,7 @@ import { UploadLoaderProps, columns } from "@/components/DownloadColumns";
 import { Progress } from "@/components/ui/progress";
 import { invoke } from "@tauri-apps/api/tauri";
 import { resolve, appLocalDataDir, BaseDirectory } from "@tauri-apps/api/path";
-import { LocalCADFile } from "@/lib/types";
+import { CADFile, LocalCADFile } from "@/lib/types";
 import { readTextFile, writeTextFile } from "@tauri-apps/api/fs";
 import {
   Select,
@@ -40,6 +40,7 @@ export function UploadPage({ className }: UploadPageProps) {
 
   async function handleClick() {
     let serverUrl: string = await invoke("get_server_url");
+    let projDir: string = await invoke("get_project_dir");
 
     console.log(action);
     console.log(message);
@@ -58,9 +59,63 @@ export function UploadPage({ className }: UploadPageProps) {
       });
     }
 
+    // TODO we definitely have duplicate code here we can refactor, lmao
     console.log(toUpload);
     if (action === "Reset") {
-      // TODO
+      // if file is not in base.json, then we just need to delete the file
+      // otherwise, get the s3 url from the server and download the file
+      const baseStr = await readTextFile("base.json", {
+        dir: BaseDirectory.AppLocalData,
+      });
+      const base: CADFile[] = JSON.parse(baseStr);
+      for (let i = 0; i < toUpload.length; i++) {
+        const relPath: string = toUpload[i].path.replace(projDir, "");
+        let found: boolean = false;
+        for (let j = 0; j < base.length; j++) {
+          if (base[j].path === toUpload[i].path) {
+            found = true;
+            const response = await fetch(
+              serverUrl + "/download/file/" + relPath.replaceAll("\\", "|"),
+            );
+            const s3Url = (await response.json())["s3Url"];
+
+            // get s3 url, download file
+            await invoke("download_s3_file", {
+              link: {
+                path: relPath,
+                url: s3Url,
+              },
+            });
+            break;
+          }
+        }
+
+        if (!found) {
+          // delete file
+          console.log("deleteing a file " + toUpload[i].path);
+          await invoke("delete_file", { file: relPath });
+        }
+        setProgress((100 * (i + 1)) / toUpload.length);
+      }
+
+      // update toUpload.json
+      const initUploadStr = await readTextFile("toUpload.json", {
+        dir: BaseDirectory.AppLocalData,
+      });
+      let initUpload: LocalCADFile[] = JSON.parse(initUploadStr);
+      for (let i = 0; i < toUpload.length; i++) {
+        const downloadedPath: string = toUpload[i].path;
+        let j = initUpload.length;
+        while (j--) {
+          if (initUpload[j].path == downloadedPath) {
+            initUpload.splice(j, 1);
+          }
+        }
+      }
+
+      await writeTextFile("toUpload.json", JSON.stringify(initUpload), {
+        dir: BaseDirectory.AppLocalData,
+      });
     } else if (action === "Upload") {
       // 1. post to /commit
       const commitStr = await readTextFile("basecommit.txt", {

@@ -48,7 +48,7 @@ export function Settings({ className }: SettingsProps) {
     <div className={cn("", className)}>
       <h1 className="text-2xl">Client Settings</h1>
       <h2 className="text-xl">Set Project Directory</h2>
-      <p>Current Project Directory: {projDir}</p>
+      <p>Selected Project Directory: {projDir}</p>
       <Button onClick={findProjectDir}>Set Project Directory</Button>
       <Separator className="my-5" />
       <h2 className="text-xl">Set Server URL</h2>
