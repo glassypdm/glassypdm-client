@@ -8,7 +8,7 @@
   },
   "package": {
     "productName": "glassyPDM",
-    "version": "0.1.0-1"
+    "version": "0.1.0"
   },
   "tauri": {
     "allowlist": {
@@ -16,7 +16,9 @@
       "fs": {
         "all": true,
         "scope": {
-          "allow": ["$APPDATA", "$APPDATA/*", "$APPLOCALDATA", "$APPLOCALDATA/**/*"]
+          "allow": [
+            "$APPDATA", "$APPDATA/*", "$APPLOCALDATA", "$APPLOCALDATA/**/*", "$RESOURCE/resources/*"
+          ]
         }
       },
       "dialog": {
@@ -33,6 +35,7 @@
     "bundle": {
       "active": true,
       "targets": "all",
+      "publisher": "18x18az",
       "identifier": "org.18x18az.pdm",
       "icon": [
         "icons/32x32.png",
@@ -40,7 +43,17 @@
         "icons/128x128@2x.png",
         "icons/icon.icns",
         "icons/icon.ico"
-      ]
+      ],
+      "resources": [
+        "resources/clerk.txt",
+        "resources/clerk-profile.txt"
+      ],
+      "category": "DeveloperTool",
+      "windows": {
+        "certificateThumbprint": null,
+        "digestAlgorithm": "sha256",
+        "timestampUrl": ""
+      }
     },
     "security": {
       "csp": null

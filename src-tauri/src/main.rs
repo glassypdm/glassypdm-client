@@ -51,7 +51,6 @@ fn delete_file(app_handle: tauri::AppHandle, file: String) {
 fn upload_changes(app_handle: tauri::AppHandle, file: LocalCADFile, commit: u64, server_url: String) -> Result<(), ()> {
     let client = reqwest::blocking::Client::new();
     let url = server_url.to_string() + "/ingest";
-    //let url = "http://localhost:5000/ingest";
     println!("commit # {}; server url {}", commit, &url);
 
     let project_dir = get_project_dir(app_handle);
@@ -60,37 +59,35 @@ fn upload_changes(app_handle: tauri::AppHandle, file: LocalCADFile, commit: u64,
     let path: String = file.path;
     let relative_path = path.replace(&project_dir, "");
 
+    let mut form: Form;
+
     // TODO optimise, lol
     if file.size != 0 {
         println!("uploading {}", path);
         println!("relative {}", relative_path);
-        let form = reqwest::blocking::multipart::Form::new()
+        form = reqwest::blocking::multipart::Form::new()
             .text("commit", commit.to_string())
             .text("path", relative_path)
             .text("size", file.size.to_string())
             .text("hash", file.hash)
+            .text("project", 0.to_string())
             .file("key", path).unwrap();
-        
-        let res = client.post(url.to_string())
-            .multipart(form)
-            .send().unwrap();
-
-        println!("{:?}", res);
     } else {
         // deleted file
         println!("relative {} (deleting!)", relative_path);
-        let form = reqwest::blocking::multipart::Form::new()
+        form = reqwest::blocking::multipart::Form::new()
             .text("commit", commit.to_string())
             .text("path", relative_path)
             .text("size", file.size.to_string())
+            .text("project", 0.to_string())
             .text("hash", file.hash);
-        
-        let res = client.post(url.to_string())
-            .multipart(form)
-            .send().unwrap();
-        println!("{:?}", res);
     }
 
+    let res = client.post(url.to_string())
+        .multipart(form)
+        .send().unwrap();
+
+    println!("{:?}", res);
 
     println!("upload done");
     Ok(())
@@ -110,7 +107,7 @@ fn get_server_url(app_handle: tauri::AppHandle) -> String {
     let path = appdir.join("server_url.txt");
     let output: String = match fs::read_to_string(path) {
         Ok(contents) => return contents,
-        Err(_err) => "http://localhost:5000".to_string(),
+        Err(_err) => "http://example.com/".to_string(),
     };
     return output;
 }
@@ -121,7 +118,7 @@ fn get_project_dir(app_handle: tauri::AppHandle) -> String {
     let path = appdir.join("project_dir.txt");
     let output: String = match fs::read_to_string(path) {
         Ok(contents) => return contents,
-        Err(_err) => "set project directory please!!!".to_string(),
+        Err(_err) => "no project directory set".to_string(),
     };
     return output;
 }
@@ -137,7 +134,7 @@ fn update_project_dir(app_handle: tauri::AppHandle, dir: PathBuf) {
 
     // update base.json
     path = appdir.join("base.json");
-    hash_dir(app_handle, &pathbuf_to_string(path));
+    hash_dir(app_handle, &pathbuf_to_string(path), Vec::new());
 }
 
 fn pathbuf_to_string(path: PathBuf) -> String {
@@ -153,8 +150,17 @@ fn greet(name: &str) -> String {
     return output;
 }
 
+fn is_key_in_list(key: String, list: Vec<String>) -> bool {
+    for str in list {
+        if key == str {
+            return true;
+        }
+    }
+    return false;
+}
+
 #[tauri::command]
-fn hash_dir(app_handle: tauri::AppHandle, results_path: &str) {
+fn hash_dir(app_handle: tauri::AppHandle, results_path: &str, ignore_list: Vec<String>) {
     let path: String = get_project_dir(app_handle);
     if path == "no lol" {
         return;
@@ -162,11 +168,34 @@ fn hash_dir(app_handle: tauri::AppHandle, results_path: &str) {
     
     let mut files: Vec<LocalCADFile> = Vec::new();
 
+    // first, handle ignorelist
+    let base_data: String = match fs::read_to_string(results_path) {
+        Ok(content) => content,
+        Err(_error) => "bruh".to_string(),
+    };
+    if base_data != "bruh" {
+        let base_json: Vec<LocalCADFile> = serde_json::from_str(&base_data).expect("base.json not formatted");
+        for ignored_file in &ignore_list {
+            println!("ignoring a file! {}", ignored_file);
+            for file in &base_json {
+                if file.path == ignored_file.clone() {
+                    let output: LocalCADFile = LocalCADFile {
+                        path: ignored_file.clone(),
+                        size: file.size,
+                        hash: file.hash.clone()
+                    };
+                    files.push(output);
+                }
+            }
+        }
+    }
+
+
     let do_steps = || -> Result<(), Error> {
         let tree = MerkleTree::builder(path)
         .algorithm(Algorithm::Blake3)
         .hash_names(true)
-        .build()?;
+        .build().unwrap();
 
         for item in tree {
             let pathbuf = item.path.absolute.into_string();
@@ -179,7 +208,14 @@ fn hash_dir(app_handle: tauri::AppHandle, results_path: &str) {
             let isthisfile = metadata.is_file();
             let filesize = metadata.len();
 
+            // ignore if directory
             if !isthisfile {
+                continue;
+            }
+
+            // if file is in ignorelist, we already handled it
+            // so ignore it
+            if is_key_in_list(pathbuf.clone(), ignore_list.clone()) {
                 continue;
             }
 
