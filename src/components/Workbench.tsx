@@ -42,7 +42,7 @@ export function Workbench({ className }: WorkbenchProps) {
 
       // write remote commit into some file
       const commit: string = remote.commit?.toString() || "0";
-      await deleteFileIfExist("basecommit.json");
+      await deleteFileIfExist("basecommit.txt");
       await writeTextFile("basecommit.txt", commit, {
         dir: BaseDirectory.AppLocalData,
         append: false,

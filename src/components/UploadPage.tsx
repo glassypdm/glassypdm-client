@@ -192,7 +192,7 @@ export function UploadPage({ className }: UploadPageProps) {
         const path = await resolve(appdata, "base.json");
         await invoke("hash_dir", { resultsPath: path, ignoreList: ignoreList });
 
-        await deleteFileIfExist("basecommit.json");
+        await deleteFileIfExist("basecommit.txt");
         await writeTextFile("basecommit.txt", newCommit.toString(), {
           dir: BaseDirectory.AppLocalData,
           append: false,
