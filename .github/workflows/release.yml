@@ -16,4 +16,3 @@ jobs:
         with:
           release-type: simple
           package-name: glassyPDM
-          release-as: 0.1.0

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLoaderData, useNavigate } from "react-router-dom";
 import { RowSelectionState } from "@tanstack/react-table";
-import { cn } from "@/lib/utils";
+import { cn, deleteFileIfExist } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { DownloadTable } from "@/components/DownloadTable";
 import { UploadLoaderProps, columns } from "@/components/DownloadColumns";
@@ -113,8 +113,10 @@ export function UploadPage({ className }: UploadPageProps) {
         }
       }
 
+      await deleteFileIfExist("toUpload.json");
       await writeTextFile("toUpload.json", JSON.stringify(initUpload), {
         dir: BaseDirectory.AppLocalData,
+        append: false,
       });
     } else if (action === "Upload") {
       // 1. post to /commit
@@ -189,13 +191,18 @@ export function UploadPage({ className }: UploadPageProps) {
         const appdata = await appLocalDataDir();
         const path = await resolve(appdata, "base.json");
         await invoke("hash_dir", { resultsPath: path, ignoreList: ignoreList });
+
+        await deleteFileIfExist("basecommit.txt");
         await writeTextFile("basecommit.txt", newCommit.toString(), {
           dir: BaseDirectory.AppLocalData,
+          append: false,
         });
 
         // update toUpload
+        await deleteFileIfExist("toUpload.json");
         await writeTextFile("toUpload.json", JSON.stringify(initUpload), {
           dir: BaseDirectory.AppLocalData,
+          append: false,
         });
       }
     }
