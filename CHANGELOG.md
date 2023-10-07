@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/joshtenorio/glassypdm-client/compare/v0.1.0...v0.1.1) (2023-10-07)
+
+
+### Bug Fixes
+
+* json files are cleared before writing ([6e2dbd3](https://github.com/joshtenorio/glassypdm-client/commit/6e2dbd3223e1bc739a40c4342e737f26f870168d))
+
 ## [0.1.0](https://github.com/joshtenorio/glassypdm-client/compare/v0.1.0-1...v0.1.0) (2023-10-06)
 
 
