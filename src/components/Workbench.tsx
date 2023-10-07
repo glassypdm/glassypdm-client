@@ -13,7 +13,7 @@ import {
   ChangeType,
   WorkbenchLoaderProps,
 } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { cn, deleteFileIfExist } from "@/lib/utils";
 
 interface WorkbenchProps extends React.HTMLAttributes<HTMLDivElement> {}
 
@@ -42,8 +42,10 @@ export function Workbench({ className }: WorkbenchProps) {
 
       // write remote commit into some file
       const commit: string = remote.commit?.toString() || "0";
+      await deleteFileIfExist("basecommit.json");
       await writeTextFile("basecommit.txt", commit, {
         dir: BaseDirectory.AppLocalData,
+        append: false,
       });
 
       let contents = await readTextFile("base.json", {
@@ -97,8 +99,10 @@ export function Workbench({ className }: WorkbenchProps) {
       });
       console.log(toDownload);
       setDownload(toDownload);
+      await deleteFileIfExist("toDownload.json");
       await writeTextFile("toDownload.json", JSON.stringify(toDownload), {
         dir: BaseDirectory.AppLocalData,
+        append: false,
       });
 
       // for getting what to upload, compare base.json with compare.json
@@ -149,8 +153,10 @@ export function Workbench({ className }: WorkbenchProps) {
 
       console.log(toUpload);
       setUpload(toUpload);
+      await deleteFileIfExist("toUpload.json");
       await writeTextFile("toUpload.json", JSON.stringify(toUpload), {
         dir: BaseDirectory.AppLocalData,
+        append: false,
       });
 
       // TODO: compare remote with compare.json for file conflicts

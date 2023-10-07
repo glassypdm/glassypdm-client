@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLoaderData, useNavigate } from "react-router-dom";
 import { RowSelectionState } from "@tanstack/react-table";
-import { cn } from "@/lib/utils";
+import { cn, deleteFileIfExist } from "@/lib/utils";
 import { Button } from "./ui/button";
 import { DownloadTable } from "./DownloadTable";
 import { DownloadLoaderProps, columns } from "./DownloadColumns";
@@ -87,8 +87,10 @@ export function DownloadPage(props: DownloadPageProps) {
     }
 
     // update toDownload
+    await deleteFileIfExist("toDownload.json");
     await writeTextFile("toDownload.json", JSON.stringify(initDownload), {
       dir: BaseDirectory.AppLocalData,
+      append: false,
     });
   }
 
