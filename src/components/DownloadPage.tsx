@@ -3,8 +3,8 @@ import { useLoaderData, useNavigate } from "react-router-dom";
 import { RowSelectionState } from "@tanstack/react-table";
 import { cn, deleteFileIfExist } from "@/lib/utils";
 import { Button } from "./ui/button";
-import { DownloadTable } from "./DownloadTable";
-import { DownloadLoaderProps, columns } from "./DownloadColumns";
+import { FileTable } from "./FileTable";
+import { DownloadLoaderProps, columns } from "./FileColumn";
 import { Progress } from "./ui/progress";
 import { invoke } from "@tauri-apps/api/tauri";
 import { resolve, appLocalDataDir, BaseDirectory } from "@tauri-apps/api/path";
@@ -112,7 +112,7 @@ export function DownloadPage(props: DownloadPageProps) {
       </div>
       <Progress className="" value={progress} />
       <div className="container mx-auto py-10">
-        <DownloadTable
+        <FileTable
           columns={columns}
           data={files.files}
           selection={selection}

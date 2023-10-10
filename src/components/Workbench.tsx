@@ -159,9 +159,8 @@ export function Workbench({ className }: WorkbenchProps) {
         append: false,
       });
 
-      // TODO: compare remote with compare.json for file conflicts
-      // nvm, if we compare upload w/ download then things in both
-      // should suffice
+      // compare download and upload lists
+      // intersection is conflicted files
     } catch (err: any) {
       console.error(err.message);
     }

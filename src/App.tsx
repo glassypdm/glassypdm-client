@@ -16,10 +16,7 @@ import { Account } from "./components/Account";
 import { History } from "./components/History";
 import { About } from "./components/About";
 import { DownloadPage } from "./components/DownloadPage";
-import {
-  downloadPageLoader,
-  uploadPageLoader,
-} from "./components/DownloadColumns";
+import { downloadPageLoader, uploadPageLoader } from "./components/FileColumn";
 import { UploadPage } from "./components/UploadPage";
 import { settingsLoader } from "./components/SettingsLoader";
 import { workbenchLoader } from "./components/WorkbenchLoader";

@@ -23,7 +23,7 @@ interface DataTableProps<TData, TValue> {
   setSelection: any;
 }
 
-export function DownloadTable<TData, TValue>({
+export function FileTable<TData, TValue>({
   columns,
   data,
   selection,
