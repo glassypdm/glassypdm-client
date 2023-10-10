@@ -1,13 +1,13 @@
 import { cn } from "@/lib/utils";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
 import { useState } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
 import { open } from "@tauri-apps/api/dialog";
-import { Separator } from "./ui/separator";
-import { SettingsLoaderProps } from "./SettingsLoader";
+import { Separator } from "../components/ui/separator";
+import { SettingsLoaderProps } from "../lib/SettingsLoader";
 import { useLoaderData } from "react-router-dom";
-import { useToast } from "./ui/use-toast";
+import { useToast } from "../components/ui/use-toast";
 
 interface SettingsProps extends React.HTMLAttributes<HTMLDivElement> {}
 

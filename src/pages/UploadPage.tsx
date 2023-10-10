@@ -16,9 +16,9 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { Textarea } from "./ui/textarea";
+import { Textarea } from "../components/ui/textarea";
 import { useUser } from "@clerk/clerk-react";
-import { useToast } from "./ui/use-toast";
+import { useToast } from "../components/ui/use-toast";
 
 interface UploadPageProps extends React.HTMLAttributes<HTMLDivElement> {}
 

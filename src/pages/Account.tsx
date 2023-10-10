@@ -3,7 +3,7 @@ import { readTextFile } from "@tauri-apps/api/fs";
 import { open } from "@tauri-apps/api/shell";
 import { cn } from "@/lib/utils";
 import { useAuth, useUser } from "@clerk/clerk-react";
-import { Button } from "./ui/button";
+import { Button } from "../components/ui/button";
 
 const clerkPath = await resolveResource("resources/clerk-profile.txt");
 const CLERK_USER_PROFILE_URL = await readTextFile(clerkPath);

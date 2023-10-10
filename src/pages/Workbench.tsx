@@ -20,9 +20,9 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from "./ui/dialog";
-import { ScrollArea } from "./ui/scroll-area";
-import { Separator } from "./ui/separator";
+} from "../components/ui/dialog";
+import { ScrollArea } from "../components/ui/scroll-area";
+import { Separator } from "../components/ui/separator";
 
 interface WorkbenchProps extends React.HTMLAttributes<HTMLDivElement> {}
 

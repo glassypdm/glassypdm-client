@@ -1,7 +1,7 @@
 import { HistoryLoaderProps, Commit } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useLoaderData } from "react-router-dom";
-import { Separator } from "./ui/separator";
+import { Separator } from "../components/ui/separator";
 
 interface HistoryProps extends React.HTMLAttributes<HTMLDivElement> {}
 
