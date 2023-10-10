@@ -35,12 +35,12 @@ fn download_s3_file(app_handle: tauri::AppHandle, link: S3FileLink) {
     let prefix = p.parent().unwrap();
     println!("prefix: {}", &prefix.display());
     fs::create_dir_all(prefix).unwrap();
-    let cache_prefix: String = get_project_dir(app_handle.clone()) + "\\.glassypdm";
-    fs::create_dir_all(cache_prefix.clone()).unwrap();
+    //let cache_prefix: String = get_project_dir(app_handle.clone()) + "\\.glassypdm";
+    //fs::create_dir_all(cache_prefix.clone()).unwrap();
 
     let mut f = File::create(&path).expect("Unable to create file");
     io::copy(&mut resp, &mut f).expect("Unable to copy data");
-    let mut cache: File = File::create(cache_prefix.clone() + "\\" + link.key.as_str()).expect("unable to create cache file");
+    //let mut cache: File = File::create(cache_prefix.clone() + "\\" + link.key.as_str()).expect("unable to create cache file");
     //io::copy(&mut resp, &mut cache).expect("Unable to copy data");
     println!("finish");
     println!("loc: {}", path);
@@ -251,6 +251,7 @@ fn hash_dir(app_handle: tauri::AppHandle, results_path: &str, ignore_list: Vec<S
 
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_store::Builder::default().build())
         .invoke_handler(tauri::generate_handler![
             hash_dir, greet, get_project_dir, upload_changes, update_server_url,
             get_server_url, download_s3_file, update_project_dir, delete_file])

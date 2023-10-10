@@ -19,6 +19,7 @@ import {
 import { Textarea } from "../components/ui/textarea";
 import { useUser } from "@clerk/clerk-react";
 import { useToast } from "../components/ui/use-toast";
+import { Store } from "tauri-plugin-store-api";
 
 interface UploadPageProps extends React.HTMLAttributes<HTMLDivElement> {}
 
@@ -62,6 +63,10 @@ export function UploadPage({ className }: UploadPageProps) {
     // TODO we definitely have duplicate code here we can refactor, lmao
     console.log(toUpload);
     if (action === "Reset") {
+      const dataDir = await appLocalDataDir();
+      const storePath = await resolve(dataDir, "s3key.dat");
+      const store = new Store(storePath);
+
       // if file is not in base.json, then we just need to delete the file
       // otherwise, get the s3 url from the server and download the file
       const baseStr = await readTextFile("base.json", {
@@ -74,16 +79,23 @@ export function UploadPage({ className }: UploadPageProps) {
         for (let j = 0; j < base.length; j++) {
           if (base[j].path === toUpload[i].path) {
             found = true;
-            const response = await fetch(
-              serverUrl + "/download/file/" + relPath.replaceAll("\\", "|"),
-            );
-            const s3Url = (await response.json())["s3Url"];
+            // from datastore, grab s3key
+            // TODO properly type the store stuff
+            const s3Key = (
+              (await store.get(relPath.replaceAll("\\", "|"))) as any
+            )["value"];
 
-            // get s3 url, download file
+            // then fetch /download/s3/:key path
+            const response = await fetch(serverUrl + "/download/s3/" + s3Key);
+            const data = await response.json();
+            const s3Url = data["s3Url"];
+
+            // and download the file
             await invoke("download_s3_file", {
               link: {
                 path: relPath,
                 url: s3Url,
+                key: s3Key,
               },
             });
             break;
@@ -92,7 +104,7 @@ export function UploadPage({ className }: UploadPageProps) {
 
         if (!found) {
           // delete file
-          console.log("deleteing a file " + toUpload[i].path);
+          console.log("deleting a file " + toUpload[i].path);
           await invoke("delete_file", { file: relPath });
         }
         setProgress((100 * (i + 1)) / toUpload.length);
