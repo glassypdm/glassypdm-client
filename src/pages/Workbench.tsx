@@ -23,6 +23,7 @@ import {
 } from "../components/ui/dialog";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { Separator } from "../components/ui/separator";
+import { open } from "@tauri-apps/api/shell";
 
 interface WorkbenchProps extends React.HTMLAttributes<HTMLDivElement> {}
 
@@ -194,6 +195,15 @@ export function Workbench({ className }: WorkbenchProps) {
     setLoading(false);
   }
 
+  async function openFolder() {
+    const projDir: string = await invoke("get_project_dir");
+    await open(projDir);
+  }
+
+  async function openWebsite() {
+    // TODO website, lol
+  }
+
   return (
     <div className={cn("", className)}>
       <Dialog defaultOpen={conflictExists} open={conflictExists}>
@@ -245,6 +255,12 @@ export function Workbench({ className }: WorkbenchProps) {
             : upload.length + " files ready for upload"}
         </Button>
       </div>
+      <Button className="my-4" onClick={openFolder}>
+        Open Project Folder
+      </Button>
+      <Button className="m-4" onClick={openWebsite}>
+        Open Website
+      </Button>
     </div>
   );
 }

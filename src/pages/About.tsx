@@ -10,7 +10,7 @@ export function About({ className }: AboutProps) {
   return (
     <div className={cn("", className)}>
       <h1 className="text-2xl">glassyPDM</h1>
-      <p>Version: {GLASSYPDM_VER}</p>
+      <p>App Version: {GLASSYPDM_VER}</p>
       <p>Tauri Version: {TAURI_VER}</p>
       <br />
       <p>
