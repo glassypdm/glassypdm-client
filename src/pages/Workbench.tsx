@@ -201,7 +201,7 @@ export function Workbench({ className }: WorkbenchProps) {
   }
 
   async function openWebsite() {
-    // TODO website, lol
+    await open("https://pdm.18x18az.org/");
   }
 
   return (
