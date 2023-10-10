@@ -45,6 +45,7 @@ export interface CADFileColumn {
 export interface WorkbenchLoaderProps {
   toDownload: CADFile[];
   toUpload: LocalCADFile[];
+  conflict: string[];
 }
 
 export interface Commit {

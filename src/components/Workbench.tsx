@@ -14,6 +14,15 @@ import {
   WorkbenchLoaderProps,
 } from "@/lib/types";
 import { cn, deleteFileIfExist } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "./ui/dialog";
+import { ScrollArea } from "./ui/scroll-area";
+import { Separator } from "./ui/separator";
 
 interface WorkbenchProps extends React.HTMLAttributes<HTMLDivElement> {}
 
@@ -23,6 +32,10 @@ export function Workbench({ className }: WorkbenchProps) {
   const [upload, setUpload] = useState<LocalCADFile[]>(loaderData.toUpload);
   const [download, setDownload] = useState<CADFile[]>(loaderData.toDownload);
   const [loading, setLoading] = useState(false);
+  const [conflict, setConflict] = useState<string[]>(loaderData.conflict);
+  const [conflictExists, setConflictExists] = useState(
+    loaderData.conflict.length > 0,
+  );
   const navigate = useNavigate();
 
   async function getChanges() {
@@ -161,6 +174,19 @@ export function Workbench({ className }: WorkbenchProps) {
 
       // compare download and upload lists
       // intersection is conflicted files
+      let conflict: string[] = [];
+      for (let i = 0; i < toUpload.length; i++) {
+        const file: string = toUpload[i].path.replace(projDir, "");
+        for (let j = 0; j < toDownload.length; j++) {
+          if (file === toDownload[j].path) {
+            console.log("conflict!");
+            console.log(file);
+            conflict.push(file);
+            setConflictExists(true);
+          }
+        }
+      }
+      setConflict(conflict);
     } catch (err: any) {
       console.error(err.message);
     }
@@ -170,6 +196,33 @@ export function Workbench({ className }: WorkbenchProps) {
 
   return (
     <div className={cn("", className)}>
+      <Dialog defaultOpen={conflictExists} open={conflictExists}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>File conflicts detected!</DialogTitle>
+            <DialogDescription>
+              Please backup these files elsewhere before downloading/uploading
+              changes.
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea>
+            {conflict.map((value: string, index: number, array: string[]) => {
+              return (
+                <div>
+                  <li>{value}</li>
+                  <Separator />
+                </div>
+              );
+            })}
+          </ScrollArea>
+          <Button
+            onClick={() => setConflictExists(false)}
+            variant="destructive"
+          >
+            I understand
+          </Button>
+        </DialogContent>
+      </Dialog>
       <h1 className="text-2xl">SDM-24</h1>
       <div className="space-x-4">
         <Button
