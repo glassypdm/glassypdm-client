@@ -26,6 +26,12 @@ struct S3FileLink {
     key: String
 }
 
+#[derive(Serialize, Deserialize)]
+struct UploadStatus {
+    result: bool,
+    s3key: String
+}
+
 #[tauri::command]
 fn download_s3_file(app_handle: tauri::AppHandle, link: S3FileLink) {
     println!("download");
@@ -53,7 +59,7 @@ fn delete_file(app_handle: tauri::AppHandle, file: String) {
 }
 
 #[tauri::command]
-fn upload_changes(app_handle: tauri::AppHandle, file: LocalCADFile, commit: u64, server_url: String) -> Result<(), ()> {
+fn upload_changes(app_handle: tauri::AppHandle, file: LocalCADFile, commit: u64, server_url: String) -> Result<String, ()> {
     let client = reqwest::blocking::Client::new();
     let url = server_url.to_string() + "/ingest";
     println!("commit # {}; server url {}", commit, &url);
@@ -93,9 +99,13 @@ fn upload_changes(app_handle: tauri::AppHandle, file: LocalCADFile, commit: u64,
         .send().unwrap();
 
     println!("{:?}", res);
-
+    let data = res.json::<UploadStatus>().unwrap();
+    let mut output = "oops".to_string();
+    if data.result {
+        output = data.s3key;
+    }
     println!("upload done");
-    Ok(())
+    Ok(output)
 }
 
 #[tauri::command]

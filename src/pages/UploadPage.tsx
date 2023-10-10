@@ -42,9 +42,10 @@ export function UploadPage({ className }: UploadPageProps) {
   async function handleClick() {
     let serverUrl: string = await invoke("get_server_url");
     let projDir: string = await invoke("get_project_dir");
+    const dataDir = await appLocalDataDir();
+    const storePath = await resolve(dataDir, "s3key.dat");
+    const store = new Store(storePath);
 
-    console.log(action);
-    console.log(message);
     const authorID: string = user?.id || "null";
 
     // get paths for upload/reset
@@ -63,10 +64,6 @@ export function UploadPage({ className }: UploadPageProps) {
     // TODO we definitely have duplicate code here we can refactor, lmao
     console.log(toUpload);
     if (action === "Reset") {
-      const dataDir = await appLocalDataDir();
-      const storePath = await resolve(dataDir, "s3key.dat");
-      const store = new Store(storePath);
-
       // if file is not in base.json, then we just need to delete the file
       // otherwise, get the s3 url from the server and download the file
       const baseStr = await readTextFile("base.json", {
@@ -183,10 +180,12 @@ export function UploadPage({ className }: UploadPageProps) {
           title: "File upload rejected",
           description: "Re-sync and download new files from the server.",
         });
+        return;
+        // TODO now that we return here; we can un-nest the else body
       } else {
         // do the file upload stuff
         for (let i = 0; i < fileCount; i++) {
-          await invoke("upload_changes", {
+          const key = await invoke("upload_changes", {
             file: {
               path: toUpload[i].path,
               size: toUpload[i].size,
@@ -195,11 +194,18 @@ export function UploadPage({ className }: UploadPageProps) {
             commit: newCommit,
             serverUrl: serverUrl,
           });
-
+          console.log(key);
+          const relPath = toUpload[i].path
+            .replaceAll(projDir, "")
+            .replaceAll("\\", "|");
+          store.set(relPath, { value: key });
           setProgress((100 * (i + 1)) / fileCount);
         }
 
         console.log("finish uploading");
+
+        // save datastore
+        store.save();
 
         // remove items that were in toUpload from toUpload.json
         const str = await readTextFile("toUpload.json", {
