@@ -13,17 +13,18 @@ import {
   ChangeType,
   WorkbenchLoaderProps,
 } from "@/lib/types";
-import { cn, deleteFileIfExist } from "@/lib/utils";
+import { cn, deleteFileIfExist, isClientCurrent } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from "../components/ui/dialog";
-import { ScrollArea } from "../components/ui/scroll-area";
-import { Separator } from "../components/ui/separator";
+} from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 import { open } from "@tauri-apps/api/shell";
+import { useToast } from "@/components/ui/use-toast";
 
 interface WorkbenchProps extends React.HTMLAttributes<HTMLDivElement> {}
 
@@ -37,11 +38,23 @@ export function Workbench({ className }: WorkbenchProps) {
   const [conflictExists, setConflictExists] = useState(
     loaderData.conflict.length > 0,
   );
+  const { toast } = useToast();
   const navigate = useNavigate();
 
   async function getChanges() {
     console.log("click sync");
     setLoading(true);
+    if (!(await isClientCurrent())) {
+      setLoading(false);
+      toast({
+        title: "New glassyPDM version available!",
+        description: "Talk to your team lead for the new installer.",
+      });
+      // TODO we probably want to force users to update to the newest client
+      // version until client is a bit more stable in terms of
+      // update frequency
+      return;
+    }
     let serverUrl: string = await invoke("get_server_url");
     let projDir: string = await invoke("get_project_dir");
 
@@ -204,6 +217,36 @@ export function Workbench({ className }: WorkbenchProps) {
     await open("https://pdm.18x18az.org/");
   }
 
+  async function navigateDownload() {
+    if (!(await isClientCurrent())) {
+      setLoading(false);
+      toast({
+        title: "New glassyPDM version available!",
+        description: "Talk to your team lead for the new installer.",
+      });
+      // TODO we probably want to force users to update to the newest client
+      // version until project is a bit more stable in terms of
+      // update frequency and bugs
+      return;
+    }
+    navigate("/download");
+  }
+
+  async function navigateUpload() {
+    if (!(await isClientCurrent())) {
+      setLoading(false);
+      toast({
+        title: "New glassyPDM version available!",
+        description: "Talk to your team lead for the new installer.",
+      });
+      // TODO we probably want to force users to update to the newest client
+      // version until client is a bit more stable in terms of
+      // update frequency
+      return;
+    }
+    navigate("/upload");
+  }
+
   return (
     <div className={cn("", className)}>
       <Dialog defaultOpen={conflictExists} open={conflictExists}>
@@ -236,7 +279,7 @@ export function Workbench({ className }: WorkbenchProps) {
       <h1 className="text-2xl">SDM-24</h1>
       <div className="space-x-4">
         <Button
-          onClick={() => navigate("/download")}
+          onClick={navigateDownload}
           disabled={download.length === 0 ? true : false}
         >
           {download.length === 0
@@ -247,7 +290,7 @@ export function Workbench({ className }: WorkbenchProps) {
           {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Sync"}
         </Button>
         <Button
-          onClick={() => navigate("/upload")}
+          onClick={navigateUpload}
           disabled={upload.length === 0 ? true : false}
         >
           {upload.length === 0
