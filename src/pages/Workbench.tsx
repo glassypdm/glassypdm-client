@@ -219,7 +219,6 @@ export function Workbench({ className }: WorkbenchProps) {
 
   async function navigateDownload() {
     if (!(await isClientCurrent())) {
-      setLoading(false);
       toast({
         title: "New glassyPDM version available!",
         description: "Talk to your team lead for the new installer.",
@@ -234,7 +233,6 @@ export function Workbench({ className }: WorkbenchProps) {
 
   async function navigateUpload() {
     if (!(await isClientCurrent())) {
-      setLoading(false);
       toast({
         title: "New glassyPDM version available!",
         description: "Talk to your team lead for the new installer.",

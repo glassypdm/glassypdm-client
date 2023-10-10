@@ -131,6 +131,29 @@ export function UploadPage({ className }: UploadPageProps) {
         append: false,
       });
     } else if (action === "Upload") {
+      // 0. check if we have permissions to upload
+      const email = user?.primaryEmailAddress?.emailAddress as string;
+      const resPermission = await fetch(
+        serverUrl + "/info/permissions/" + email,
+      );
+      const dataPermission = await resPermission.json();
+      console.log(dataPermission);
+      if (!dataPermission["result"]) {
+        toast({
+          title: "Upload failed",
+          description: "Please open an issue on the GitHub page.",
+        });
+        return;
+      }
+      if (dataPermission["level"] < 1) {
+        toast({
+          title: "Upload failed",
+          description:
+            "You do not have write permissions. Talk to your team lead.",
+        });
+        return;
+      }
+
       // 1. post to /commit
       const commitStr = await readTextFile("basecommit.txt", {
         dir: BaseDirectory.AppLocalData,
