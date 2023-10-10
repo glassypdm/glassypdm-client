@@ -206,7 +206,7 @@ export function Workbench({ className }: WorkbenchProps) {
             </DialogDescription>
           </DialogHeader>
           <ScrollArea>
-            {conflict.map((value: string, index: number, array: string[]) => {
+            {conflict.map((value: string) => {
               return (
                 <div>
                   <li>{value}</li>
@@ -236,9 +236,6 @@ export function Workbench({ className }: WorkbenchProps) {
         <Button onClick={getChanges} disabled={loading}>
           {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Sync"}
         </Button>
-        {
-          // TODO do we want to disable uploads if downloads are available?
-        }
         <Button
           onClick={() => navigate("/upload")}
           disabled={upload.length === 0 ? true : false}
