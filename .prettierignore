@@ -4,3 +4,4 @@ src-tauri
 dist
 *.md
 *.txt
+*.yml
