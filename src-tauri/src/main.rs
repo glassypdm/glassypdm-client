@@ -22,21 +22,26 @@ struct LocalCADFile {
 #[derive(Serialize, Deserialize)]
 struct S3FileLink {
     path: String,
-    url: String
+    url: String,
+    key: String
 }
 
 #[tauri::command]
 fn download_s3_file(app_handle: tauri::AppHandle, link: S3FileLink) {
     println!("download");
     let mut resp = reqwest::blocking::get(link.url).unwrap();
-    let path = get_project_dir(app_handle) + link.path.as_str();
+    let path = get_project_dir(app_handle.clone()) + link.path.as_str();
     let p: &Path = std::path::Path::new(&path);
     let prefix = p.parent().unwrap();
     println!("prefix: {}", &prefix.display());
     fs::create_dir_all(prefix).unwrap();
+    let cache_prefix: String = get_project_dir(app_handle.clone()) + "\\.glassypdm";
+    fs::create_dir_all(cache_prefix.clone()).unwrap();
 
     let mut f = File::create(&path).expect("Unable to create file");
     io::copy(&mut resp, &mut f).expect("Unable to copy data");
+    let mut cache: File = File::create(cache_prefix.clone() + "\\" + link.key.as_str()).expect("unable to create cache file");
+    //io::copy(&mut resp, &mut cache).expect("Unable to copy data");
     println!("finish");
     println!("loc: {}", path);
 }

@@ -47,14 +47,18 @@ export function DownloadPage(props: DownloadPageProps) {
         console.log(key);
         // get s3 url
         const response = await fetch(serverUrl + "/download/file/" + key);
-        const s3Url = (await response.json())["s3Url"];
+        const data = await response.json();
+        const s3Url = data["s3Url"];
+        const s3Key = data["key"];
         console.log(s3Url);
+        console.log(s3Key);
 
         // have rust backend download the file
         await invoke("download_s3_file", {
           link: {
             path: file.path,
             url: s3Url,
+            key: s3Key,
           },
         });
       } else {
