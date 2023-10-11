@@ -20,7 +20,7 @@ export function History({ className }: HistoryProps) {
             const d = new Date(0);
             d.setUTCSeconds(val.timestamp);
             return (
-              <div>
+              <div key={val.id}>
                 <li key={val.id}>
                   Commit {val.id} by {val.authorID} changed {val.fileCount}{" "}
                   files at {d.toLocaleString()} with message{" "}

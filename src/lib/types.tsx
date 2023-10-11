@@ -60,3 +60,7 @@ export interface Commit {
 export interface HistoryLoaderProps {
   recentCommits: Commit[];
 }
+
+export interface PermissionDashboardProps {
+  level: number;
+}
