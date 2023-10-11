@@ -31,5 +31,5 @@ jobs:
             "type": "refactor",
             "section": "Miscellaneous",
             "hidden": false
-          },
+          }
           ]'
