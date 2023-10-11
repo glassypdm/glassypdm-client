@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.2.0](https://github.com/joshtenorio/glassypdm-client/compare/v0.1.1...v0.2.0) (2023-10-11)
+
+
+### Features
+
+* detect file conflicts ([f9bf147](https://github.com/joshtenorio/glassypdm-client/commit/f9bf14735a3a9b1990c39d4ebf98194a433b0585))
+* eligible users can set permissions for others ([9ebb67b](https://github.com/joshtenorio/glassypdm-client/commit/9ebb67bda13572a0dec849d5c53f16bd39c3c535))
+* Open project folder button ([6c846c5](https://github.com/joshtenorio/glassypdm-client/commit/6c846c5c83b017fd9b70c89a1dbaf3029f348fb5))
+* open project website button ([62aa638](https://github.com/joshtenorio/glassypdm-client/commit/62aa63847288fa63de36237c7b4af758a6475f24))
+* prevent uploads if user doesn't have write permissions ([09177b9](https://github.com/joshtenorio/glassypdm-client/commit/09177b9844e69321e296ad87646db972c440e36e))
+* prevent workspace actions if client is outdated ([da9ac65](https://github.com/joshtenorio/glassypdm-client/commit/da9ac65e74c91d694d762bca509dcf80758c9801))
+* save s3key on file upload ([a9e1dbb](https://github.com/joshtenorio/glassypdm-client/commit/a9e1dbb16e79d5257c51f262158143a923ebfad3))
+
+
+### Bug Fixes
+
+* reset file to proper revision ([0cbdec7](https://github.com/joshtenorio/glassypdm-client/commit/0cbdec78ffa1a3b364910931a4201e66471fd1bf))
+
 ## [0.1.1](https://github.com/joshtenorio/glassypdm-client/compare/v0.1.0...v0.1.1) (2023-10-07)
 
 
