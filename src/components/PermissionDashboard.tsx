@@ -74,13 +74,12 @@ export function PermissionDashboard(props: PermissionDashboardProps) {
   }
 
   return (
-    <div>
+    <div className="p-1 m-1 ">
       <h1 className="text-2xl">Edit Permissions</h1>
-      <div>
+      <div className="flex">
         <Input
           onChange={(e: any) => setEmailInput(e.target.value)}
           placeholder={"Enter email here.."}
-          className="w-2/4"
           type="email"
         />
         <Select onValueChange={(e) => setLevel(e)}>
