@@ -3,8 +3,8 @@ import { useLoaderData, useNavigate } from "react-router-dom";
 import { RowSelectionState } from "@tanstack/react-table";
 import { cn, deleteFileIfExist } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { DownloadTable } from "@/components/DownloadTable";
-import { UploadLoaderProps, columns } from "@/components/DownloadColumns";
+import { FileTable } from "@/components/FileTable";
+import { UploadLoaderProps, columns } from "@/components/FileColumn";
 import { Progress } from "@/components/ui/progress";
 import { invoke } from "@tauri-apps/api/tauri";
 import { resolve, appLocalDataDir, BaseDirectory } from "@tauri-apps/api/path";
@@ -16,9 +16,10 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { Textarea } from "./ui/textarea";
+import { Textarea } from "../components/ui/textarea";
 import { useUser } from "@clerk/clerk-react";
-import { useToast } from "./ui/use-toast";
+import { useToast } from "../components/ui/use-toast";
+import { Store } from "tauri-plugin-store-api";
 
 interface UploadPageProps extends React.HTMLAttributes<HTMLDivElement> {}
 
@@ -41,9 +42,10 @@ export function UploadPage({ className }: UploadPageProps) {
   async function handleClick() {
     let serverUrl: string = await invoke("get_server_url");
     let projDir: string = await invoke("get_project_dir");
+    const dataDir = await appLocalDataDir();
+    const storePath = await resolve(dataDir, "s3key.dat");
+    const store = new Store(storePath);
 
-    console.log(action);
-    console.log(message);
     const authorID: string = user?.id || "null";
 
     // get paths for upload/reset
@@ -74,16 +76,23 @@ export function UploadPage({ className }: UploadPageProps) {
         for (let j = 0; j < base.length; j++) {
           if (base[j].path === toUpload[i].path) {
             found = true;
-            const response = await fetch(
-              serverUrl + "/download/file/" + relPath.replaceAll("\\", "|"),
-            );
-            const s3Url = (await response.json())["s3Url"];
+            // from datastore, grab s3key
+            // TODO properly type the store stuff
+            const s3Key = (
+              (await store.get(relPath.replaceAll("\\", "|"))) as any
+            )["value"];
 
-            // get s3 url, download file
+            // then fetch /download/s3/:key path
+            const response = await fetch(serverUrl + "/download/s3/" + s3Key);
+            const data = await response.json();
+            const s3Url = data["s3Url"];
+
+            // and download the file
             await invoke("download_s3_file", {
               link: {
                 path: relPath,
                 url: s3Url,
+                key: s3Key,
               },
             });
             break;
@@ -92,7 +101,7 @@ export function UploadPage({ className }: UploadPageProps) {
 
         if (!found) {
           // delete file
-          console.log("deleteing a file " + toUpload[i].path);
+          console.log("deleting a file " + toUpload[i].path);
           await invoke("delete_file", { file: relPath });
         }
         setProgress((100 * (i + 1)) / toUpload.length);
@@ -119,6 +128,29 @@ export function UploadPage({ className }: UploadPageProps) {
         append: false,
       });
     } else if (action === "Upload") {
+      // 0. check if we have permissions to upload
+      const email = user?.primaryEmailAddress?.emailAddress as string;
+      const resPermission = await fetch(
+        serverUrl + "/info/permissions/" + email,
+      );
+      const dataPermission = await resPermission.json();
+      console.log(dataPermission);
+      if (!dataPermission["result"]) {
+        toast({
+          title: "Upload failed",
+          description: "Please open an issue on the GitHub page.",
+        });
+        return;
+      }
+      if (dataPermission["level"] < 1) {
+        toast({
+          title: "Upload failed",
+          description:
+            "You do not have write permissions. Talk to your team lead.",
+        });
+        return;
+      }
+
       // 1. post to /commit
       const commitStr = await readTextFile("basecommit.txt", {
         dir: BaseDirectory.AppLocalData,
@@ -148,10 +180,12 @@ export function UploadPage({ className }: UploadPageProps) {
           title: "File upload rejected",
           description: "Re-sync and download new files from the server.",
         });
+        return;
+        // TODO now that we return here; we can un-nest the else body
       } else {
         // do the file upload stuff
         for (let i = 0; i < fileCount; i++) {
-          await invoke("upload_changes", {
+          const key = await invoke("upload_changes", {
             file: {
               path: toUpload[i].path,
               size: toUpload[i].size,
@@ -160,11 +194,20 @@ export function UploadPage({ className }: UploadPageProps) {
             commit: newCommit,
             serverUrl: serverUrl,
           });
-
+          console.log(key);
+          const relPath = toUpload[i].path
+            .replaceAll(projDir, "")
+            .replaceAll("\\", "|");
+          if (key !== "oops" && key !== "deleted") {
+            store.set(relPath, { value: key });
+          }
           setProgress((100 * (i + 1)) / fileCount);
         }
 
         console.log("finish uploading");
+
+        // save datastore
+        store.save();
 
         // remove items that were in toUpload from toUpload.json
         const str = await readTextFile("toUpload.json", {
@@ -239,7 +282,7 @@ export function UploadPage({ className }: UploadPageProps) {
         <Progress className="" value={progress} />
       </div>
       <div className="container mx-auto py-1">
-        <DownloadTable
+        <FileTable
           columns={columns}
           data={files.files}
           selection={selection}

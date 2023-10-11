@@ -1,7 +1,7 @@
 import { HistoryLoaderProps, Commit } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useLoaderData } from "react-router-dom";
-import { Separator } from "./ui/separator";
+import { Separator } from "../components/ui/separator";
 
 interface HistoryProps extends React.HTMLAttributes<HTMLDivElement> {}
 
@@ -20,7 +20,7 @@ export function History({ className }: HistoryProps) {
             const d = new Date(0);
             d.setUTCSeconds(val.timestamp);
             return (
-              <div>
+              <div key={val.id}>
                 <li key={val.id}>
                   Commit {val.id} by {val.authorID} changed {val.fileCount}{" "}
                   files at {d.toLocaleString()} with message{" "}

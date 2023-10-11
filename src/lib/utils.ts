@@ -1,4 +1,6 @@
+import { getVersion } from "@tauri-apps/api/app";
 import { BaseDirectory, exists, removeFile } from "@tauri-apps/api/fs";
+import { invoke } from "@tauri-apps/api/tauri";
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -20,4 +22,14 @@ export async function deleteFileIfExist(filename: string) {
       dir: BaseDirectory.AppLocalData,
     });
   }
+}
+
+export async function isClientCurrent() {
+  const serverURL = await invoke("get_server_url");
+  const response = await fetch(serverURL + "/version");
+  const data = await response.json();
+  const version = data["version"];
+  const localVersion = await getVersion();
+  //return false;
+  return localVersion === version;
 }

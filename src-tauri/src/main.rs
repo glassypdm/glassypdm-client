@@ -22,21 +22,32 @@ struct LocalCADFile {
 #[derive(Serialize, Deserialize)]
 struct S3FileLink {
     path: String,
-    url: String
+    url: String,
+    key: String
+}
+
+#[derive(Serialize, Deserialize)]
+struct UploadStatus {
+    result: bool,
+    s3key: String
 }
 
 #[tauri::command]
 fn download_s3_file(app_handle: tauri::AppHandle, link: S3FileLink) {
     println!("download");
     let mut resp = reqwest::blocking::get(link.url).unwrap();
-    let path = get_project_dir(app_handle) + link.path.as_str();
+    let path = get_project_dir(app_handle.clone()) + link.path.as_str();
     let p: &Path = std::path::Path::new(&path);
     let prefix = p.parent().unwrap();
     println!("prefix: {}", &prefix.display());
     fs::create_dir_all(prefix).unwrap();
+    //let cache_prefix: String = get_project_dir(app_handle.clone()) + "\\.glassypdm";
+    //fs::create_dir_all(cache_prefix.clone()).unwrap();
 
     let mut f = File::create(&path).expect("Unable to create file");
     io::copy(&mut resp, &mut f).expect("Unable to copy data");
+    //let mut cache: File = File::create(cache_prefix.clone() + "\\" + link.key.as_str()).expect("unable to create cache file");
+    //io::copy(&mut resp, &mut cache).expect("Unable to copy data");
     println!("finish");
     println!("loc: {}", path);
 }
@@ -48,7 +59,7 @@ fn delete_file(app_handle: tauri::AppHandle, file: String) {
 }
 
 #[tauri::command]
-fn upload_changes(app_handle: tauri::AppHandle, file: LocalCADFile, commit: u64, server_url: String) -> Result<(), ()> {
+fn upload_changes(app_handle: tauri::AppHandle, file: LocalCADFile, commit: u64, server_url: String) -> Result<String, ()> {
     let client = reqwest::blocking::Client::new();
     let url = server_url.to_string() + "/ingest";
     println!("commit # {}; server url {}", commit, &url);
@@ -88,9 +99,13 @@ fn upload_changes(app_handle: tauri::AppHandle, file: LocalCADFile, commit: u64,
         .send().unwrap();
 
     println!("{:?}", res);
-
+    let data = res.json::<UploadStatus>().unwrap();
+    let mut output = "oops".to_string();
+    if data.result {
+        output = data.s3key;
+    }
     println!("upload done");
-    Ok(())
+    Ok(output)
 }
 
 #[tauri::command]
@@ -246,6 +261,7 @@ fn hash_dir(app_handle: tauri::AppHandle, results_path: &str, ignore_list: Vec<S
 
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_store::Builder::default().build())
         .invoke_handler(tauri::generate_handler![
             hash_dir, greet, get_project_dir, upload_changes, update_server_url,
             get_server_url, download_s3_file, update_project_dir, delete_file])

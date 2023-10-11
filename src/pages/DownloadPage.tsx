@@ -2,14 +2,15 @@ import { useState } from "react";
 import { useLoaderData, useNavigate } from "react-router-dom";
 import { RowSelectionState } from "@tanstack/react-table";
 import { cn, deleteFileIfExist } from "@/lib/utils";
-import { Button } from "./ui/button";
-import { DownloadTable } from "./DownloadTable";
-import { DownloadLoaderProps, columns } from "./DownloadColumns";
-import { Progress } from "./ui/progress";
+import { Button } from "../components/ui/button";
+import { FileTable } from "../components/FileTable";
+import { DownloadLoaderProps, columns } from "../components/FileColumn";
+import { Progress } from "../components/ui/progress";
 import { invoke } from "@tauri-apps/api/tauri";
 import { resolve, appLocalDataDir, BaseDirectory } from "@tauri-apps/api/path";
 import { CADFile, DownloadFile } from "@/lib/types";
 import { readTextFile, writeTextFile } from "@tauri-apps/api/fs";
+import { Store } from "tauri-plugin-store-api";
 
 interface DownloadPageProps extends React.HTMLAttributes<HTMLDivElement> {}
 
@@ -23,6 +24,10 @@ export function DownloadPage(props: DownloadPageProps) {
 
   async function handleDownload() {
     const serverUrl: string = await invoke("get_server_url");
+    const dataDir = await appLocalDataDir();
+    const storePath = await resolve(dataDir, "s3key.dat");
+    const store = new Store(storePath);
+    console.log(storePath);
     console.log("downloading files");
     console.log(selection);
 
@@ -45,16 +50,24 @@ export function DownloadPage(props: DownloadPageProps) {
       if (file.size != 0) {
         const key: string = file.path.replaceAll("\\", "|");
         console.log(key);
+
         // get s3 url
         const response = await fetch(serverUrl + "/download/file/" + key);
-        const s3Url = (await response.json())["s3Url"];
+        const data = await response.json();
+        const s3Url = data["s3Url"];
+        const s3Key = data["key"];
         console.log(s3Url);
+        console.log(s3Key);
+
+        // save key in store
+        await store.set(key, { value: s3Key });
 
         // have rust backend download the file
         await invoke("download_s3_file", {
           link: {
             path: file.path,
             url: s3Url,
+            key: s3Key,
           },
         });
       } else {
@@ -92,6 +105,9 @@ export function DownloadPage(props: DownloadPageProps) {
       dir: BaseDirectory.AppLocalData,
       append: false,
     });
+
+    // save store
+    await store.save();
   }
 
   return (
@@ -112,7 +128,7 @@ export function DownloadPage(props: DownloadPageProps) {
       </div>
       <Progress className="" value={progress} />
       <div className="container mx-auto py-10">
-        <DownloadTable
+        <FileTable
           columns={columns}
           data={files.files}
           selection={selection}

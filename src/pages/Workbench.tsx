@@ -13,7 +13,18 @@ import {
   ChangeType,
   WorkbenchLoaderProps,
 } from "@/lib/types";
-import { cn, deleteFileIfExist } from "@/lib/utils";
+import { cn, deleteFileIfExist, isClientCurrent } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { open } from "@tauri-apps/api/shell";
+import { useToast } from "@/components/ui/use-toast";
 
 interface WorkbenchProps extends React.HTMLAttributes<HTMLDivElement> {}
 
@@ -23,11 +34,27 @@ export function Workbench({ className }: WorkbenchProps) {
   const [upload, setUpload] = useState<LocalCADFile[]>(loaderData.toUpload);
   const [download, setDownload] = useState<CADFile[]>(loaderData.toDownload);
   const [loading, setLoading] = useState(false);
+  const [conflict, setConflict] = useState<string[]>(loaderData.conflict);
+  const [conflictExists, setConflictExists] = useState(
+    loaderData.conflict.length > 0,
+  );
+  const { toast } = useToast();
   const navigate = useNavigate();
 
   async function getChanges() {
     console.log("click sync");
     setLoading(true);
+    if (!(await isClientCurrent())) {
+      setLoading(false);
+      toast({
+        title: "New glassyPDM version available!",
+        description: "Talk to your team lead for the new installer.",
+      });
+      // TODO we probably want to force users to update to the newest client
+      // version until client is a bit more stable in terms of
+      // update frequency
+      return;
+    }
     let serverUrl: string = await invoke("get_server_url");
     let projDir: string = await invoke("get_project_dir");
 
@@ -159,9 +186,21 @@ export function Workbench({ className }: WorkbenchProps) {
         append: false,
       });
 
-      // TODO: compare remote with compare.json for file conflicts
-      // nvm, if we compare upload w/ download then things in both
-      // should suffice
+      // compare download and upload lists
+      // intersection is conflicted files
+      let conflict: string[] = [];
+      for (let i = 0; i < toUpload.length; i++) {
+        const file: string = toUpload[i].path.replace(projDir, "");
+        for (let j = 0; j < toDownload.length; j++) {
+          if (file === toDownload[j].path) {
+            console.log("conflict!");
+            console.log(file);
+            conflict.push(file);
+            setConflictExists(true);
+          }
+        }
+      }
+      setConflict(conflict);
     } catch (err: any) {
       console.error(err.message);
     }
@@ -169,12 +208,76 @@ export function Workbench({ className }: WorkbenchProps) {
     setLoading(false);
   }
 
+  async function openFolder() {
+    const projDir: string = await invoke("get_project_dir");
+    await open(projDir);
+  }
+
+  async function openWebsite() {
+    await open("https://pdm.18x18az.org/");
+  }
+
+  async function navigateDownload() {
+    if (!(await isClientCurrent())) {
+      toast({
+        title: "New glassyPDM version available!",
+        description: "Talk to your team lead for the new installer.",
+      });
+      // TODO we probably want to force users to update to the newest client
+      // version until project is a bit more stable in terms of
+      // update frequency and bugs
+      return;
+    }
+    navigate("/download");
+  }
+
+  async function navigateUpload() {
+    if (!(await isClientCurrent())) {
+      toast({
+        title: "New glassyPDM version available!",
+        description: "Talk to your team lead for the new installer.",
+      });
+      // TODO we probably want to force users to update to the newest client
+      // version until client is a bit more stable in terms of
+      // update frequency
+      return;
+    }
+    navigate("/upload");
+  }
+
   return (
     <div className={cn("", className)}>
+      <Dialog defaultOpen={conflictExists} open={conflictExists}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>File conflicts detected!</DialogTitle>
+            <DialogDescription>
+              Please backup these files elsewhere before downloading/uploading
+              changes.
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea>
+            {conflict.map((value: string) => {
+              return (
+                <div>
+                  <li>{value}</li>
+                  <Separator />
+                </div>
+              );
+            })}
+          </ScrollArea>
+          <Button
+            onClick={() => setConflictExists(false)}
+            variant="destructive"
+          >
+            I understand
+          </Button>
+        </DialogContent>
+      </Dialog>
       <h1 className="text-2xl">SDM-24</h1>
       <div className="space-x-4">
         <Button
-          onClick={() => navigate("/download")}
+          onClick={navigateDownload}
           disabled={download.length === 0 ? true : false}
         >
           {download.length === 0
@@ -184,11 +287,8 @@ export function Workbench({ className }: WorkbenchProps) {
         <Button onClick={getChanges} disabled={loading}>
           {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Sync"}
         </Button>
-        {
-          // TODO do we want to disable uploads if downloads are available?
-        }
         <Button
-          onClick={() => navigate("/upload")}
+          onClick={navigateUpload}
           disabled={upload.length === 0 ? true : false}
         >
           {upload.length === 0
@@ -196,6 +296,12 @@ export function Workbench({ className }: WorkbenchProps) {
             : upload.length + " files ready for upload"}
         </Button>
       </div>
+      <Button className="my-4" onClick={openFolder}>
+        Open Project Folder
+      </Button>
+      <Button className="m-4" onClick={openWebsite}>
+        Open Website
+      </Button>
     </div>
   );
 }

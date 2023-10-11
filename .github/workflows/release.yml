@@ -16,3 +16,20 @@ jobs:
         with:
           release-type: simple
           package-name: glassyPDM
+          changelog-types: '[
+          {
+            "type": "feat",
+            "section": "Features",
+            "hidden": false
+          },
+          {
+            "type": "fix",
+            "section": "Bug Fixes",
+            "hidden": false
+          },
+          {
+            "type": "refactor",
+            "section": "Miscellaneous",
+            "hidden": false
+          },
+          ]'

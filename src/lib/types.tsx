@@ -45,6 +45,7 @@ export interface CADFileColumn {
 export interface WorkbenchLoaderProps {
   toDownload: CADFile[];
   toUpload: LocalCADFile[];
+  conflict: string[];
 }
 
 export interface Commit {
@@ -58,4 +59,8 @@ export interface Commit {
 
 export interface HistoryLoaderProps {
   recentCommits: Commit[];
+}
+
+export interface PermissionDashboardProps {
+  level: number;
 }
