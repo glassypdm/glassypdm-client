@@ -87,7 +87,7 @@ export function PermissionDashboard(props: PermissionDashboardProps) {
             <SelectValue placeholder="Select a permission" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="0">Read only</SelectItem>
+            <SelectItem value="0">Read Only</SelectItem>
             <SelectItem value="1">Write Access</SelectItem>
             <SelectItem value="2">Manager</SelectItem>
             <SelectItem value="3">Owner</SelectItem>
