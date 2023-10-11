@@ -198,7 +198,7 @@ export function UploadPage({ className }: UploadPageProps) {
           const relPath = toUpload[i].path
             .replaceAll(projDir, "")
             .replaceAll("\\", "|");
-          if (key !== "oops") {
+          if (key !== "oops" && key !== "deleted") {
             store.set(relPath, { value: key });
           }
           setProgress((100 * (i + 1)) / fileCount);
