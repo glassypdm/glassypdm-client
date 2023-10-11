@@ -7,6 +7,7 @@ import { Button } from "../components/ui/button";
 import { PermissionDashboard } from "@/components/PermissionDashboard";
 import { invoke } from "@tauri-apps/api/tauri";
 import { useEffect, useState } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const clerkPath = await resolveResource("resources/clerk-profile.txt");
 const CLERK_USER_PROFILE_URL = await readTextFile(clerkPath);
@@ -17,7 +18,7 @@ interface AccountProps extends React.HTMLAttributes<HTMLDivElement> {}
 export function Account({ className }: AccountProps) {
   const { signOut, isLoaded } = useAuth();
   const { user, isSignedIn } = useUser();
-  const [permission, setPermission] = useState(0);
+  const [permission, setPermission] = useState(-1);
 
   if (!user || !isLoaded || !isSignedIn) {
     return null;
@@ -52,6 +53,16 @@ export function Account({ className }: AccountProps) {
       break;
   }
 
+  let dashboard = <Skeleton className="h-4 w-[250px]" />;
+  if (permission >= 0) {
+    dashboard = (
+      <div>
+        <h1 className="text-2xl">Your permission level is: {permissionDesc}</h1>
+        <PermissionDashboard level={permission} />
+      </div>
+    );
+  }
+
   return (
     <div className={cn("", className)}>
       <h1 className="text-2xl">Hello, {user["fullName"]}</h1>
@@ -61,8 +72,7 @@ export function Account({ className }: AccountProps) {
           Edit Account Settings
         </Button>
       </div>
-      <h1 className="text-2xl">Your permission level is: {permissionDesc}</h1>
-      <PermissionDashboard level={permission} />
+      {dashboard}
     </div>
   );
 }

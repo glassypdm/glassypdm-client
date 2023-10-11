@@ -74,7 +74,7 @@ export function PermissionDashboard(props: PermissionDashboardProps) {
   }
 
   return (
-    <div className="p-1 m-1 ">
+    <div className="p-1 m-2">
       <h1 className="text-2xl">Edit Permissions</h1>
       <div className="flex">
         <Input
@@ -95,6 +95,7 @@ export function PermissionDashboard(props: PermissionDashboardProps) {
         </Select>
       </div>
       <Button
+        className="my-2"
         onClick={submitPermission}
         disabled={level.length === 0 || emailInput.length === 0}
       >
