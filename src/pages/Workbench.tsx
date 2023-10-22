@@ -248,7 +248,7 @@ export function Workbench({ className }: WorkbenchProps) {
   return (
     <div className={cn("", className)}>
       <Dialog defaultOpen={conflictExists} open={conflictExists}>
-        <DialogContent>
+        <DialogContent className="overflow-y-scroll max-h-screen">
           <DialogHeader>
             <DialogTitle>File conflicts detected!</DialogTitle>
             <DialogDescription>
@@ -259,8 +259,8 @@ export function Workbench({ className }: WorkbenchProps) {
           <ScrollArea>
             {conflict.map((value: string) => {
               return (
-                <div>
-                  <li>{value}</li>
+                <div key={value}>
+                  <p>{value}</p>
                   <Separator />
                 </div>
               );
