@@ -33,6 +33,7 @@ export function UploadPage({ className }: UploadPageProps) {
   const [action, setAction] = useState("Upload");
   const [message, setMessage] = useState("");
   const [progress, setProgress] = useState(0);
+  const [disabled, setDisabled] = useState(false);
   const navigate = useNavigate();
 
   if (!isLoaded || !isSignedIn) {
@@ -60,6 +61,8 @@ export function UploadPage({ className }: UploadPageProps) {
         change: files.files[idx].file.change,
       });
     }
+
+    setDisabled(true);
 
     // TODO we definitely have duplicate code here we can refactor, lmao
     console.log(toUpload);
@@ -140,6 +143,7 @@ export function UploadPage({ className }: UploadPageProps) {
           title: "Upload failed",
           description: "Please open an issue on the GitHub page.",
         });
+        setDisabled(false);
         return;
       }
       if (dataPermission["level"] < 1) {
@@ -148,6 +152,7 @@ export function UploadPage({ className }: UploadPageProps) {
           description:
             "You do not have write permissions. Talk to your team lead.",
         });
+        setDisabled(false);
         return;
       }
 
@@ -180,6 +185,7 @@ export function UploadPage({ className }: UploadPageProps) {
           title: "File upload rejected",
           description: "Re-sync and download new files from the server.",
         });
+        setDisabled(false);
         return;
         // TODO now that we return here; we can un-nest the else body
       } else {
@@ -249,18 +255,25 @@ export function UploadPage({ className }: UploadPageProps) {
         });
       }
     }
+    setDisabled(false);
   }
 
   return (
     <div className={cn("", className)}>
       <h1 className="text-2xl">Upload Changes</h1>
       <div className="flex m-2">
-        <Button className="left-0" onClick={() => navigate(-1)}>
+        <Button
+          className="left-0"
+          onClick={() => navigate(-1)}
+          disabled={disabled}
+        >
           Close
         </Button>
         <Button
           className="absolute right-20"
-          disabled={Object.keys(selection).length == 0 || progress == 100}
+          disabled={
+            disabled || Object.keys(selection).length == 0 || progress == 100
+          }
           onClick={handleClick}
           variant={action === "Reset" ? "destructive" : "default"}
         >

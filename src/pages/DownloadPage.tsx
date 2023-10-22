@@ -20,6 +20,7 @@ export function DownloadPage(props: DownloadPageProps) {
     files.selectionList,
   );
   const [progress, setProgress] = useState(0);
+  const [disabled, setDisabled] = useState(false);
   const navigate = useNavigate();
 
   async function handleDownload() {
@@ -30,6 +31,7 @@ export function DownloadPage(props: DownloadPageProps) {
     console.log(storePath);
     console.log("downloading files");
     console.log(selection);
+    setDisabled(true);
 
     // get paths for download
     let toDownload: DownloadFile[] = [];
@@ -108,6 +110,7 @@ export function DownloadPage(props: DownloadPageProps) {
 
     // save store
     await store.save();
+    setDisabled(false);
   }
 
   return (
@@ -115,13 +118,19 @@ export function DownloadPage(props: DownloadPageProps) {
       <h1 className="text-2xl">Download Changes</h1>
       <div className="m-2">
         {/** page header */}
-        <Button className="left-0" onClick={() => navigate(-1)}>
+        <Button
+          className="left-0"
+          onClick={() => navigate(-1)}
+          disabled={disabled}
+        >
           Close
         </Button>
         <Button
           className="absolute right-10"
           onClick={handleDownload}
-          disabled={Object.keys(selection).length == 0 || progress == 100}
+          disabled={
+            disabled || Object.keys(selection).length == 0 || progress == 100
+          }
         >
           {progress == 100 ? "Download Complete" : "Download Selected"}
         </Button>

@@ -22,6 +22,7 @@ export function PermissionDashboard(props: PermissionDashboardProps) {
   const { toast } = useToast();
   const [emailInput, setEmailInput] = useState("");
   const [level, setLevel] = useState("");
+  const [disabled, setDisabled] = useState(false);
 
   if (!isLoaded || !user) {
     return (
@@ -37,8 +38,6 @@ export function PermissionDashboard(props: PermissionDashboardProps) {
   }
 
   async function submitPermission() {
-    console.log(emailInput);
-    console.log(level);
     if (emailInput === user?.primaryEmailAddress?.emailAddress) {
       toast({
         title: "Failure",
@@ -46,6 +45,8 @@ export function PermissionDashboard(props: PermissionDashboardProps) {
       });
       return;
     }
+
+    setDisabled(true);
     const rawResponse = await fetch(serverUrl + "/permissions", {
       method: "POST",
       mode: "cors",
@@ -71,6 +72,7 @@ export function PermissionDashboard(props: PermissionDashboardProps) {
         description: "Couldn't set permission",
       });
     }
+    setDisabled(false);
   }
 
   return (
@@ -97,7 +99,7 @@ export function PermissionDashboard(props: PermissionDashboardProps) {
       <Button
         className="my-2"
         onClick={submitPermission}
-        disabled={level.length === 0 || emailInput.length === 0}
+        disabled={disabled || level.length === 0 || emailInput.length === 0}
       >
         Submit
       </Button>

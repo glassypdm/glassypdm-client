@@ -24,7 +24,6 @@ export function Settings({ className }: SettingsProps) {
     });
 
     if (selected !== null) {
-      // user cancelled selection
       setProjDir(selected as string);
     }
   }
