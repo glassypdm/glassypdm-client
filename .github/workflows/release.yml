@@ -36,5 +36,10 @@ jobs:
             "type": "refactor",
             "section": "Miscellaneous",
             "hidden": false
+          },
+          {
+            "type": "style",
+            "section": "Miscellaneous",
+            "hidden": false
           }
           ]'
