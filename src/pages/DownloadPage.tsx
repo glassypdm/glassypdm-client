@@ -1,15 +1,15 @@
 import { useState } from "react";
 import { useLoaderData, useNavigate } from "react-router-dom";
 import { RowSelectionState } from "@tanstack/react-table";
-import { cn, deleteFileIfExist } from "@/lib/utils";
+import { cn, getAbsolutePath, updateApplicationDataFile } from "@/lib/utils";
 import { Button } from "../components/ui/button";
 import { FileTable } from "../components/FileTable";
 import { DownloadLoaderProps, columns } from "../components/FileColumn";
 import { Progress } from "../components/ui/progress";
 import { invoke } from "@tauri-apps/api/tauri";
 import { resolve, appLocalDataDir, BaseDirectory } from "@tauri-apps/api/path";
-import { CADFile, DownloadFile } from "@/lib/types";
-import { readTextFile, writeTextFile } from "@tauri-apps/api/fs";
+import { CADFile, DownloadFile, LocalCADFile } from "@/lib/types";
+import { readTextFile } from "@tauri-apps/api/fs";
 import { Store } from "tauri-plugin-store-api";
 
 interface DownloadPageProps extends React.HTMLAttributes<HTMLDivElement> {}
@@ -34,21 +34,21 @@ export function DownloadPage(props: DownloadPageProps) {
     setDisabled(true);
 
     // get paths for download
-    let toDownload: DownloadFile[] = [];
+    let selectedDownload: DownloadFile[] = [];
     for (let i = 0; i < Object.keys(selection).length; i++) {
       let key: string = Object.keys(selection)[i];
       const idx = parseInt(key);
-      toDownload.push({
+      selectedDownload.push({
         path: files.files[idx].file.path,
         size: files.files[idx].file.size,
       });
     }
 
     // download files
-    console.log(toDownload);
-    const length = toDownload.length;
+    console.log(selectedDownload);
+    const length = selectedDownload.length;
     for (let i = 0; i < length; i++) {
-      const file: DownloadFile = toDownload[i];
+      const file: DownloadFile = selectedDownload[i];
       if (file.size != 0) {
         const key: string = file.path.replaceAll("\\", "|");
         console.log(key);
@@ -81,18 +81,54 @@ export function DownloadPage(props: DownloadPageProps) {
     }
 
     console.log("finish downloading");
+
+    // determine which files to ignore whilst hashing
+    const uploadStr = await readTextFile("toUpload.json", {
+      dir: BaseDirectory.AppLocalData,
+    });
+    const toUpload: LocalCADFile[] = JSON.parse(uploadStr);
+    const newUploadList: LocalCADFile[] = [];
+    let ignoreList: string[] = [];
+
+    for (let i = 0; i < toUpload.length; i++) {
+      let found = false;
+
+      // iterate through selected download list
+      for (let j = 0; j < selectedDownload.length; j++) {
+        const absolute: string = await getAbsolutePath(
+          selectedDownload[j].path,
+        );
+        if (absolute === toUpload[i].path) {
+          found = true;
+          break;
+        }
+      }
+
+      // if not found, add it to ignore list
+      if (!found) {
+        newUploadList.push(toUpload[i]);
+        ignoreList.push(toUpload[i].path);
+      }
+    }
+
     // after download, hash dir to base.json
     const appdata = await appLocalDataDir();
     const path = await resolve(appdata, "base.json");
-    await invoke("hash_dir", { resultsPath: path, ignoreList: [] });
+    await invoke("hash_dir", { resultsPath: path, ignoreList: ignoreList });
+
+    // update toUpload.json
+    await updateApplicationDataFile(
+      "toUpload.json",
+      JSON.stringify(newUploadList),
+    );
 
     // remove items that were in toDownload from toDownload.json
     const str = await readTextFile("toDownload.json", {
       dir: BaseDirectory.AppLocalData,
     });
     let initDownload: CADFile[] = JSON.parse(str);
-    for (let i = 0; i < toDownload.length; i++) {
-      const downloadedPath: string = toDownload[i].path;
+    for (let i = 0; i < selectedDownload.length; i++) {
+      const downloadedPath: string = selectedDownload[i].path;
       let j = initDownload.length;
       while (j--) {
         if (initDownload[j].path == downloadedPath) {
@@ -102,11 +138,10 @@ export function DownloadPage(props: DownloadPageProps) {
     }
 
     // update toDownload
-    await deleteFileIfExist("toDownload.json");
-    await writeTextFile("toDownload.json", JSON.stringify(initDownload), {
-      dir: BaseDirectory.AppLocalData,
-      append: false,
-    });
+    await updateApplicationDataFile(
+      "toDownload.json",
+      JSON.stringify(selectedDownload),
+    );
 
     // save store
     await store.save();

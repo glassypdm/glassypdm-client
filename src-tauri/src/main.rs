@@ -140,16 +140,13 @@ fn get_project_dir(app_handle: tauri::AppHandle) -> String {
 
 #[tauri::command]
 fn update_project_dir(app_handle: tauri::AppHandle, dir: PathBuf) {
-    println!("new project dir: {}", dir.display());
-
     let appdir = app_handle.path_resolver().app_local_data_dir().unwrap();
     let mut path = appdir.join("project_dir.txt");
-
     let _ = fs::write(path, pathbuf_to_string(dir));
 
     // update base.json
     path = appdir.join("base.json");
-    hash_dir(app_handle, &pathbuf_to_string(path), Vec::new());
+    let _ = fs::write(path, "[]");
 }
 
 fn pathbuf_to_string(path: PathBuf) -> String {

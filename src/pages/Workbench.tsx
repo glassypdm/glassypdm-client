@@ -202,7 +202,7 @@ export function Workbench({ className }: WorkbenchProps) {
       }
       setConflict(conflict);
     } catch (err: any) {
-      console.error(err.message);
+      console.error(err);
     }
 
     setLoading(false);
