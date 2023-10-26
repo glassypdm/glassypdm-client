@@ -25,7 +25,7 @@ export function Settings({ className }: SettingsProps) {
 
     if (selected !== null) {
       setProjDir(selected as string);
-      await invoke("update_project_dir", { dir: projDir as string });
+      await invoke("update_project_dir", { dir: selected as string });
       toast({
         title: "Project Directory saved.",
       });
