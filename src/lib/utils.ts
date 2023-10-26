@@ -1,5 +1,10 @@
 import { getVersion } from "@tauri-apps/api/app";
-import { BaseDirectory, exists, removeFile } from "@tauri-apps/api/fs";
+import {
+  BaseDirectory,
+  exists,
+  removeFile,
+  writeTextFile,
+} from "@tauri-apps/api/fs";
 import { invoke } from "@tauri-apps/api/tauri";
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -22,6 +27,22 @@ export async function deleteFileIfExist(filename: string) {
       dir: BaseDirectory.AppLocalData,
     });
   }
+}
+
+export async function updateApplicationDataFile(
+  filename: string,
+  data: string,
+) {
+  await deleteFileIfExist(filename);
+  await writeTextFile(filename, data, {
+    dir: BaseDirectory.AppLocalData,
+    append: false,
+  });
+}
+
+export async function getAbsolutePath(filename: string) {
+  const dir: string = await invoke("get_project_dir");
+  return dir + filename;
 }
 
 export async function isClientCurrent() {

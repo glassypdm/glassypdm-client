@@ -24,23 +24,34 @@ export function Settings({ className }: SettingsProps) {
     });
 
     if (selected !== null) {
-      // user cancelled selection
       setProjDir(selected as string);
+      await invoke("update_project_dir", { dir: selected as string });
+      toast({
+        title: "Project Directory saved.",
+      });
     }
   }
 
   async function saveChanges() {
     let newUrl: string = serverURL;
-    if (serverURL.endsWith("/")) {
+    newUrl.trim();
+    newUrl.toLowerCase();
+    if (newUrl.endsWith("/")) {
       newUrl = serverURL.substring(0, serverURL.length - 1);
-      setServerURL(newUrl);
     }
 
+    if (newUrl.includes(" ") || !newUrl.startsWith("http")) {
+      toast({
+        title: "server URL invalid, try again.",
+      });
+      return;
+    }
+
+    setServerURL(newUrl);
     await invoke("update_server_url", { newUrl: newUrl });
-    await invoke("update_project_dir", { dir: projDir as string });
 
     toast({
-      title: "Settings saved.",
+      title: "Server URL saved.",
     });
   }
 

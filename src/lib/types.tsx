@@ -8,6 +8,7 @@ export enum ChangeType {
 export interface CADFile {
   path: string;
   commit: number;
+  s3Key: string;
   size: number;
   hash: string;
   change: ChangeType;
@@ -18,6 +19,7 @@ export interface DownloadFile {
   size: number;
 }
 
+// path is absolute
 export interface LocalCADFile {
   path: string;
   size: number;

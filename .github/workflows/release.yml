@@ -28,7 +28,17 @@ jobs:
             "hidden": false
           },
           {
+            "type": "perf",
+            "section": "Miscellaneous",
+            "hidden": false
+          },
+          {
             "type": "refactor",
+            "section": "Miscellaneous",
+            "hidden": false
+          },
+          {
+            "type": "style",
             "section": "Miscellaneous",
             "hidden": false
           }
