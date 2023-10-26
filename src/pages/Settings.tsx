@@ -34,11 +34,20 @@ export function Settings({ className }: SettingsProps) {
 
   async function saveChanges() {
     let newUrl: string = serverURL;
-    if (serverURL.endsWith("/")) {
+    newUrl.trim();
+    newUrl.toLowerCase();
+    if (newUrl.endsWith("/")) {
       newUrl = serverURL.substring(0, serverURL.length - 1);
-      setServerURL(newUrl);
     }
 
+    if (newUrl.includes(" ") || !newUrl.startsWith("http")) {
+      toast({
+        title: "server URL invalid, try again.",
+      });
+      return;
+    }
+
+    setServerURL(newUrl);
     await invoke("update_server_url", { newUrl: newUrl });
 
     toast({
