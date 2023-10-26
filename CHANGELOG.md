@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.3.0](https://github.com/joshtenorio/glassypdm-client/compare/v0.2.0...v0.3.0) (2023-10-26)
+
+
+### Features
+
+* disable actions while downloading/uploading/setting permission ([ac31295](https://github.com/joshtenorio/glassypdm-client/commit/ac31295806e9ca071dc20d8715aae5418f307a89))
+* project directory is set without hitting save changes ([fb028f3](https://github.com/joshtenorio/glassypdm-client/commit/fb028f3863cc148c993e4c26e0609e0d7711cc59))
+* project history is a little smarter ([6fea5c7](https://github.com/joshtenorio/glassypdm-client/commit/6fea5c7fe2bf92922f35b0832b308e8359247c5f))
+
+
+### Bug Fixes
+
+* Conflict dialog has a scrollbar now ([e815a0d](https://github.com/joshtenorio/glassypdm-client/commit/e815a0dcb717efb39048621c94f71847cccd6fbf))
+* files marked for uploading are ignored when downloading new changes ([cf97efc](https://github.com/joshtenorio/glassypdm-client/commit/cf97efc5a5a2471203bac383bf548831cd65b2e7))
+
+
+### Miscellaneous
+
+* handle more invalid server url inputs ([78fc10d](https://github.com/joshtenorio/glassypdm-client/commit/78fc10d9b0e67900e26838fc7f7a03b86121432f))
+
 ## [0.2.0](https://github.com/joshtenorio/glassypdm-client/compare/v0.1.1...v0.2.0) (2023-10-11)
 
 
