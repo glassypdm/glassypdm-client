@@ -19,12 +19,20 @@ export function History({ className }: HistoryProps) {
             array;
             const d = new Date(0);
             d.setUTCSeconds(val.timestamp);
+            const msg =
+              val.message !== "" ? (
+                <p>
+                  with message <i>{val.message}</i>
+                </p>
+              ) : (
+                <p></p>
+              );
             return (
               <div key={val.id}>
                 <li key={val.id}>
                   Commit {val.id} by {val.authorID} changed {val.fileCount}{" "}
-                  files at {d.toLocaleString()} with message{" "}
-                  <i>{val.message}</i>
+                  files at {d.toLocaleString()}
+                  {msg}
                 </li>
                 <Separator />
               </div>
