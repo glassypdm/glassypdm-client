@@ -25,6 +25,10 @@ export function Settings({ className }: SettingsProps) {
 
     if (selected !== null) {
       setProjDir(selected as string);
+      await invoke("update_project_dir", { dir: projDir as string });
+      toast({
+        title: "Project Directory saved.",
+      });
     }
   }
 
@@ -36,10 +40,9 @@ export function Settings({ className }: SettingsProps) {
     }
 
     await invoke("update_server_url", { newUrl: newUrl });
-    await invoke("update_project_dir", { dir: projDir as string });
 
     toast({
-      title: "Settings saved.",
+      title: "Server URL saved.",
     });
   }
 

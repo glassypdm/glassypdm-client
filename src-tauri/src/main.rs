@@ -146,7 +146,8 @@ fn update_project_dir(app_handle: tauri::AppHandle, dir: PathBuf) {
 
     // update base.json
     path = appdir.join("base.json");
-    let _ = fs::write(path, "[]");
+    //let _ = fs::write(path, "[]");
+    hash_dir(app_handle, &pathbuf_to_string(path), Vec::new());
 }
 
 fn pathbuf_to_string(path: PathBuf) -> String {
