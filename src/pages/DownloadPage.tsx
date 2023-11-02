@@ -11,6 +11,7 @@ import { resolve, appLocalDataDir, BaseDirectory } from "@tauri-apps/api/path";
 import { CADFile, DownloadFile, LocalCADFile } from "@/lib/types";
 import { readTextFile } from "@tauri-apps/api/fs";
 import { Store } from "tauri-plugin-store-api";
+import { useToast } from "@/components/ui/use-toast";
 
 interface DownloadPageProps extends React.HTMLAttributes<HTMLDivElement> {}
 
@@ -22,6 +23,7 @@ export function DownloadPage(props: DownloadPageProps) {
   const [progress, setProgress] = useState(0);
   const [disabled, setDisabled] = useState(false);
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   async function handleDownload() {
     const serverUrl: string = await invoke("get_server_url");
@@ -32,6 +34,9 @@ export function DownloadPage(props: DownloadPageProps) {
     console.log("downloading files");
     console.log(selection);
     setDisabled(true);
+
+    // time function
+    const startTime = performance.now();
 
     // get paths for download
     let selectedDownload: DownloadFile[] = [];
@@ -146,6 +151,12 @@ export function DownloadPage(props: DownloadPageProps) {
     // save store
     await store.save();
     setDisabled(false);
+
+    // stop timing function
+    const endTime = performance.now();
+    toast({
+      title: `Download took ${endTime - startTime} milliseconds`,
+    });
   }
 
   return (
