@@ -140,7 +140,7 @@ export function DownloadPage(props: DownloadPageProps) {
     // update toDownload
     await updateApplicationDataFile(
       "toDownload.json",
-      JSON.stringify(selectedDownload),
+      JSON.stringify(initDownload),
     );
 
     // save store
