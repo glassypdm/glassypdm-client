@@ -1,7 +1,12 @@
 import { useState } from "react";
 import { useLoaderData, useNavigate } from "react-router-dom";
 import { RowSelectionState } from "@tanstack/react-table";
-import { cn, getAbsolutePath, updateApplicationDataFile } from "@/lib/utils";
+import {
+  cn,
+  delay,
+  getAbsolutePath,
+  updateApplicationDataFile,
+} from "@/lib/utils";
 import { Button } from "../components/ui/button";
 import { FileTable } from "../components/FileTable";
 import { DownloadLoaderProps, columns } from "../components/FileColumn";
@@ -89,6 +94,7 @@ export function DownloadPage(props: DownloadPageProps) {
           // handle progress bar
           setProgress((100 * ++cnt) / length);
           setDescription(`${cnt} of ${length} downloaded...`);
+          await delay(2);
         },
       ),
     );

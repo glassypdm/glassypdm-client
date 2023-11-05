@@ -66,3 +66,7 @@ export async function isClientCurrent() {
   //return false;
   return localVersion === version;
 }
+
+export function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
