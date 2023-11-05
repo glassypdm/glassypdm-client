@@ -61,7 +61,9 @@ const router = createHashRouter([
       },
       {
         path: "/download",
-        element: <DownloadPage className="col-span-3" />,
+        element: (
+          <DownloadPage className="absolute col-span-4 z-10 bg-slate-950" />
+        ),
         loader: downloadPageLoader,
       },
       {

@@ -177,7 +177,7 @@ export function DownloadPage(props: DownloadPageProps) {
 
   return (
     <div className={cn("", props.className)}>
-      <h1 className="text-2xl">Download Changes</h1>
+      <h1 className="text-2xl mx-4">Download Changes</h1>
       <div className="flex flex-row justify-items-center m-3">
         {/** page header */}
         <Button
