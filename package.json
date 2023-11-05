@@ -1,7 +1,7 @@
 {
   "name": "glassy_pdm_client",
   "private": true,
-  "version": "0.3.0",
+  "version": "0.4.0",
   "type": "module",
   "lint-staged": {
     "**/*": "prettier --write --ignore-unknown"
@@ -19,6 +19,7 @@
     "@clerk/types": "^3.53.0",
     "@fontsource/roboto": "^5.0.8",
     "@hookform/resolvers": "^3.3.1",
+    "@radix-ui/react-alert-dialog": "^1.0.5",
     "@radix-ui/react-checkbox": "^1.0.4",
     "@radix-ui/react-dialog": "^1.0.5",
     "@radix-ui/react-label": "^2.0.2",

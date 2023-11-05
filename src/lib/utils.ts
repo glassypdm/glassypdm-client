@@ -29,6 +29,17 @@ export async function deleteFileIfExist(filename: string) {
   }
 }
 
+export async function clearLocalData() {
+  deleteFileIfExist("base.json");
+  deleteFileIfExist("basecommit.txt");
+  deleteFileIfExist("compare.json");
+  deleteFileIfExist("project_dir.txt");
+  deleteFileIfExist("s3key.dat");
+  deleteFileIfExist("server_url.txt");
+  deleteFileIfExist("toDownload.json");
+  deleteFileIfExist("toUpload.json");
+}
+
 export async function updateApplicationDataFile(
   filename: string,
   data: string,
@@ -53,4 +64,8 @@ export async function isClientCurrent() {
   const localVersion = await getVersion();
   //return false;
   return localVersion === version;
+}
+
+export function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }

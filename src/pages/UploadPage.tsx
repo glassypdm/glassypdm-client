@@ -34,6 +34,7 @@ export function UploadPage({ className }: UploadPageProps) {
   const [message, setMessage] = useState("");
   const [progress, setProgress] = useState(0);
   const [disabled, setDisabled] = useState(false);
+  const [description, setDescription] = useState("");
   const navigate = useNavigate();
 
   if (!isLoaded || !isSignedIn) {
@@ -48,6 +49,8 @@ export function UploadPage({ className }: UploadPageProps) {
     const store = new Store(storePath);
 
     const authorID: string = user?.id || "null";
+
+    const startTime = performance.now();
 
     // get paths for upload/reset
     let toUpload: LocalCADFile[] = [];
@@ -107,6 +110,8 @@ export function UploadPage({ className }: UploadPageProps) {
           console.log("deleting a file " + toUpload[i].path);
           await invoke("delete_file", { file: relPath });
         }
+
+        setDescription(`${i + 1} of ${i + 1} files reset`);
         setProgress((100 * (i + 1)) / toUpload.length);
       }
 
@@ -199,6 +204,7 @@ export function UploadPage({ className }: UploadPageProps) {
             },
             commit: newCommit,
             serverUrl: serverUrl,
+            change: toUpload[i].change,
           });
           console.log(key);
           const relPath = toUpload[i].path
@@ -207,6 +213,7 @@ export function UploadPage({ className }: UploadPageProps) {
           if (key !== "oops" && key !== "deleted") {
             store.set(relPath, { value: key });
           }
+          setDescription(`${i + 1} of ${fileCount} files uploaded...`);
           setProgress((100 * (i + 1)) / fileCount);
         }
 
@@ -255,22 +262,30 @@ export function UploadPage({ className }: UploadPageProps) {
         });
       }
     }
+
+    const endTime = performance.now();
+    toast({
+      title: `${action} took ${endTime - startTime} milliseconds`,
+    });
+
+    setDescription("Complete!");
     setDisabled(false);
   }
 
   return (
     <div className={cn("", className)}>
-      <h1 className="text-2xl">Upload Changes</h1>
-      <div className="flex m-2">
+      <h1 className="text-2xl mx-4">Upload Changes</h1>
+      <div className="flex justify-items-center m-3">
         <Button
-          className="left-0"
+          className="flex-none"
           onClick={() => navigate(-1)}
           disabled={disabled}
         >
           Close
         </Button>
+        <p className="flex-auto text-center">{description}</p>
         <Button
-          className="absolute right-20"
+          className="flex-none"
           disabled={
             disabled || Object.keys(selection).length == 0 || progress == 100
           }
@@ -280,19 +295,19 @@ export function UploadPage({ className }: UploadPageProps) {
           {progress == 100 ? action + " Complete" : action + " Selected"}
         </Button>
         <Select onValueChange={(e) => setAction(e)}>
-          <SelectTrigger className="w-[40px] absolute right-10"></SelectTrigger>
+          <SelectTrigger className="w-[40px]"></SelectTrigger>
           <SelectContent>
             <SelectItem value="Upload">Upload</SelectItem>
             <SelectItem value="Reset">Reset</SelectItem>
           </SelectContent>
         </Select>
       </div>
-      <div className="space-y-1">
+      <div className="space-y-1 mx-4">
         <Textarea
           placeholder="Type your commit message here."
           onChange={(e) => setMessage(e.target.value)}
         />
-        <Progress className="" value={progress} />
+        <Progress value={progress} />
       </div>
       <div className="container mx-auto py-1">
         <FileTable

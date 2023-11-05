@@ -1,7 +1,12 @@
 import { useState } from "react";
 import { useLoaderData, useNavigate } from "react-router-dom";
 import { RowSelectionState } from "@tanstack/react-table";
-import { cn, getAbsolutePath, updateApplicationDataFile } from "@/lib/utils";
+import {
+  cn,
+  delay,
+  getAbsolutePath,
+  updateApplicationDataFile,
+} from "@/lib/utils";
 import { Button } from "../components/ui/button";
 import { FileTable } from "../components/FileTable";
 import { DownloadLoaderProps, columns } from "../components/FileColumn";
@@ -11,6 +16,7 @@ import { resolve, appLocalDataDir, BaseDirectory } from "@tauri-apps/api/path";
 import { CADFile, DownloadFile, LocalCADFile } from "@/lib/types";
 import { readTextFile } from "@tauri-apps/api/fs";
 import { Store } from "tauri-plugin-store-api";
+import { useToast } from "@/components/ui/use-toast";
 
 interface DownloadPageProps extends React.HTMLAttributes<HTMLDivElement> {}
 
@@ -21,7 +27,9 @@ export function DownloadPage(props: DownloadPageProps) {
   );
   const [progress, setProgress] = useState(0);
   const [disabled, setDisabled] = useState(false);
+  const [description, setDescription] = useState("");
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   async function handleDownload() {
     const serverUrl: string = await invoke("get_server_url");
@@ -32,6 +40,9 @@ export function DownloadPage(props: DownloadPageProps) {
     console.log("downloading files");
     console.log(selection);
     setDisabled(true);
+
+    // time function
+    const startTime = performance.now();
 
     // get paths for download
     let selectedDownload: DownloadFile[] = [];
@@ -47,41 +58,48 @@ export function DownloadPage(props: DownloadPageProps) {
     // download files
     console.log(selectedDownload);
     const length = selectedDownload.length;
-    for (let i = 0; i < length; i++) {
-      const file: DownloadFile = selectedDownload[i];
-      if (file.size != 0) {
-        const key: string = file.path.replaceAll("\\", "|");
-        console.log(key);
+    //for (let i = 0; i < length; i++) {
+    let cnt = 0;
+    await Promise.all(
+      selectedDownload.map(async (file: DownloadFile) => {
+        //const file: DownloadFile = selectedDownload[i];
+        if (file.size != 0) {
+          const key: string = file.path.replaceAll("\\", "|");
+          console.log(key);
 
-        // get s3 url
-        const response = await fetch(serverUrl + "/download/file/" + key);
-        const data = await response.json();
-        const s3Url = data["s3Url"];
-        const s3Key = data["key"];
-        console.log(s3Url);
-        console.log(s3Key);
+          // get s3 url
+          const response = await fetch(serverUrl + "/download/file/" + key);
+          const data = await response.json();
+          const s3Url = data["s3Url"];
+          const s3Key = data["key"];
+          console.log(s3Url);
+          console.log(s3Key);
 
-        // save key in store
-        await store.set(key, { value: s3Key });
+          // save key in store
+          await store.set(key, { value: s3Key });
 
-        // have rust backend download the file
-        await invoke("download_s3_file", {
-          link: {
-            path: file.path,
-            url: s3Url,
-            key: s3Key,
-          },
-        });
-      } else {
-        console.log("deleting file " + file.path);
-        await invoke("delete_file", { file: file.path });
-      }
-      // handle progress bar
-      setProgress((100 * (i + 1)) / length);
-    }
+          // have rust backend download the file
+          await invoke("download_s3_file", {
+            link: {
+              path: file.path,
+              url: s3Url,
+              key: s3Key,
+            },
+          });
+        } else {
+          console.log("deleting file " + file.path);
+          await invoke("delete_file", { file: file.path });
+        }
+        // handle progress bar
+        setProgress((100 * ++cnt) / length);
+        setDescription(`${cnt} of ${length} downloaded...`);
+        await delay(2);
+      }),
+    );
 
     console.log("finish downloading");
 
+    setDescription("Updating local data...");
     // determine which files to ignore whilst hashing
     const uploadStr = await readTextFile("toUpload.json", {
       dir: BaseDirectory.AppLocalData,
@@ -140,28 +158,36 @@ export function DownloadPage(props: DownloadPageProps) {
     // update toDownload
     await updateApplicationDataFile(
       "toDownload.json",
-      JSON.stringify(selectedDownload),
+      JSON.stringify(initDownload),
     );
 
     // save store
     await store.save();
     setDisabled(false);
+
+    // stop timing function
+    const endTime = performance.now();
+    toast({
+      title: `Download took ${endTime - startTime} milliseconds`,
+    });
+    setDescription("Complete!");
   }
 
   return (
     <div className={cn("", props.className)}>
-      <h1 className="text-2xl">Download Changes</h1>
-      <div className="m-2">
+      <h1 className="text-2xl mx-4">Download Changes</h1>
+      <div className="flex flex-row justify-items-center m-3">
         {/** page header */}
         <Button
-          className="left-0"
+          className="flex-none"
           onClick={() => navigate(-1)}
           disabled={disabled}
         >
           Close
         </Button>
+        <p className="flex-auto text-center">{description}</p>
         <Button
-          className="absolute right-10"
+          className="flex-none"
           onClick={handleDownload}
           disabled={
             disabled || Object.keys(selection).length == 0 || progress == 100

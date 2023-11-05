@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { clearLocalData, cn } from "@/lib/utils";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { useState } from "react";
@@ -6,8 +6,18 @@ import { invoke } from "@tauri-apps/api/tauri";
 import { open } from "@tauri-apps/api/dialog";
 import { Separator } from "../components/ui/separator";
 import { SettingsLoaderProps } from "../lib/SettingsLoader";
-import { useLoaderData } from "react-router-dom";
+import { useLoaderData, useNavigate } from "react-router-dom";
 import { useToast } from "../components/ui/use-toast";
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface SettingsProps extends React.HTMLAttributes<HTMLDivElement> {}
 
@@ -16,6 +26,9 @@ export function Settings({ className }: SettingsProps) {
   const [serverURL, setServerURL] = useState(defaults.serverURL);
   const [projDir, setProjDir] = useState(defaults.projectDir);
   const { toast } = useToast();
+  const [deleteDisabled, setDeleteDisabled] = useState(false);
+  const [alertText, setAlertText] = useState("Delete Local Data");
+  const navigate = useNavigate();
 
   async function findProjectDir() {
     const selected = await open({
@@ -55,6 +68,20 @@ export function Settings({ className }: SettingsProps) {
     });
   }
 
+  function resetAlert() {
+    setDeleteDisabled(false);
+    setAlertText("Delete Local Data");
+  }
+
+  async function deleteLocalData() {
+    setDeleteDisabled(true);
+
+    await clearLocalData();
+
+    setAlertText("Done");
+    navigate(0);
+  }
+
   return (
     <div className={cn("", className)}>
       <h1 className="text-2xl">Client Settings</h1>
@@ -70,7 +97,35 @@ export function Settings({ className }: SettingsProps) {
         value={serverURL}
       />
       <Separator className="my-5" />
-      <Button onClick={saveChanges}>Save Changes</Button>
+      <div className="space-x-4">
+        <Button onClick={saveChanges}>Save Changes</Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="destructive" onClick={resetAlert}>
+              Delete Local Data
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete Local Data</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. You will need to reconfigure your
+                client settings.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <Button
+                variant="destructive"
+                disabled={deleteDisabled}
+                onClick={deleteLocalData}
+              >
+                {alertText}
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
     </div>
   );
 }
