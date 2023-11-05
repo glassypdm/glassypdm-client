@@ -204,6 +204,7 @@ export function UploadPage({ className }: UploadPageProps) {
             },
             commit: newCommit,
             serverUrl: serverUrl,
+            change: toUpload[i].change,
           });
           console.log(key);
           const relPath = toUpload[i].path

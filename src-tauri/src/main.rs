@@ -59,20 +59,21 @@ fn delete_file(app_handle: tauri::AppHandle, file: String) {
 }
 
 #[tauri::command]
-fn upload_changes(app_handle: tauri::AppHandle, file: LocalCADFile, commit: u64, server_url: String) -> Result<String, ()> {
+fn upload_changes(app_handle: tauri::AppHandle, file: LocalCADFile, commit: u64, server_url: String, change: u64) -> Result<String, ()> {
     let client = reqwest::blocking::Client::new();
     let url = server_url.to_string() + "/ingest";
     println!("commit # {}; server url {}", commit, &url);
 
     let project_dir = get_project_dir(app_handle);
     println!("{}", project_dir);
+    println!("{}", change);
 
     let path: String = file.path;
     let relative_path = path.replace(&project_dir, "");
 
     let mut form: Form;
 
-    // TODO optimise, lol
+    // TODO refactor, lol
     if file.size != 0 {
         println!("uploading {}", path);
         println!("relative {}", relative_path);
@@ -91,7 +92,8 @@ fn upload_changes(app_handle: tauri::AppHandle, file: LocalCADFile, commit: u64,
             .text("path", relative_path)
             .text("size", file.size.to_string())
             .text("project", 0.to_string())
-            .text("hash", file.hash);
+            .text("hash", file.hash)
+            .text("changeType", change.to_string());
     }
 
     let res = client.post(url.to_string())
@@ -237,7 +239,7 @@ fn hash_dir(app_handle: tauri::AppHandle, results_path: &str, ignore_list: Vec<S
                 continue;
             }
 
-            println!("{}: {}", pathbuf, s_hash);
+            //println!("{}: {}", pathbuf, s_hash);
             let file = LocalCADFile {
                 hash: s_hash,
                 path: pathbuf,

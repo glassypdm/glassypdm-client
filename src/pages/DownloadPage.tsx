@@ -61,42 +61,40 @@ export function DownloadPage(props: DownloadPageProps) {
     //for (let i = 0; i < length; i++) {
     let cnt = 0;
     await Promise.all(
-      selectedDownload.map(
-        async (file: DownloadFile, index: number, array: DownloadFile[]) => {
-          //const file: DownloadFile = selectedDownload[i];
-          if (file.size != 0) {
-            const key: string = file.path.replaceAll("\\", "|");
-            console.log(key);
+      selectedDownload.map(async (file: DownloadFile) => {
+        //const file: DownloadFile = selectedDownload[i];
+        if (file.size != 0) {
+          const key: string = file.path.replaceAll("\\", "|");
+          console.log(key);
 
-            // get s3 url
-            const response = await fetch(serverUrl + "/download/file/" + key);
-            const data = await response.json();
-            const s3Url = data["s3Url"];
-            const s3Key = data["key"];
-            console.log(s3Url);
-            console.log(s3Key);
+          // get s3 url
+          const response = await fetch(serverUrl + "/download/file/" + key);
+          const data = await response.json();
+          const s3Url = data["s3Url"];
+          const s3Key = data["key"];
+          console.log(s3Url);
+          console.log(s3Key);
 
-            // save key in store
-            await store.set(key, { value: s3Key });
+          // save key in store
+          await store.set(key, { value: s3Key });
 
-            // have rust backend download the file
-            await invoke("download_s3_file", {
-              link: {
-                path: file.path,
-                url: s3Url,
-                key: s3Key,
-              },
-            });
-          } else {
-            console.log("deleting file " + file.path);
-            await invoke("delete_file", { file: file.path });
-          }
-          // handle progress bar
-          setProgress((100 * ++cnt) / length);
-          setDescription(`${cnt} of ${length} downloaded...`);
-          await delay(2);
-        },
-      ),
+          // have rust backend download the file
+          await invoke("download_s3_file", {
+            link: {
+              path: file.path,
+              url: s3Url,
+              key: s3Key,
+            },
+          });
+        } else {
+          console.log("deleting file " + file.path);
+          await invoke("delete_file", { file: file.path });
+        }
+        // handle progress bar
+        setProgress((100 * ++cnt) / length);
+        setDescription(`${cnt} of ${length} downloaded...`);
+        await delay(2);
+      }),
     );
 
     console.log("finish downloading");

@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { getVersion } from "@tauri-apps/api/app";
 import {
   BaseDirectory,
