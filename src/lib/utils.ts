@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { getVersion } from "@tauri-apps/api/app";
 import {
   BaseDirectory,
@@ -27,6 +28,17 @@ export async function deleteFileIfExist(filename: string) {
       dir: BaseDirectory.AppLocalData,
     });
   }
+}
+
+export async function clearLocalData() {
+  deleteFileIfExist("base.json");
+  deleteFileIfExist("basecommit.txt");
+  deleteFileIfExist("compare.json");
+  deleteFileIfExist("project_dir.txt");
+  deleteFileIfExist("s3key.dat");
+  deleteFileIfExist("server_url.txt");
+  deleteFileIfExist("toDownload.json");
+  deleteFileIfExist("toUpload.json");
 }
 
 export async function updateApplicationDataFile(
