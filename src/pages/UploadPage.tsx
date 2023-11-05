@@ -267,7 +267,7 @@ export function UploadPage({ className }: UploadPageProps) {
       title: `${action} took ${endTime - startTime} milliseconds`,
     });
 
-    setDescription("Complete");
+    setDescription("Complete!");
     setDisabled(false);
   }
 
