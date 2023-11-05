@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.4.0](https://github.com/joshtenorio/glassypdm-client/compare/v0.3.0...v0.4.0) (2023-11-05)
+
+
+### Features
+
+* Add delete local data button for debug/quick resets ([243545f](https://github.com/joshtenorio/glassypdm-client/commit/243545fe01505d7e85a3b36f9ea984c6ab582e83))
+* improve download feedback ([e45ccad](https://github.com/joshtenorio/glassypdm-client/commit/e45ccad6cc9c5047227203545580d31b1dc4944b))
+* Improve upload page feedback and make it take the entire window ([a5c1118](https://github.com/joshtenorio/glassypdm-client/commit/a5c111891e8ffc7d518d945306c893939a31249b))
+* Upload change type to server ([54d7868](https://github.com/joshtenorio/glassypdm-client/commit/54d7868479a2964dfb0e914d961f98839a9cd33e))
+
+
+### Bug Fixes
+
+* Properly update toDownload.json when downloading ([ebf5c23](https://github.com/joshtenorio/glassypdm-client/commit/ebf5c23ec0fd3f5892c04f23aededaae845a524e))
+
+
+### Miscellaneous
+
+* improve download speed ([2f10abe](https://github.com/joshtenorio/glassypdm-client/commit/2f10abe8f829ddf7f806c4ffcf8488fd0666b0f7))
+
 ## [0.3.0](https://github.com/joshtenorio/glassypdm-client/compare/v0.2.0...v0.3.0) (2023-10-26)
 
 
