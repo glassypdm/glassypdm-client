@@ -68,7 +68,9 @@ const router = createHashRouter([
       },
       {
         path: "/upload",
-        element: <UploadPage className="col-span-3" />,
+        element: (
+          <UploadPage className="absolute col-span-4 z-10 bg-slate-950 w-full" />
+        ),
         loader: uploadPageLoader,
       },
     ],
