@@ -1,19 +1,5 @@
-# glassyPDM Client
-## todo
-- [x] upload/download changed/new files
-- [x] upload a deleted file
-- [x] don't download deleted files
-- [x] delete a file if server says it was deleted
-- [x] for download/upload list: say if it is new file, updated file, or deleted
-- [x] improve feedback for knowing when files have downloaded/uploaded successfully/failed
-- [ ] replace default Tauri icon, GPL compliance
-- [x] better config experience
-- [x] ignore `$~` or `~$` files that solidworks makes
-- [x] auth, commit messages, view commit history
-- [ ] download older revisions
-- [x] discard changes
+# glassyPDM
 ## Support
-
 ## Dev Instructions
 ### Prerequisites
 - Yarn classic. [link](https://classic.yarnpkg.com/en/docs/install#windows-stable)
