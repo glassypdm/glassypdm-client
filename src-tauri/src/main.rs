@@ -83,6 +83,7 @@ fn upload_changes(app_handle: tauri::AppHandle, file: LocalCADFile, commit: u64,
             .text("size", file.size.to_string())
             .text("hash", file.hash)
             .text("project", 0.to_string())
+            .text("changeType", change.to_string())
             .file("key", path).unwrap();
     } else {
         // deleted file
