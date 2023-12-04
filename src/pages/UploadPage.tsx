@@ -182,6 +182,7 @@ export function UploadPage({ className }: UploadPageProps) {
           fileCount: fileCount,
         }),
       });
+      // TODO type the response
       const response = await rawResponse.json();
 
       // 2. if successful, invoke upload file
@@ -192,75 +193,79 @@ export function UploadPage({ className }: UploadPageProps) {
         });
         setDisabled(false);
         return;
-        // TODO now that we return here; we can un-nest the else body
-      } else {
-        // do the file upload stuff
-        for (let i = 0; i < fileCount; i++) {
-          const key = await invoke("upload_changes", {
-            file: {
-              path: toUpload[i].path,
-              size: toUpload[i].size,
-              hash: toUpload[i].hash,
-            },
-            commit: newCommit,
-            serverUrl: serverUrl,
-            change: toUpload[i].change,
-          });
-          console.log(key);
-          const relPath = toUpload[i].path
-            .replaceAll(projDir, "")
-            .replaceAll("\\", "|");
-          if (key !== "oops" && key !== "deleted") {
-            store.set(relPath, { value: key });
-          }
-          setDescription(`${i + 1} of ${fileCount} files uploaded...`);
-          setProgress((100 * (i + 1)) / fileCount);
-        }
-
-        console.log("finish uploading");
-
-        // save datastore
-        store.save();
-
-        // remove items that were in toUpload from toUpload.json
-        const str = await readTextFile("toUpload.json", {
-          dir: BaseDirectory.AppLocalData,
-        });
-        let initUpload: LocalCADFile[] = JSON.parse(str);
-        for (let i = 0; i < toUpload.length; i++) {
-          const downloadedPath: string = toUpload[i].path;
-          let j = initUpload.length;
-          while (j--) {
-            if (initUpload[j].path == downloadedPath) {
-              initUpload.splice(j, 1);
-            }
-          }
-        }
-        // ignore files that we did not upload
-        let ignoreList: string[] = [];
-        for (let i = 0; i < initUpload.length; i++) {
-          ignoreList.push(initUpload[i].path);
-        }
-        console.log(ignoreList);
-
-        // afterwards update base.json and basecommit.txt
-        const appdata = await appLocalDataDir();
-        const path = await resolve(appdata, "base.json");
-        await invoke("hash_dir", { resultsPath: path, ignoreList: ignoreList });
-
-        await deleteFileIfExist("basecommit.txt");
-        await writeTextFile("basecommit.txt", newCommit.toString(), {
-          dir: BaseDirectory.AppLocalData,
-          append: false,
-        });
-
-        // update toUpload
-        await deleteFileIfExist("toUpload.json");
-        await writeTextFile("toUpload.json", JSON.stringify(initUpload), {
-          dir: BaseDirectory.AppLocalData,
-          append: false,
-        });
       }
+
+      // do the file upload stuff
+      for (let i = 0; i < fileCount; i++) {
+        const key = await invoke("upload_changes", {
+          file: {
+            path: toUpload[i].path,
+            size: toUpload[i].size,
+            hash: toUpload[i].hash,
+          },
+          commit: newCommit,
+          serverUrl: serverUrl,
+          change: toUpload[i].change,
+        });
+        console.log(key);
+        const relPath = toUpload[i].path
+          .replaceAll(projDir, "")
+          .replaceAll("\\", "|");
+        if (key !== "oops" && key !== "deleted") {
+          store.set(relPath, { value: key });
+        } else if (key === "oops") {
+          toast({
+            title: "Something might've gone wrong",
+            description: "Open an issue on GitHub.",
+          });
+        }
+        setDescription(`${i + 1} of ${fileCount} files uploaded...`);
+        setProgress((100 * (i + 1)) / fileCount);
+      }
+
+      console.log("finish uploading");
+
+      // save datastore
+      store.save();
+
+      // remove items that were in toUpload from toUpload.json
+      const str = await readTextFile("toUpload.json", {
+        dir: BaseDirectory.AppLocalData,
+      });
+      let initUpload: LocalCADFile[] = JSON.parse(str);
+      for (let i = 0; i < toUpload.length; i++) {
+        const downloadedPath: string = toUpload[i].path;
+        let j = initUpload.length;
+        while (j--) {
+          if (initUpload[j].path == downloadedPath) {
+            initUpload.splice(j, 1);
+          }
+        }
+      }
+      // ignore files that we did not upload
+      let ignoreList: string[] = [];
+      for (let i = 0; i < initUpload.length; i++) {
+        ignoreList.push(initUpload[i].path);
+      }
+      console.log(ignoreList);
+
+      // afterwards update base.json and basecommit.txt
+      const appdata = await appLocalDataDir();
+      const path = await resolve(appdata, "base.json");
+      await invoke("hash_dir", { resultsPath: path, ignoreList: ignoreList });
+
+      await deleteFileIfExist("basecommit.txt");
+      await writeTextFile("basecommit.txt", newCommit.toString(), {
+        dir: BaseDirectory.AppLocalData,
+        append: false,
+      });
+
+      // update toUpload
+      await deleteFileIfExist("toUpload.json");
+      await writeTextFile("toUpload.json", JSON.stringify(initUpload), {
+        dir: BaseDirectory.AppLocalData,
+        append: false,
+      });
     }
 
     const endTime = performance.now();

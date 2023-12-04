@@ -50,9 +50,6 @@ export function Workbench({ className }: WorkbenchProps) {
         title: "New glassyPDM version available!",
         description: "Talk to your team lead for the new installer.",
       });
-      // TODO we probably want to force users to update to the newest client
-      // version until client is a bit more stable in terms of
-      // update frequency
       return;
     }
     let serverUrl: string = await invoke("get_server_url");
@@ -223,9 +220,6 @@ export function Workbench({ className }: WorkbenchProps) {
         title: "New glassyPDM version available!",
         description: "Talk to your team lead for the new installer.",
       });
-      // TODO we probably want to force users to update to the newest client
-      // version until project is a bit more stable in terms of
-      // update frequency and bugs
       return;
     }
     navigate("/download");
@@ -237,9 +231,6 @@ export function Workbench({ className }: WorkbenchProps) {
         title: "New glassyPDM version available!",
         description: "Talk to your team lead for the new installer.",
       });
-      // TODO we probably want to force users to update to the newest client
-      // version until client is a bit more stable in terms of
-      // update frequency
       return;
     }
     navigate("/upload");

@@ -10,12 +10,7 @@ export function Sidebar({ className }: SidebarProps) {
       className={cn("space-y-4 py-4 pb-12 h-screen bg-slate-900", className)}
     >
       <div className="px-3 py-2">
-        <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">
-          kanguwu
-          {
-            // TODO: do we need a text thing here
-          }
-        </h2>
+        <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight"></h2>
         <div className="space-y-1">
           <NavLink to="/">
             {({ isActive }) => (
