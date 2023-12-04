@@ -60,7 +60,6 @@ export function Workbench({ className }: WorkbenchProps) {
 
     const appdata = await appLocalDataDir();
     const path = await resolve(appdata, "compare.json");
-    console.log(path);
     await invoke("hash_dir", { resultsPath: path, ignoreList: [] });
     try {
       const data = await fetch(serverUrl + "/info/project");
@@ -162,21 +161,22 @@ export function Workbench({ className }: WorkbenchProps) {
       });
 
       // if !base && compare, add toUpload
-      compare.forEach((cFile: LocalCADFile) => {
+      for (let i = 0; i < compare.length; i++) {
+        let cFile: LocalCADFile = compare[i];
         let found: boolean = false;
-        base.every((bFile: LocalCADFile) => {
-          if (bFile.path == cFile.path) {
+        for (let j = 0; j < base.length; j++) {
+          let bFile: LocalCADFile = base[j];
+          if (bFile.path === cFile.path) {
             found = true;
-            return false;
+            break;
           }
-          return true;
-        });
+        }
 
         if (!found) {
           cFile.change = ChangeType.CREATE;
           toUpload.push(cFile);
         }
-      });
+      }
 
       console.log(toUpload);
       setUpload(toUpload);
