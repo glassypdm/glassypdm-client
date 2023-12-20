@@ -34,6 +34,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { open } from "@tauri-apps/api/shell";
 import { useToast } from "@/components/ui/use-toast";
+import { trace } from "tauri-plugin-log-api";
 
 interface WorkbenchProps extends React.HTMLAttributes<HTMLDivElement> {}
 
@@ -126,6 +127,7 @@ export function Workbench({ className }: WorkbenchProps) {
           }
         }
       });
+      trace("Obtained files to download");
       console.log(toDownload);
       setDownload(toDownload);
       await updateAppDataFile(DOWNLOAD_JSON_FILE, JSON.stringify(toDownload));
@@ -177,6 +179,7 @@ export function Workbench({ className }: WorkbenchProps) {
         }
       }
 
+      trace("Obtained files to upload");
       console.log(toUpload);
       setUpload(toUpload);
       await updateAppDataFile(UPLOAD_JSON_FILE, JSON.stringify(toUpload));
@@ -199,7 +202,7 @@ export function Workbench({ className }: WorkbenchProps) {
     } catch (err: any) {
       console.error(err);
     }
-
+    trace("Sync action complete");
     setLoading(false);
   }
 

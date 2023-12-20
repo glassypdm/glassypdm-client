@@ -5,18 +5,33 @@ use std::path::PathBuf;
 use std::path::Path;
 use serde::{Serialize, Deserialize};
 use merkle_hash::{bytes_to_hex, Algorithm, MerkleTree, anyhow::Error};
+use tauri::Manager;
 use std::fs::{File, self};
 use std::io::Write;
 use std::io;
-use reqwest::blocking::multipart::*;
+use reqwest::{Client, Response};
+use reqwest::multipart::*;
 use tauri_plugin_log::LogTarget;
-use log::info;
+use log::{info, trace};
 
 #[derive(Serialize, Deserialize)]
 struct LocalCADFile {
     path: String,
     size: u64,
     hash: String
+}
+
+// TODO better name
+#[derive(Clone, Serialize)]
+struct UploadStatusPayload {
+    uploaded: u32,
+    total: u32
+}
+
+#[derive(Serialize, Deserialize)]
+struct Change {
+    file: LocalCADFile,
+    change: u64
 }
 
 #[derive(Serialize, Deserialize)]
@@ -27,7 +42,7 @@ struct S3FileLink {
 }
 
 #[derive(Serialize, Deserialize)]
-struct UploadStatus {
+struct FileUploadStatus {
     result: bool,
     s3key: String
 }
@@ -59,56 +74,43 @@ fn delete_file(app_handle: tauri::AppHandle, file: String) {
 }
 
 #[tauri::command]
-fn upload_changes(app_handle: tauri::AppHandle, file: LocalCADFile, commit: u64, server_url: String, change: u64) -> Result<String, ()> {
-    let client = reqwest::blocking::Client::new();
-    let url = server_url.to_string() + "/ingest";
-    println!("commit # {}; server url {}", commit, &url);
+async fn upload_files(app_handle: tauri::AppHandle, files: Vec<Change>, commit: u64, server_url: String) -> Result<(), reqwest::Error> {
+    let client: Client = reqwest::Client::new();
+    let url: String = server_url.to_string() + "/ingest";
 
-    let project_dir = get_project_dir(app_handle);
-    println!("{}", project_dir);
-    println!("{}", change);
+    let project_dir = get_project_dir(app_handle.clone());
+    let uploadCount: u32 = files.len().try_into().unwrap();
+    let mut uploaded: u32 = 0;
+    for file in files {
+        let path: String = file.file.path;
+        let relative_path = path.replace(&project_dir, "");
 
-    let path: String = file.path;
-    let relative_path = path.replace(&project_dir, "");
-
-    let form: Form;
-
-    // TODO refactor, lol
-    if file.size != 0 {
-        println!("uploading {}", path);
-        println!("relative {}", relative_path);
-        form = reqwest::blocking::multipart::Form::new()
+        // create request
+        let form: Form;
+        // TODO consider using file.change instead of file.file.size to see if we delete the file
+        if file.file.size != 0 {
+            form = reqwest::multipart::Form::new()
             .text("commit", commit.to_string())
             .text("path", relative_path)
-            .text("size", file.size.to_string())
-            .text("hash", file.hash)
+            .text("size", file.file.size.to_string())
+            .text("hash", file.file.hash)
             .text("project", 0.to_string())
-            .text("changeType", change.to_string())
             .file("key", path).unwrap();
-    } else {
-        // deleted file
-        println!("relative {} (deleting!)", relative_path);
-        form = reqwest::blocking::multipart::Form::new()
-            .text("commit", commit.to_string())
-            .text("path", relative_path)
-            .text("size", file.size.to_string())
-            .text("project", 0.to_string())
-            .text("hash", file.hash)
-            .text("changeType", change.to_string());
-    }
+        } else {
 
-    let res = client.post(url.to_string())
-        .multipart(form)
-        .send().unwrap();
+        }
 
-    println!("{:?}", res);
-    let data = res.json::<UploadStatus>().unwrap();
-    let mut output = "oops".to_string();
-    if data.result {
-        output = data.s3key;
+        // send request
+        let res: Response = client.post(url.to_string())
+            .multipart(form)
+            .send()
+            .await?;
+        // get s3 key and store it
+        // emit status event
+        uploaded += 1;
+        app_handle.emit_all("uploadStatus", UploadStatusPayload { uploaded: uploaded, total: uploadCount }).unwrap();
     }
-    println!("upload done");
-    Ok(output)
+    Ok(())
 }
 
 #[tauri::command]
@@ -249,7 +251,7 @@ fn hash_dir(app_handle: tauri::AppHandle, results_path: &str, ignore_list: Vec<S
     };
     let _ = do_steps();
 
-    info!("fn hash_dir done");
+    trace!("fn hash_dir done");
 }
 
 fn main() {
@@ -260,7 +262,7 @@ fn main() {
             LogTarget::Stdout
         ]).build())
         .invoke_handler(tauri::generate_handler![
-            hash_dir, get_project_dir, upload_changes, update_server_url,
+            hash_dir, get_project_dir, update_server_url,
             get_server_url, download_s3_file, update_project_dir, delete_file])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

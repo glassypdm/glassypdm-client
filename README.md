@@ -1,7 +1,7 @@
 # glassyPDM
 glassyPDM is a PDM solution for teams looking to collaborate on hardware design.
 ## Support
-Create a ticket [here](https://todo.sr.ht/~joshtenorio/glassypdm).
+Create a ticket [here](https://github.com/joshtenorio/glassypdm-client/issues).
 ## Dev Instructions
 ### Prerequisites
 - Yarn classic. [link](https://classic.yarnpkg.com/en/docs/install#windows-stable)
