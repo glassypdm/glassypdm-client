@@ -7,7 +7,7 @@ use serde::{Serialize, Deserialize};
 use merkle_hash::{bytes_to_hex, Algorithm, MerkleTree, anyhow::Error};
 use tauri::Manager;
 use std::fs::{File, self};
-use std::io::Write;
+use std::io::{Read, Write};
 use std::io;
 use reqwest::{Client, Response};
 use reqwest::multipart::*;
@@ -73,6 +73,15 @@ fn delete_file(app_handle: tauri::AppHandle, file: String) {
     let _ = fs::remove_file(path);
 }
 
+fn get_file_as_byte_vec(filename: &String) -> Vec<u8> {
+    let mut f = File::open(&filename).expect("no file found");
+    let metadata = fs::metadata(&filename).expect("unable to read metadata");
+    let mut buffer = vec![0; metadata.len() as usize];
+    f.read(&mut buffer).expect("buffer overflow");
+
+    buffer
+}
+
 #[tauri::command]
 async fn upload_files(app_handle: tauri::AppHandle, files: Vec<Change>, commit: u64, server_url: String) -> Result<(), reqwest::Error> {
     let client: Client = reqwest::Client::new();
@@ -89,15 +98,21 @@ async fn upload_files(app_handle: tauri::AppHandle, files: Vec<Change>, commit: 
         let form: Form;
         // TODO consider using file.change instead of file.file.size to see if we delete the file
         if file.file.size != 0 {
+            let content: Vec<u8> = get_file_as_byte_vec(&path);
             form = reqwest::multipart::Form::new()
             .text("commit", commit.to_string())
-            .text("path", relative_path)
+            .text("path", relative_path.clone())
             .text("size", file.file.size.to_string())
             .text("hash", file.file.hash)
             .text("project", 0.to_string())
-            .file("key", path).unwrap();
+            .part("key", Part::bytes(content).file_name(relative_path));
         } else {
-
+            form = reqwest::multipart::Form::new()
+            .text("commit", commit.to_string())
+            .text("path", relative_path.clone())
+            .text("size", file.file.size.to_string())
+            .text("hash", file.file.hash)
+            .text("project", 0.to_string())
         }
 
         // send request
@@ -105,6 +120,7 @@ async fn upload_files(app_handle: tauri::AppHandle, files: Vec<Change>, commit: 
             .multipart(form)
             .send()
             .await?;
+        
         // get s3 key and store it
         // emit status event
         uploaded += 1;
