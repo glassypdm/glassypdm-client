@@ -41,6 +41,7 @@
     "react-router-dom": "^6.16.0",
     "tailwind-merge": "^1.14.0",
     "tailwindcss-animate": "^1.0.7",
+    "tauri-plugin-log-api": "https://github.com/tauri-apps/tauri-plugin-log#v1",
     "tauri-plugin-store-api": "https://github.com/tauri-apps/tauri-plugin-store#v1",
     "zod": "^3.22.2"
   },

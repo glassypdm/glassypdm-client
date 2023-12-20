@@ -3,6 +3,7 @@ import { useLoaderData, useNavigate } from "react-router-dom";
 import { RowSelectionState } from "@tanstack/react-table";
 import {
   DOWNLOAD_JSON_FILE,
+  S3KEY_DAT_FILE,
   UPLOAD_JSON_FILE,
   cn,
   delay,
@@ -36,7 +37,7 @@ export function DownloadPage(props: DownloadPageProps) {
   async function handleDownload() {
     const serverUrl: string = await invoke("get_server_url");
     const dataDir = await appLocalDataDir();
-    const storePath = await resolve(dataDir, "s3key.dat");
+    const storePath = await resolve(dataDir, S3KEY_DAT_FILE);
     const store = new Store(storePath);
     console.log(storePath);
     console.log("downloading files");

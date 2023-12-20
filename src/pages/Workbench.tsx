@@ -61,6 +61,7 @@ export function Workbench({ className }: WorkbenchProps) {
       });
       return;
     }
+
     let serverUrl: string = await invoke("get_server_url");
     let projDir: string = await invoke("get_project_dir");
 

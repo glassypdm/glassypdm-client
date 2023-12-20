@@ -11,6 +11,8 @@ use std::fs::{File, self, create_dir_all};
 use std::io::{Read, Write};
 use std::io;
 use reqwest::blocking::multipart::*;
+use tauri_plugin_log::{LogLevel, LogTarget};
+use log::{info};
 
 #[derive(Serialize, Deserialize)]
 struct LocalCADFile {
@@ -249,12 +251,16 @@ fn hash_dir(app_handle: tauri::AppHandle, results_path: &str, ignore_list: Vec<S
     };
     let _ = do_steps();
 
-    println!("fn hash_dir done");
+    info!("fn hash_dir done");
 }
 
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_store::Builder::default().build())
+        .plugin(tauri_plugin_log::Builder::default().targets([
+            LogTarget::LogDir,
+            LogTarget::Stdout
+        ]).build())
         .invoke_handler(tauri::generate_handler![
             hash_dir, get_project_dir, upload_changes, update_server_url,
             get_server_url, download_s3_file, update_project_dir, delete_file])

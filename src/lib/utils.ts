@@ -37,6 +37,7 @@ export let S3KEY_DAT_FILE: string = "s3key.dat";
 export let SERVER_URL_FILE: string = "server_url.txt";
 export let DOWNLOAD_JSON_FILE: string = "toDownload.json";
 export let UPLOAD_JSON_FILE: string = "toUpload.json";
+export let LOCAL_CONFIG_DAT: string = "config.dat";
 
 export async function clearLocalData() {
   deleteFileIfExist(BASE_JSON_FILE);
@@ -47,6 +48,7 @@ export async function clearLocalData() {
   deleteFileIfExist(SERVER_URL_FILE);
   deleteFileIfExist(DOWNLOAD_JSON_FILE);
   deleteFileIfExist(UPLOAD_JSON_FILE);
+  deleteFileIfExist(LOCAL_CONFIG_DAT);
 }
 
 export async function updateAppDataFile(filename: string, data: string) {
