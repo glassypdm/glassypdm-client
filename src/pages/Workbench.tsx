@@ -72,7 +72,6 @@ export function Workbench({ className }: WorkbenchProps) {
     try {
       const data = await fetch(serverUrl + "/info/project");
       const remote: ProjectState = await data.json();
-      console.log(remote);
 
       // write remote commit into some file
       const commit: string = remote.commit?.toString() || "0";

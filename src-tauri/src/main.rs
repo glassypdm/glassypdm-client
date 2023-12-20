@@ -1,9 +1,12 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod util;
+mod settings;
+mod types;
+
 use std::path::PathBuf;
 use std::path::Path;
-use serde::{Serialize, Deserialize};
 use merkle_hash::{bytes_to_hex, Algorithm, MerkleTree, anyhow::Error};
 use tauri::Manager;
 use std::fs::{File, self};
@@ -13,39 +16,9 @@ use reqwest::{Client, Response};
 use reqwest::multipart::*;
 use tauri_plugin_log::LogTarget;
 use log::{info, trace};
-
-#[derive(Serialize, Deserialize)]
-struct LocalCADFile {
-    path: String,
-    size: u64,
-    hash: String
-}
-
-// TODO better name
-#[derive(Clone, Serialize)]
-struct UploadStatusPayload {
-    uploaded: u32,
-    total: u32
-}
-
-#[derive(Serialize, Deserialize)]
-struct Change {
-    file: LocalCADFile,
-    change: u64
-}
-
-#[derive(Serialize, Deserialize)]
-struct S3FileLink {
-    path: String,
-    url: String,
-    key: String
-}
-
-#[derive(Serialize, Deserialize)]
-struct FileUploadStatus {
-    result: bool,
-    s3key: String
-}
+use crate::util::{is_key_in_list, pathbuf_to_string, get_file_as_byte_vec};
+use crate::settings::{update_server_url, get_server_url, get_project_dir};
+use crate::types::{LocalCADFile, UploadStatusPayload, Change, S3FileLink, FileUploadStatus};
 
 #[tauri::command]
 fn download_s3_file(app_handle: tauri::AppHandle, link: S3FileLink) {
@@ -73,14 +46,6 @@ fn delete_file(app_handle: tauri::AppHandle, file: String) {
     let _ = fs::remove_file(path);
 }
 
-fn get_file_as_byte_vec(filename: &String) -> Vec<u8> {
-    let mut f = File::open(&filename).expect("no file found");
-    let metadata = fs::metadata(&filename).expect("unable to read metadata");
-    let mut buffer = vec![0; metadata.len() as usize];
-    f.read(&mut buffer).expect("buffer overflow");
-
-    buffer
-}
 
 #[tauri::command]
 async fn upload_files(app_handle: tauri::AppHandle, files: Vec<Change>, commit: u64, server_url: String) -> Result<(), reqwest::Error> {
@@ -130,36 +95,6 @@ async fn upload_files(app_handle: tauri::AppHandle, files: Vec<Change>, commit: 
 }
 
 #[tauri::command]
-fn update_server_url(app_handle: tauri::AppHandle, new_url: String) {
-    let appdir = app_handle.path_resolver().app_local_data_dir().unwrap();
-    let path = appdir.join("server_url.txt");
-
-    let _ = fs::write(path, new_url);
-}
-
-#[tauri::command]
-fn get_server_url(app_handle: tauri::AppHandle) -> String {
-    let appdir = app_handle.path_resolver().app_local_data_dir().unwrap();
-    let path = appdir.join("server_url.txt");
-    let output: String = match fs::read_to_string(path) {
-        Ok(contents) => return contents,
-        Err(_err) => "http://example.com/".to_string(),
-    };
-    return output;
-}
-
-#[tauri::command]
-fn get_project_dir(app_handle: tauri::AppHandle) -> String {
-    let appdir = app_handle.path_resolver().app_local_data_dir().unwrap();
-    let path = appdir.join("project_dir.txt");
-    let output: String = match fs::read_to_string(path) {
-        Ok(contents) => return contents,
-        Err(_err) => "no project directory set".to_string(),
-    };
-    return output;
-}
-
-#[tauri::command]
 fn update_project_dir(app_handle: tauri::AppHandle, dir: PathBuf) {
     let appdir = app_handle.path_resolver().app_local_data_dir().unwrap();
     let mut path = appdir.join("project_dir.txt");
@@ -169,20 +104,6 @@ fn update_project_dir(app_handle: tauri::AppHandle, dir: PathBuf) {
     path = appdir.join("base.json");
     //let _ = fs::write(path, "[]");
     hash_dir(app_handle, &pathbuf_to_string(path), Vec::new());
-}
-
-fn pathbuf_to_string(path: PathBuf) -> String {
-    let output: String = path.into_os_string().into_string().unwrap();
-    return output;
-}
-
-fn is_key_in_list(key: String, list: Vec<String>) -> bool {
-    for str in list {
-        if key == str {
-            return true;
-        }
-    }
-    return false;
 }
 
 #[tauri::command]
