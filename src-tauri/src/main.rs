@@ -4,15 +4,13 @@
 use std::path::PathBuf;
 use std::path::Path;
 use serde::{Serialize, Deserialize};
-use tauri::api::dialog;
-use tauri::{CustomMenuItem, Menu, Submenu, Manager};
 use merkle_hash::{bytes_to_hex, Algorithm, MerkleTree, anyhow::Error};
-use std::fs::{File, self, create_dir_all};
-use std::io::{Read, Write};
+use std::fs::{File, self};
+use std::io::Write;
 use std::io;
 use reqwest::blocking::multipart::*;
-use tauri_plugin_log::{LogLevel, LogTarget};
-use log::{info};
+use tauri_plugin_log::LogTarget;
+use log::info;
 
 #[derive(Serialize, Deserialize)]
 struct LocalCADFile {
@@ -73,7 +71,7 @@ fn upload_changes(app_handle: tauri::AppHandle, file: LocalCADFile, commit: u64,
     let path: String = file.path;
     let relative_path = path.replace(&project_dir, "");
 
-    let mut form: Form;
+    let form: Form;
 
     // TODO refactor, lol
     if file.size != 0 {

@@ -4,6 +4,7 @@ import { Input } from "../components/ui/input";
 import { useState } from "react";
 import { invoke } from "@tauri-apps/api/tauri";
 import { open } from "@tauri-apps/api/dialog";
+import { open as shellOpen } from "@tauri-apps/api/shell";
 import { Separator } from "../components/ui/separator";
 import { SettingsLoaderProps } from "../lib/SettingsLoader";
 import { useLoaderData, useNavigate } from "react-router-dom";
@@ -18,6 +19,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { appLocalDataDir, appLogDir } from "@tauri-apps/api/path";
 
 interface SettingsProps extends React.HTMLAttributes<HTMLDivElement> {}
 
@@ -82,6 +84,14 @@ export function Settings({ className }: SettingsProps) {
     navigate(0);
   }
 
+  async function openLogsDir() {
+    await shellOpen(await appLogDir());
+  }
+
+  async function openAppLocalDataDir() {
+    await shellOpen(await appLocalDataDir());
+  }
+
   return (
     <div className={cn("", className)}>
       <h1 className="text-2xl">Client Settings</h1>
@@ -125,6 +135,11 @@ export function Settings({ className }: SettingsProps) {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+      </div>
+      <Separator className="my-5" />
+      <div className="space-x-4">
+        <Button onClick={openAppLocalDataDir}>View App Data</Button>
+        <Button onClick={openLogsDir}>View App Logs</Button>
       </div>
     </div>
   );
