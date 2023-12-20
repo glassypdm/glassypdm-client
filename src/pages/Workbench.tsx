@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useLoaderData, useNavigate } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/tauri";
 import { resolve, appLocalDataDir } from "@tauri-apps/api/path";
-import { readTextFile, writeTextFile, BaseDirectory } from "@tauri-apps/api/fs";
+import { readTextFile, BaseDirectory } from "@tauri-apps/api/fs";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,7 +13,16 @@ import {
   ChangeType,
   WorkbenchLoaderProps,
 } from "@/lib/types";
-import { cn, deleteFileIfExist, isClientCurrent } from "@/lib/utils";
+import {
+  BASE_COMMIT_FILE,
+  BASE_JSON_FILE,
+  COMPARE_JSON_FILE,
+  DOWNLOAD_JSON_FILE,
+  UPLOAD_JSON_FILE,
+  cn,
+  isClientCurrent,
+  updateAppDataFile,
+} from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -56,7 +65,7 @@ export function Workbench({ className }: WorkbenchProps) {
     let projDir: string = await invoke("get_project_dir");
 
     const appdata = await appLocalDataDir();
-    const path = await resolve(appdata, "compare.json");
+    const path = await resolve(appdata, COMPARE_JSON_FILE);
     await invoke("hash_dir", { resultsPath: path, ignoreList: [] });
     try {
       const data = await fetch(serverUrl + "/info/project");
@@ -65,18 +74,14 @@ export function Workbench({ className }: WorkbenchProps) {
 
       // write remote commit into some file
       const commit: string = remote.commit?.toString() || "0";
-      await deleteFileIfExist("basecommit.txt");
-      await writeTextFile("basecommit.txt", commit, {
-        dir: BaseDirectory.AppLocalData,
-        append: false,
-      });
+      await updateAppDataFile(BASE_COMMIT_FILE, commit);
 
-      let contents = await readTextFile("base.json", {
+      let contents = await readTextFile(BASE_JSON_FILE, {
         dir: BaseDirectory.AppLocalData,
       });
       const base = JSON.parse(contents);
 
-      contents = await readTextFile("compare.json", {
+      contents = await readTextFile(COMPARE_JSON_FILE, {
         dir: BaseDirectory.AppLocalData,
       });
       const compare = JSON.parse(contents);
@@ -122,11 +127,7 @@ export function Workbench({ className }: WorkbenchProps) {
       });
       console.log(toDownload);
       setDownload(toDownload);
-      await deleteFileIfExist("toDownload.json");
-      await writeTextFile("toDownload.json", JSON.stringify(toDownload), {
-        dir: BaseDirectory.AppLocalData,
-        append: false,
-      });
+      await updateAppDataFile(DOWNLOAD_JSON_FILE, JSON.stringify(toDownload));
 
       // for getting what to upload, compare base.json with compare.json
       let toUpload: LocalCADFile[] = [];
@@ -177,11 +178,7 @@ export function Workbench({ className }: WorkbenchProps) {
 
       console.log(toUpload);
       setUpload(toUpload);
-      await deleteFileIfExist("toUpload.json");
-      await writeTextFile("toUpload.json", JSON.stringify(toUpload), {
-        dir: BaseDirectory.AppLocalData,
-        append: false,
-      });
+      await updateAppDataFile(UPLOAD_JSON_FILE, JSON.stringify(toUpload));
 
       // compare download and upload lists
       // intersection is conflicted files

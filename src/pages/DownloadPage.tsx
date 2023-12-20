@@ -2,10 +2,12 @@ import { useState } from "react";
 import { useLoaderData, useNavigate } from "react-router-dom";
 import { RowSelectionState } from "@tanstack/react-table";
 import {
+  DOWNLOAD_JSON_FILE,
+  UPLOAD_JSON_FILE,
   cn,
   delay,
   getAbsolutePath,
-  updateApplicationDataFile,
+  updateAppDataFile,
 } from "@/lib/utils";
 import { Button } from "../components/ui/button";
 import { FileTable } from "../components/FileTable";
@@ -101,7 +103,7 @@ export function DownloadPage(props: DownloadPageProps) {
 
     setDescription("Updating local data...");
     // determine which files to ignore whilst hashing
-    const uploadStr = await readTextFile("toUpload.json", {
+    const uploadStr = await readTextFile(UPLOAD_JSON_FILE, {
       dir: BaseDirectory.AppLocalData,
     });
     const toUpload: LocalCADFile[] = JSON.parse(uploadStr);
@@ -135,13 +137,10 @@ export function DownloadPage(props: DownloadPageProps) {
     await invoke("hash_dir", { resultsPath: path, ignoreList: ignoreList });
 
     // update toUpload.json
-    await updateApplicationDataFile(
-      "toUpload.json",
-      JSON.stringify(newUploadList),
-    );
+    await updateAppDataFile(UPLOAD_JSON_FILE, JSON.stringify(newUploadList));
 
     // remove items that were in toDownload from toDownload.json
-    const str = await readTextFile("toDownload.json", {
+    const str = await readTextFile(DOWNLOAD_JSON_FILE, {
       dir: BaseDirectory.AppLocalData,
     });
     let initDownload: CADFile[] = JSON.parse(str);
@@ -156,10 +155,7 @@ export function DownloadPage(props: DownloadPageProps) {
     }
 
     // update toDownload
-    await updateApplicationDataFile(
-      "toDownload.json",
-      JSON.stringify(initDownload),
-    );
+    await updateAppDataFile(DOWNLOAD_JSON_FILE, JSON.stringify(initDownload));
 
     // save store
     await store.save();

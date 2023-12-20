@@ -1,7 +1,14 @@
 import { useState } from "react";
 import { useLoaderData, useNavigate } from "react-router-dom";
 import { RowSelectionState } from "@tanstack/react-table";
-import { cn, deleteFileIfExist } from "@/lib/utils";
+import {
+  BASE_COMMIT_FILE,
+  BASE_JSON_FILE,
+  S3KEY_DAT_FILE,
+  UPLOAD_JSON_FILE,
+  cn,
+  updateAppDataFile,
+} from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { FileTable } from "@/components/FileTable";
 import { UploadLoaderProps, columns } from "@/components/FileColumn";
@@ -9,7 +16,7 @@ import { Progress } from "@/components/ui/progress";
 import { invoke } from "@tauri-apps/api/tauri";
 import { resolve, appLocalDataDir, BaseDirectory } from "@tauri-apps/api/path";
 import { CADFile, LocalCADFile } from "@/lib/types";
-import { readTextFile, writeTextFile } from "@tauri-apps/api/fs";
+import { readTextFile } from "@tauri-apps/api/fs";
 import {
   Select,
   SelectTrigger,
@@ -45,7 +52,7 @@ export function UploadPage({ className }: UploadPageProps) {
     let serverUrl: string = await invoke("get_server_url");
     let projDir: string = await invoke("get_project_dir");
     const dataDir = await appLocalDataDir();
-    const storePath = await resolve(dataDir, "s3key.dat");
+    const storePath = await resolve(dataDir, S3KEY_DAT_FILE);
     const store = new Store(storePath);
 
     const authorID: string = user?.id || "null";
@@ -72,7 +79,7 @@ export function UploadPage({ className }: UploadPageProps) {
     if (action === "Reset") {
       // if file is not in base.json, then we just need to delete the file
       // otherwise, get the s3 url from the server and download the file
-      const baseStr = await readTextFile("base.json", {
+      const baseStr = await readTextFile(BASE_JSON_FILE, {
         dir: BaseDirectory.AppLocalData,
       });
       const base: CADFile[] = JSON.parse(baseStr);
@@ -116,7 +123,7 @@ export function UploadPage({ className }: UploadPageProps) {
       }
 
       // update toUpload.json
-      const initUploadStr = await readTextFile("toUpload.json", {
+      const initUploadStr = await readTextFile(UPLOAD_JSON_FILE, {
         dir: BaseDirectory.AppLocalData,
       });
       let initUpload: LocalCADFile[] = JSON.parse(initUploadStr);
@@ -130,11 +137,7 @@ export function UploadPage({ className }: UploadPageProps) {
         }
       }
 
-      await deleteFileIfExist("toUpload.json");
-      await writeTextFile("toUpload.json", JSON.stringify(initUpload), {
-        dir: BaseDirectory.AppLocalData,
-        append: false,
-      });
+      await updateAppDataFile(UPLOAD_JSON_FILE, JSON.stringify(initUpload));
     } else if (action === "Upload") {
       // 0. check if we have permissions to upload
       const email = user?.primaryEmailAddress?.emailAddress as string;
@@ -162,7 +165,7 @@ export function UploadPage({ className }: UploadPageProps) {
       }
 
       // 1. post to /commit
-      const commitStr = await readTextFile("basecommit.txt", {
+      const commitStr = await readTextFile(BASE_COMMIT_FILE, {
         dir: BaseDirectory.AppLocalData,
       });
       let newCommit: number = parseInt(commitStr) + 1;
@@ -229,7 +232,7 @@ export function UploadPage({ className }: UploadPageProps) {
       store.save();
 
       // remove items that were in toUpload from toUpload.json
-      const str = await readTextFile("toUpload.json", {
+      const str = await readTextFile(UPLOAD_JSON_FILE, {
         dir: BaseDirectory.AppLocalData,
       });
       let initUpload: LocalCADFile[] = JSON.parse(str);
@@ -251,21 +254,13 @@ export function UploadPage({ className }: UploadPageProps) {
 
       // afterwards update base.json and basecommit.txt
       const appdata = await appLocalDataDir();
-      const path = await resolve(appdata, "base.json");
+      const path = await resolve(appdata, BASE_JSON_FILE);
       await invoke("hash_dir", { resultsPath: path, ignoreList: ignoreList });
 
-      await deleteFileIfExist("basecommit.txt");
-      await writeTextFile("basecommit.txt", newCommit.toString(), {
-        dir: BaseDirectory.AppLocalData,
-        append: false,
-      });
+      await updateAppDataFile(BASE_COMMIT_FILE, newCommit.toString());
 
       // update toUpload
-      await deleteFileIfExist("toUpload.json");
-      await writeTextFile("toUpload.json", JSON.stringify(initUpload), {
-        dir: BaseDirectory.AppLocalData,
-        append: false,
-      });
+      await updateAppDataFile(UPLOAD_JSON_FILE, JSON.stringify(initUpload));
     }
 
     const endTime = performance.now();

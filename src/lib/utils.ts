@@ -29,21 +29,27 @@ export async function deleteFileIfExist(filename: string) {
   }
 }
 
+export let BASE_JSON_FILE: string = "base.json";
+export let BASE_COMMIT_FILE: string = "basecommit.txt";
+export let COMPARE_JSON_FILE: string = "compare.json";
+export let PROJECT_DIR_FILE: string = "project_dir.txt";
+export let S3KEY_DAT_FILE: string = "s3key.dat";
+export let SERVER_URL_FILE: string = "server_url.txt";
+export let DOWNLOAD_JSON_FILE: string = "toDownload.json";
+export let UPLOAD_JSON_FILE: string = "toUpload.json";
+
 export async function clearLocalData() {
-  deleteFileIfExist("base.json");
-  deleteFileIfExist("basecommit.txt");
-  deleteFileIfExist("compare.json");
-  deleteFileIfExist("project_dir.txt");
-  deleteFileIfExist("s3key.dat");
-  deleteFileIfExist("server_url.txt");
-  deleteFileIfExist("toDownload.json");
-  deleteFileIfExist("toUpload.json");
+  deleteFileIfExist(BASE_JSON_FILE);
+  deleteFileIfExist(BASE_COMMIT_FILE);
+  deleteFileIfExist(COMPARE_JSON_FILE);
+  deleteFileIfExist(PROJECT_DIR_FILE);
+  deleteFileIfExist(S3KEY_DAT_FILE);
+  deleteFileIfExist(SERVER_URL_FILE);
+  deleteFileIfExist(DOWNLOAD_JSON_FILE);
+  deleteFileIfExist(UPLOAD_JSON_FILE);
 }
 
-export async function updateApplicationDataFile(
-  filename: string,
-  data: string,
-) {
+export async function updateAppDataFile(filename: string, data: string) {
   await deleteFileIfExist(filename);
   await writeTextFile(filename, data, {
     dir: BaseDirectory.AppLocalData,
