@@ -158,14 +158,6 @@ fn pathbuf_to_string(path: PathBuf) -> String {
     return output;
 }
 
-// Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
-#[tauri::command]
-fn greet(name: &str) -> String {
-    let output: String = format!("Hello, {}! You've been greeted from Rust!", name);
-    println!("helasdfasdfasdfsdf");
-    return output;
-}
-
 fn is_key_in_list(key: String, list: Vec<String>) -> bool {
     for str in list {
         if key == str {
@@ -206,7 +198,7 @@ fn hash_dir(app_handle: tauri::AppHandle, results_path: &str, ignore_list: Vec<S
         }
     }
 
-
+    // build hash
     let do_steps = || -> Result<(), Error> {
         let tree = MerkleTree::builder(path)
         .algorithm(Algorithm::Blake3)
@@ -264,7 +256,7 @@ fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_store::Builder::default().build())
         .invoke_handler(tauri::generate_handler![
-            hash_dir, greet, get_project_dir, upload_changes, update_server_url,
+            hash_dir, get_project_dir, upload_changes, update_server_url,
             get_server_url, download_s3_file, update_project_dir, delete_file])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
