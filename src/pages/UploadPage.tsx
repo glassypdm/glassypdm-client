@@ -118,7 +118,7 @@ export function UploadPage({ className }: UploadPageProps) {
           await invoke("delete_file", { file: relPath });
         }
 
-        setDescription(`${i + 1} of ${i + 1} files reset`);
+        setDescription(`${i + 1} of ${toUpload.length} files reset`);
         setProgress((100 * (i + 1)) / toUpload.length);
       }
 
