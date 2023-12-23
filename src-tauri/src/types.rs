@@ -8,6 +8,20 @@ pub struct LocalCADFile {
     pub hash: String
 }
 
+#[derive(Serialize, Deserialize)]
+pub struct DownloadFile {
+    pub path: String,
+    pub size: u64
+}
+
+#[derive(Clone, Serialize)]
+pub struct DownloadStatusPayload {
+    pub downloaded: u32,
+    pub total: u32,
+    pub s3: String,
+    pub rel_path: String
+}
+
 // TODO better name
 #[derive(Clone, Serialize)]
 pub struct UploadStatusPayload {

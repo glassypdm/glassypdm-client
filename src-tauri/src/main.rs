@@ -9,20 +9,26 @@ use std::path::PathBuf;
 use std::path::Path;
 use merkle_hash::{bytes_to_hex, Algorithm, MerkleTree, anyhow::Error};
 use tauri::Manager;
+use types::DownloadFile;
 use std::fs::{File, self};
 use std::io::{Read, Write};
 use std::io;
 use reqwest::{Client, Response};
 use reqwest::multipart::*;
 use tauri_plugin_log::LogTarget;
-use log::{info, trace};
+use log::{info, trace, error};
 use crate::util::{is_key_in_list, pathbuf_to_string, get_file_as_byte_vec};
 use crate::settings::{update_server_url, get_server_url, get_project_dir};
 use crate::types::{LocalCADFile, UploadStatusPayload, Change, S3FileLink, FileUploadStatus, ReqwestError};
 
 #[tauri::command]
+async fn download_files(app_handle: tauri::AppHandle, files: Vec<DownloadFile>, server_url: String) -> Result<(), ReqwestError> {
+
+}
+
+#[tauri::command]
 fn download_s3_file(app_handle: tauri::AppHandle, link: S3FileLink) {
-    println!("download");
+    info!("downloading a file");
     let mut resp = reqwest::blocking::get(link.url).unwrap();
     let path = get_project_dir(app_handle.clone()) + link.path.as_str();
     let p: &Path = std::path::Path::new(&path);
@@ -32,8 +38,6 @@ fn download_s3_file(app_handle: tauri::AppHandle, link: S3FileLink) {
 
     let mut f = File::create(&path).expect("Unable to create file");
     io::copy(&mut resp, &mut f).expect("Unable to copy data");
-    println!("finish");
-    println!("loc: {}", path);
 }
 
 #[tauri::command]
@@ -102,8 +106,10 @@ fn update_project_dir(app_handle: tauri::AppHandle, dir: PathBuf) {
 
 #[tauri::command]
 fn hash_dir(app_handle: tauri::AppHandle, results_path: &str, ignore_list: Vec<String>) {
+    trace!("hashing project directory");
     let path: String = get_project_dir(app_handle);
     if path == "no lol" {
+        error!("hashing failed; invalid project directory");
         return;
     }
     
@@ -117,7 +123,7 @@ fn hash_dir(app_handle: tauri::AppHandle, results_path: &str, ignore_list: Vec<S
     if base_data != "bruh" {
         let base_json: Vec<LocalCADFile> = serde_json::from_str(&base_data).expect("base.json not formatted");
         for ignored_file in &ignore_list {
-            println!("ignoring a file! {}", ignored_file);
+            info!("ignoring file {}", ignored_file);
             for file in &base_json {
                 if file.path == ignored_file.clone() {
                     let output: LocalCADFile = LocalCADFile {
@@ -129,6 +135,9 @@ fn hash_dir(app_handle: tauri::AppHandle, results_path: &str, ignore_list: Vec<S
                 }
             }
         }
+    }
+    else {
+        error!("base.json DNE");
     }
 
     // build hash

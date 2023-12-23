@@ -59,13 +59,10 @@ export function DownloadPage(props: DownloadPageProps) {
     }
 
     // download files
-    console.log(selectedDownload);
     const length = selectedDownload.length;
-    //for (let i = 0; i < length; i++) {
     let cnt = 0;
     await Promise.all(
       selectedDownload.map(async (file: DownloadFile) => {
-        //const file: DownloadFile = selectedDownload[i];
         if (file.size != 0) {
           const key: string = file.path.replaceAll("\\", "|");
           console.log(key);

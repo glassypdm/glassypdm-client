@@ -28,6 +28,7 @@ import { Textarea } from "../components/ui/textarea";
 import { useUser } from "@clerk/clerk-react";
 import { useToast } from "../components/ui/use-toast";
 import { Store } from "tauri-plugin-store-api";
+import { info } from "tauri-plugin-log-api";
 
 interface UploadPageProps extends React.HTMLAttributes<HTMLDivElement> {}
 
@@ -78,6 +79,7 @@ export function UploadPage({ className }: UploadPageProps) {
     // TODO we definitely have duplicate code here we can refactor, lmao
     console.log(toUpload);
     if (action === "Reset") {
+      info("resetting files");
       // if file is not in base.json, then we just need to delete the file
       // otherwise, get the s3 url from the server and download the file
       const baseStr = await readTextFile(BASE_JSON_FILE, {
@@ -116,6 +118,7 @@ export function UploadPage({ className }: UploadPageProps) {
         if (!found) {
           // delete file
           console.log("deleting a file " + toUpload[i].path);
+          info(`deleting file ${toUpload[i].path}`);
           await invoke("delete_file", { file: relPath });
         }
 
