@@ -6,7 +6,6 @@ import {
   S3KEY_DAT_FILE,
   UPLOAD_JSON_FILE,
   cn,
-  delay,
   getAbsolutePath,
   updateAppDataFile,
 } from "@/lib/utils";
@@ -20,6 +19,7 @@ import { CADFile, DownloadFile, LocalCADFile } from "@/lib/types";
 import { readTextFile } from "@tauri-apps/api/fs";
 import { Store } from "tauri-plugin-store-api";
 import { useToast } from "@/components/ui/use-toast";
+import { listen } from "@tauri-apps/api/event";
 
 interface DownloadPageProps extends React.HTMLAttributes<HTMLDivElement> {}
 
@@ -53,52 +53,34 @@ export function DownloadPage(props: DownloadPageProps) {
       let key: string = Object.keys(selection)[i];
       const idx = parseInt(key);
       selectedDownload.push({
-        path: files.files[idx].file.path,
+        rel_path: files.files[idx].file.path,
         size: files.files[idx].file.size,
       });
     }
 
+    // setup event listener
+    const unlisten = await listen("downloadStatus", (event) => {
+      const output: any = event.payload; // TODO type the payload
+      if (output.s3 !== "dne" || output.s3 !== "delete") {
+        store.set(output.rel_path, output.s3);
+        store.save();
+      }
+
+      setDescription(
+        `${output.downloaded} of ${output.total} files downloaded...`,
+      );
+      setProgress((100 * output.downloaded) / output.total);
+    });
+
     // download files
-    const length = selectedDownload.length;
-    let cnt = 0;
-    await Promise.all(
-      selectedDownload.map(async (file: DownloadFile) => {
-        if (file.size != 0) {
-          const key: string = file.path.replaceAll("\\", "|");
-          console.log(key);
-
-          // get s3 url
-          const response = await fetch(serverUrl + "/download/file/" + key);
-          const data = await response.json();
-          const s3Url = data["s3Url"];
-          const s3Key = data["key"];
-          console.log(s3Url);
-          console.log(s3Key);
-
-          // save key in store
-          await store.set(key, { value: s3Key });
-
-          // have rust backend download the file
-          await invoke("download_s3_file", {
-            link: {
-              path: file.path,
-              url: s3Url,
-              key: s3Key,
-            },
-          });
-        } else {
-          console.log("deleting file " + file.path);
-          await invoke("delete_file", { file: file.path });
-        }
-        // handle progress bar
-        setProgress((100 * ++cnt) / length);
-        setDescription(`${cnt} of ${length} downloaded...`);
-        await delay(2);
-      }),
-    );
+    await invoke("download_files", {
+      files: selectedDownload,
+      serverUrl: serverUrl,
+    });
 
     console.log("finish downloading");
 
+    unlisten();
     setDescription("Updating local data...");
     // determine which files to ignore whilst hashing
     const uploadStr = await readTextFile(UPLOAD_JSON_FILE, {
@@ -114,7 +96,7 @@ export function DownloadPage(props: DownloadPageProps) {
       // iterate through selected download list
       for (let j = 0; j < selectedDownload.length; j++) {
         const absolute: string = await getAbsolutePath(
-          selectedDownload[j].path,
+          selectedDownload[j].rel_path,
         );
         if (absolute === toUpload[i].path) {
           found = true;
@@ -143,7 +125,7 @@ export function DownloadPage(props: DownloadPageProps) {
     });
     let initDownload: CADFile[] = JSON.parse(str);
     for (let i = 0; i < selectedDownload.length; i++) {
-      const downloadedPath: string = selectedDownload[i].path;
+      const downloadedPath: string = selectedDownload[i].rel_path;
       let j = initDownload.length;
       while (j--) {
         if (initDownload[j].path == downloadedPath) {

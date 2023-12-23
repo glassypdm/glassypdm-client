@@ -10,8 +10,10 @@ use std::path::Path;
 use merkle_hash::{bytes_to_hex, Algorithm, MerkleTree, anyhow::Error};
 use tauri::Manager;
 use types::DownloadFile;
+use types::DownloadInformation;
+use types::DownloadStatusPayload;
 use std::fs::{File, self};
-use std::io::{Read, Write};
+use std::io::Write;
 use std::io;
 use reqwest::{Client, Response};
 use reqwest::multipart::*;
@@ -23,7 +25,67 @@ use crate::types::{LocalCADFile, UploadStatusPayload, Change, S3FileLink, FileUp
 
 #[tauri::command]
 async fn download_files(app_handle: tauri::AppHandle, files: Vec<DownloadFile>, server_url: String) -> Result<(), ReqwestError> {
+    let glassy_client: Client = reqwest::Client::new();
+    let aws_client: Client = reqwest::Client::new();
+    let project_dir = get_project_dir(app_handle.clone());
+    let mut downloaded: u32 = 0;
+    let total: u32 = files.len().try_into().unwrap();
+    for file in files {
+        if file.size != 0 { // download the file
+            let key = file.rel_path.replace("\\", "|");
+            let response = glassy_client
+                .get(server_url.clone() + "/download/file/" + &key)
+                .send()
+                .await?
+                .json::<DownloadInformation>()
+                .await?;
 
+            if response.key == "dne" || response.key == "lol" {
+                error!("/download/file route returned invalid key {}", response.key);
+                continue;
+            }
+            else { // valid key/url
+                let resp = aws_client
+                    .get(response.s3Url)
+                    .send()
+                    .await?
+                    .bytes()
+                    .await?;
+                let abs_path = project_dir.clone() + file.rel_path.as_str();
+                let p: &Path = std::path::Path::new(&abs_path);
+
+                // create folders if necessary
+                let prefix = p.parent().unwrap();
+                println!("prefix: {}", &prefix.display());
+                fs::create_dir_all(prefix).unwrap();
+
+                // create file
+                let mut f = File::create(&abs_path).expect("Unable to create file");
+                io::copy(&mut &resp[..], &mut f).expect("Unable to copy data");
+
+                downloaded += 1;
+                app_handle.emit_all("downloadStatus", DownloadStatusPayload {
+                    downloaded,
+                    total,
+                    s3: response.key,
+                    rel_path: file.rel_path
+                }).unwrap();
+            }
+        } // end if file.size != 0
+        else { // delete the file
+            delete_file(app_handle.clone(), file.rel_path.clone());
+
+            downloaded += 1;
+            app_handle.emit_all("downloadStatus", DownloadStatusPayload {
+                downloaded,
+                total,
+                s3: "deleted".to_string(),
+                rel_path: file.rel_path
+            }).unwrap();
+        }
+    }
+
+    Ok(())
 }
 
 #[tauri::command]
@@ -202,7 +264,7 @@ fn main() {
             LogTarget::Stdout
         ]).build())
         .invoke_handler(tauri::generate_handler![
-            hash_dir, get_project_dir, update_server_url, upload_files,
+            hash_dir, get_project_dir, update_server_url, upload_files, download_files,
             get_server_url, download_s3_file, update_project_dir, delete_file])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

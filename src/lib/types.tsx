@@ -15,7 +15,7 @@ export interface CADFile {
 }
 
 export interface DownloadFile {
-  path: string;
+  rel_path: string;
   size: number;
 }
 

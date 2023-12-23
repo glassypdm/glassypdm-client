@@ -10,8 +10,14 @@ pub struct LocalCADFile {
 
 #[derive(Serialize, Deserialize)]
 pub struct DownloadFile {
-    pub path: String,
+    pub rel_path: String,
     pub size: u64
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct DownloadInformation {
+  pub s3Url: String, // this is not snake_case because the server returns in camelCase
+  pub key: String
 }
 
 #[derive(Clone, Serialize)]
