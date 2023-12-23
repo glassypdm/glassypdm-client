@@ -261,7 +261,7 @@ export function UploadPage({ className }: UploadPageProps) {
     toast({
       title: `${action} took ${endTime - startTime} milliseconds`,
     });
-
+    info(`${action} took ${endTime - startTime} milliseconds`);
     setDescription("Complete!");
     setDisabled(false);
   }

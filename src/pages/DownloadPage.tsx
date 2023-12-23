@@ -20,6 +20,7 @@ import { readTextFile } from "@tauri-apps/api/fs";
 import { Store } from "tauri-plugin-store-api";
 import { useToast } from "@/components/ui/use-toast";
 import { listen } from "@tauri-apps/api/event";
+import { info } from "tauri-plugin-log-api";
 
 interface DownloadPageProps extends React.HTMLAttributes<HTMLDivElement> {}
 
@@ -146,6 +147,7 @@ export function DownloadPage(props: DownloadPageProps) {
     toast({
       title: `Download took ${endTime - startTime} milliseconds`,
     });
+    info(`Download took ${endTime - startTime} milliseconds`);
     setDescription("Complete!");
   }
 
