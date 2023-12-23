@@ -11,7 +11,8 @@ pub struct LocalCADFile {
 #[derive(Clone, Serialize)]
 pub struct UploadStatusPayload {
     pub uploaded: u32,
-    pub total: u32
+    pub total: u32,
+    pub s3: String
 }
 
 #[derive(Serialize, Deserialize)]

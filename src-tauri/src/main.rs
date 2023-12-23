@@ -16,6 +16,7 @@ use reqwest::{Client, Response};
 use reqwest::multipart::*;
 use tauri_plugin_log::LogTarget;
 use log::{info, trace};
+use thiserror;
 use crate::util::{is_key_in_list, pathbuf_to_string, get_file_as_byte_vec};
 use crate::settings::{update_server_url, get_server_url, get_project_dir};
 use crate::types::{LocalCADFile, UploadStatusPayload, Change, S3FileLink, FileUploadStatus};
@@ -46,38 +47,45 @@ fn delete_file(app_handle: tauri::AppHandle, file: String) {
     let _ = fs::remove_file(path);
 }
 
+#[derive(Debug, thiserror::Error)]
+enum ReqwestError {
+    #[error(transparent)]
+    Reqwest(#[from] reqwest::Error),
+}
+
+// we must also implement serde::Serialize
+impl serde::Serialize for ReqwestError {
+  fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+  where
+    S: serde::ser::Serializer,
+  {
+    serializer.serialize_str(self.to_string().as_ref())
+  }
+}
 
 #[tauri::command]
-async fn upload_files(app_handle: tauri::AppHandle, files: Vec<Change>, commit: u64, server_url: String) -> Result<(), reqwest::Error> {
+async fn upload_files(app_handle: tauri::AppHandle, files: Vec<Change>, commit: u64, server_url: String) -> Result<(), ReqwestError> {
     let client: Client = reqwest::Client::new();
     let url: String = server_url.to_string() + "/ingest";
 
     let project_dir = get_project_dir(app_handle.clone());
-    let uploadCount: u32 = files.len().try_into().unwrap();
+    let upload_count: u32 = files.len().try_into().unwrap();
     let mut uploaded: u32 = 0;
     for file in files {
         let path: String = file.file.path;
         let relative_path = path.replace(&project_dir, "");
 
         // create request
-        let form: Form;
+        let mut form: Form = reqwest::multipart::Form::new()
+        .text("project", 0.to_string())
+        .text("commit", commit.to_string())
+        .text("path", relative_path.clone())
+        .text("size", file.file.size.to_string())
+        .text("hash", file.file.hash);
         // TODO consider using file.change instead of file.file.size to see if we delete the file
         if file.file.size != 0 {
             let content: Vec<u8> = get_file_as_byte_vec(&path);
-            form = reqwest::multipart::Form::new()
-            .text("commit", commit.to_string())
-            .text("path", relative_path.clone())
-            .text("size", file.file.size.to_string())
-            .text("hash", file.file.hash)
-            .text("project", 0.to_string())
-            .part("key", Part::bytes(content).file_name(relative_path));
-        } else {
-            form = reqwest::multipart::Form::new()
-            .text("commit", commit.to_string())
-            .text("path", relative_path.clone())
-            .text("size", file.file.size.to_string())
-            .text("hash", file.file.hash)
-            .text("project", 0.to_string())
+            form = form.part("key", Part::bytes(content).file_name(relative_path));
         }
 
         // send request
@@ -87,9 +95,15 @@ async fn upload_files(app_handle: tauri::AppHandle, files: Vec<Change>, commit: 
             .await?;
         
         // get s3 key and store it
+        let data = res.json::<FileUploadStatus>().await?;
+        let mut output = "oops".to_string();
+        if data.result {
+            output = data.s3key;
+        }
+
         // emit status event
         uploaded += 1;
-        app_handle.emit_all("uploadStatus", UploadStatusPayload { uploaded: uploaded, total: uploadCount }).unwrap();
+        app_handle.emit_all("uploadStatus", UploadStatusPayload { uploaded: uploaded, total: upload_count, s3: output }).unwrap();
     }
     Ok(())
 }
@@ -199,7 +213,7 @@ fn main() {
             LogTarget::Stdout
         ]).build())
         .invoke_handler(tauri::generate_handler![
-            hash_dir, get_project_dir, update_server_url,
+            hash_dir, get_project_dir, update_server_url, upload_files,
             get_server_url, download_s3_file, update_project_dir, delete_file])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
