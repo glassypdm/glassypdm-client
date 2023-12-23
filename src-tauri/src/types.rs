@@ -1,3 +1,4 @@
+use thiserror;
 use serde::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize)]
@@ -35,4 +36,20 @@ pub struct S3FileLink {
 pub struct FileUploadStatus {
     pub result: bool,
     pub s3key: String
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum ReqwestError {
+    #[error(transparent)]
+    Reqwest(#[from] reqwest::Error),
+}
+
+// we must also implement serde::Serialize
+impl serde::Serialize for ReqwestError {
+  fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+  where
+    S: serde::ser::Serializer,
+  {
+    serializer.serialize_str(self.to_string().as_ref())
+  }
 }

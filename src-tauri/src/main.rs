@@ -16,10 +16,9 @@ use reqwest::{Client, Response};
 use reqwest::multipart::*;
 use tauri_plugin_log::LogTarget;
 use log::{info, trace};
-use thiserror;
 use crate::util::{is_key_in_list, pathbuf_to_string, get_file_as_byte_vec};
 use crate::settings::{update_server_url, get_server_url, get_project_dir};
-use crate::types::{LocalCADFile, UploadStatusPayload, Change, S3FileLink, FileUploadStatus};
+use crate::types::{LocalCADFile, UploadStatusPayload, Change, S3FileLink, FileUploadStatus, ReqwestError};
 
 #[tauri::command]
 fn download_s3_file(app_handle: tauri::AppHandle, link: S3FileLink) {
@@ -30,13 +29,9 @@ fn download_s3_file(app_handle: tauri::AppHandle, link: S3FileLink) {
     let prefix = p.parent().unwrap();
     println!("prefix: {}", &prefix.display());
     fs::create_dir_all(prefix).unwrap();
-    //let cache_prefix: String = get_project_dir(app_handle.clone()) + "\\.glassypdm";
-    //fs::create_dir_all(cache_prefix.clone()).unwrap();
 
     let mut f = File::create(&path).expect("Unable to create file");
     io::copy(&mut resp, &mut f).expect("Unable to copy data");
-    //let mut cache: File = File::create(cache_prefix.clone() + "\\" + link.key.as_str()).expect("unable to create cache file");
-    //io::copy(&mut resp, &mut cache).expect("Unable to copy data");
     println!("finish");
     println!("loc: {}", path);
 }
@@ -47,45 +42,30 @@ fn delete_file(app_handle: tauri::AppHandle, file: String) {
     let _ = fs::remove_file(path);
 }
 
-#[derive(Debug, thiserror::Error)]
-enum ReqwestError {
-    #[error(transparent)]
-    Reqwest(#[from] reqwest::Error),
-}
-
-// we must also implement serde::Serialize
-impl serde::Serialize for ReqwestError {
-  fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-  where
-    S: serde::ser::Serializer,
-  {
-    serializer.serialize_str(self.to_string().as_ref())
-  }
-}
-
 #[tauri::command]
 async fn upload_files(app_handle: tauri::AppHandle, files: Vec<Change>, commit: u64, server_url: String) -> Result<(), ReqwestError> {
     let client: Client = reqwest::Client::new();
     let url: String = server_url.to_string() + "/ingest";
 
     let project_dir = get_project_dir(app_handle.clone());
-    let upload_count: u32 = files.len().try_into().unwrap();
+    let total: u32 = files.len().try_into().unwrap();
     let mut uploaded: u32 = 0;
     for file in files {
         let path: String = file.path;
-        let relative_path = path.replace(&project_dir, "");
+        let rel_path = path.replace(&project_dir, "");
 
         // create request
         let mut form: Form = reqwest::multipart::Form::new()
         .text("project", 0.to_string())
         .text("commit", commit.to_string())
-        .text("path", relative_path.clone())
+        .text("path", rel_path.clone())
         .text("size", file.size.to_string())
+        .text("change", file.change.to_string())
         .text("hash", file.hash);
         // TODO consider using file.change instead of file.file.size to see if we delete the file
         if file.size != 0 {
             let content: Vec<u8> = get_file_as_byte_vec(&path);
-            form = form.part("key", Part::bytes(content).file_name(relative_path.clone()));
+            form = form.part("key", Part::bytes(content).file_name(rel_path.clone()));
         }
 
         // send request
@@ -96,14 +76,14 @@ async fn upload_files(app_handle: tauri::AppHandle, files: Vec<Change>, commit: 
         
         // get s3 key and store it
         let data = res.json::<FileUploadStatus>().await?;
-        let mut output = "oops".to_string();
+        let mut s3 = "oops".to_string();
         if data.result {
-            output = data.s3key;
+            s3 = data.s3key;
         }
 
         // emit status event
         uploaded += 1;
-        app_handle.emit_all("uploadStatus", UploadStatusPayload { uploaded: uploaded, total: upload_count, s3: output, rel_path: relative_path }).unwrap();
+        app_handle.emit_all("uploadStatus", UploadStatusPayload { uploaded, total, s3, rel_path }).unwrap();
     }
     Ok(())
 }
