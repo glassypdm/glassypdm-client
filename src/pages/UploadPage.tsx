@@ -17,6 +17,7 @@ import { invoke } from "@tauri-apps/api/tauri";
 import { resolve, appLocalDataDir, BaseDirectory } from "@tauri-apps/api/path";
 import { CADFile, LocalCADFile } from "@/lib/types";
 import { readTextFile } from "@tauri-apps/api/fs";
+import { listen } from "@tauri-apps/api/event";
 import {
   Select,
   SelectTrigger,
@@ -198,38 +199,27 @@ export function UploadPage({ className }: UploadPageProps) {
         return;
       }
 
-      // do the file upload stuff
-      for (let i = 0; i < fileCount; i++) {
-        const key = await invoke("upload_changes", {
-          file: {
-            path: toUpload[i].path,
-            size: toUpload[i].size,
-            hash: toUpload[i].hash,
-          },
-          commit: newCommit,
-          serverUrl: serverUrl,
-          change: toUpload[i].change,
-        });
-        console.log(key);
-        const relPath = toUpload[i].path
-          .replaceAll(projDir, "")
-          .replaceAll("\\", "|");
-        if (key !== "oops" && key !== "deleted") {
-          store.set(relPath, { value: key });
-        } else if (key === "oops") {
-          toast({
-            title: "Something might've gone wrong",
-            description: "Open an issue on GitHub.",
-          });
+      const unlisten = await listen("uploadStatus", (event) => {
+        console.log(event.payload);
+        const output: any = event.payload; // TODO type the payload
+        if (output.s3 !== "oops" || output.s3 !== "delete") {
+          store.set(output.rel_path, output.s3);
+          store.save();
         }
-        setDescription(`${i + 1} of ${fileCount} files uploaded...`);
-        setProgress((100 * (i + 1)) / fileCount);
-      }
+
+        setDescription(
+          `${output.uploaded} of ${output.total} files uploaded...`,
+        );
+        setProgress((100 * output.uploaded) / output.total);
+      });
+
+      await invoke("upload_files", {
+        commit: newCommit,
+        serverUrl: serverUrl,
+        files: toUpload,
+      });
 
       console.log("finish uploading");
-
-      // save datastore
-      store.save();
 
       // remove items that were in toUpload from toUpload.json
       const str = await readTextFile(UPLOAD_JSON_FILE, {
@@ -250,7 +240,6 @@ export function UploadPage({ className }: UploadPageProps) {
       for (let i = 0; i < initUpload.length; i++) {
         ignoreList.push(initUpload[i].path);
       }
-      console.log(ignoreList);
 
       // afterwards update base.json and basecommit.txt
       const appdata = await appLocalDataDir();
@@ -261,6 +250,8 @@ export function UploadPage({ className }: UploadPageProps) {
 
       // update toUpload
       await updateAppDataFile(UPLOAD_JSON_FILE, JSON.stringify(initUpload));
+
+      unlisten();
     }
 
     const endTime = performance.now();

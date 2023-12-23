@@ -72,7 +72,7 @@ async fn upload_files(app_handle: tauri::AppHandle, files: Vec<Change>, commit: 
     let upload_count: u32 = files.len().try_into().unwrap();
     let mut uploaded: u32 = 0;
     for file in files {
-        let path: String = file.file.path;
+        let path: String = file.path;
         let relative_path = path.replace(&project_dir, "");
 
         // create request
@@ -80,12 +80,12 @@ async fn upload_files(app_handle: tauri::AppHandle, files: Vec<Change>, commit: 
         .text("project", 0.to_string())
         .text("commit", commit.to_string())
         .text("path", relative_path.clone())
-        .text("size", file.file.size.to_string())
-        .text("hash", file.file.hash);
+        .text("size", file.size.to_string())
+        .text("hash", file.hash);
         // TODO consider using file.change instead of file.file.size to see if we delete the file
-        if file.file.size != 0 {
+        if file.size != 0 {
             let content: Vec<u8> = get_file_as_byte_vec(&path);
-            form = form.part("key", Part::bytes(content).file_name(relative_path));
+            form = form.part("key", Part::bytes(content).file_name(relative_path.clone()));
         }
 
         // send request
@@ -103,7 +103,7 @@ async fn upload_files(app_handle: tauri::AppHandle, files: Vec<Change>, commit: 
 
         // emit status event
         uploaded += 1;
-        app_handle.emit_all("uploadStatus", UploadStatusPayload { uploaded: uploaded, total: upload_count, s3: output }).unwrap();
+        app_handle.emit_all("uploadStatus", UploadStatusPayload { uploaded: uploaded, total: upload_count, s3: output, rel_path: relative_path }).unwrap();
     }
     Ok(())
 }

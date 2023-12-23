@@ -12,12 +12,15 @@ pub struct LocalCADFile {
 pub struct UploadStatusPayload {
     pub uploaded: u32,
     pub total: u32,
-    pub s3: String
+    pub s3: String,
+    pub rel_path: String
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct Change {
-    pub file: LocalCADFile,
+    pub path: String,
+    pub size: u64,
+    pub hash: String,
     pub change: u64
 }
 
