@@ -14,16 +14,16 @@ pub struct DownloadFile {
     pub size: u64
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct DownloadInformation {
   pub s3Url: String, // this is not snake_case because the server returns in camelCase
-  pub key: String
+  pub key: String,
+  pub relPath: String
 }
 
 #[derive(Clone, Serialize)]
 pub struct DownloadStatusPayload {
-    pub downloaded: u32,
-    pub total: u32,
+    pub total: u32, // TODO remove
     pub s3: String,
     pub rel_path: String
 }

@@ -60,17 +60,17 @@ export function DownloadPage(props: DownloadPageProps) {
     }
 
     // setup event listener
+    let cntr = 0;
     const unlisten = await listen("downloadStatus", (event) => {
       const output: any = event.payload; // TODO type the payload
       if (output.s3 !== "dne" || output.s3 !== "delete") {
         store.set(output.rel_path, output.s3);
         store.save();
       }
+      cntr += 1;
 
-      setDescription(
-        `${output.downloaded} of ${output.total} files downloaded...`,
-      );
-      setProgress((100 * output.downloaded) / output.total);
+      setDescription(`${cntr} of ${output.total} files downloaded...`);
+      setProgress((100 * cntr) / output.total);
     });
 
     // download files
