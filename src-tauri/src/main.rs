@@ -1,29 +1,24 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-mod util;
+mod changes;
 mod settings;
 mod types;
+mod util;
 
-use std::path::PathBuf;
 use std::path::Path;
-use merkle_hash::{bytes_to_hex, Algorithm, MerkleTree, anyhow::Error};
 use tauri::Manager;
-use types::DownloadFile;
-use types::DownloadInformation;
-use types::DownloadStatusPayload;
 use std::fs::{File, self};
-use std::io::Write;
 use std::io;
 use reqwest::{Client, Response};
 use reqwest::multipart::*;
 use tauri_plugin_log::LogTarget;
 use log::{info, trace, error};
-use tokio;
 use futures::{stream, StreamExt};
-use crate::util::{is_key_in_list, pathbuf_to_string, get_file_as_byte_vec};
-use crate::settings::{update_server_url, get_server_url, get_project_dir};
-use crate::types::{LocalCADFile, UploadStatusPayload, Change, S3FileLink, FileUploadStatus, ReqwestError};
+use crate::changes::hash_dir;
+use crate::settings::{update_server_url, get_server_url, get_project_dir, update_project_dir};
+use crate::types::{UploadStatusPayload, Change, S3FileLink, FileUploadStatus, ReqwestError, DownloadFile, DownloadInformation, DownloadStatusPayload};
+use crate::util::get_file_as_byte_vec;
 
 const CONCURRENT_REQUESTS: usize = 3;
 
@@ -180,108 +175,6 @@ async fn upload_files(app_handle: tauri::AppHandle, files: Vec<Change>, commit: 
         app_handle.emit_all("uploadStatus", UploadStatusPayload { uploaded, total, s3, rel_path }).unwrap();
     }
     Ok(())
-}
-
-#[tauri::command]
-fn update_project_dir(app_handle: tauri::AppHandle, dir: PathBuf) {
-    let appdir = app_handle.path_resolver().app_local_data_dir().unwrap();
-    let mut path = appdir.join("project_dir.txt");
-    let _ = fs::write(path, pathbuf_to_string(dir));
-
-    // update base.json
-    path = appdir.join("base.json");
-    //let _ = fs::write(path, "[]");
-    hash_dir(app_handle, &pathbuf_to_string(path), Vec::new());
-}
-
-#[tauri::command]
-fn hash_dir(app_handle: tauri::AppHandle, results_path: &str, ignore_list: Vec<String>) {
-    trace!("hashing project directory");
-    let path: String = get_project_dir(app_handle);
-    if path == "no lol" {
-        error!("hashing failed; invalid project directory");
-        return;
-    }
-    
-    let mut files: Vec<LocalCADFile> = Vec::new();
-
-    // first, handle ignorelist
-    let base_data: String = match fs::read_to_string(results_path) {
-        Ok(content) => content,
-        Err(_error) => "bruh".to_string(),
-    };
-    if base_data != "bruh" {
-        let base_json: Vec<LocalCADFile> = serde_json::from_str(&base_data).expect("base.json not formatted");
-        for ignored_file in &ignore_list {
-            info!("ignoring file {}", ignored_file);
-            for file in &base_json {
-                if file.path == ignored_file.clone() {
-                    let output: LocalCADFile = LocalCADFile {
-                        path: ignored_file.clone(),
-                        size: file.size,
-                        hash: file.hash.clone()
-                    };
-                    files.push(output);
-                }
-            }
-        }
-    }
-    else {
-        error!("base.json DNE");
-    }
-
-    // build hash
-    let do_steps = || -> Result<(), Error> {
-        let tree = MerkleTree::builder(path)
-        .algorithm(Algorithm::Blake3)
-        .hash_names(true)
-        .build().unwrap();
-
-        for item in tree {
-            let pathbuf = item.path.absolute.into_string();
-            let s_hash = bytes_to_hex(item.hash);
-
-            if pathbuf.as_str() == "" {
-                continue;
-            }
-            let metadata = std::fs::metadata(pathbuf.as_str())?;
-            let isthisfile = metadata.is_file();
-            let filesize = metadata.len();
-
-            // ignore if directory
-            if !isthisfile {
-                continue;
-            }
-
-            // if file is in ignorelist, we already handled it
-            // so ignore it
-            if is_key_in_list(pathbuf.clone(), ignore_list.clone()) {
-                continue;
-            }
-
-            // ignore temporary solidworks files
-            if pathbuf.as_str().contains("~$") {
-                continue;
-            }
-
-            //println!("{}: {}", pathbuf, s_hash);
-            let file = LocalCADFile {
-                hash: s_hash,
-                path: pathbuf,
-                size: filesize,
-            };
-            files.push(file);
-        }
-
-        let json = serde_json::to_string(&files)?;
-
-        let mut file = File::create(results_path)?;
-        file.write_all(json.as_bytes())?;
-        Ok(())
-    };
-    let _ = do_steps();
-
-    trace!("fn hash_dir done");
 }
 
 fn main() {

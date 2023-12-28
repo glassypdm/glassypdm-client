@@ -18,7 +18,7 @@ pub struct DownloadFile {
 pub struct DownloadInformation {
   pub s3Url: String, // this is not snake_case because the server returns in camelCase
   pub key: String,
-  pub relPath: String
+  pub relPath: String // likewise as above
 }
 
 #[derive(Clone, Serialize)]

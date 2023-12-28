@@ -1,5 +1,8 @@
+use std::path::PathBuf;
 use std::fs::{self};
 use log::info;
+use crate::changes::hash_dir;
+use crate::util::pathbuf_to_string;
 
 #[tauri::command]
 pub fn update_server_url(app_handle: tauri::AppHandle, new_url: String) {
@@ -32,3 +35,14 @@ pub fn get_project_dir(app_handle: tauri::AppHandle) -> String {
     return output;
 }
 
+#[tauri::command]
+pub fn update_project_dir(app_handle: tauri::AppHandle, dir: PathBuf) {
+    let appdir = app_handle.path_resolver().app_local_data_dir().unwrap();
+    let mut path = appdir.join("project_dir.txt");
+    let _ = fs::write(path, pathbuf_to_string(dir));
+
+    // update base.json
+    path = appdir.join("base.json");
+    //let _ = fs::write(path, "[]");
+    hash_dir(app_handle, &pathbuf_to_string(path), Vec::new());
+}
