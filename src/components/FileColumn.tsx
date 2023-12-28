@@ -5,9 +5,8 @@ import {
   CADFileColumn,
   UpdatedCADFile,
   ChangeType,
-  CADFile,
-  LocalCADFile,
   TrackedRemoteFile,
+  Change,
 } from "@/lib/types";
 import { Checkbox } from "./ui/checkbox";
 import { BaseDirectory, readTextFile } from "@tauri-apps/api/fs";
@@ -124,20 +123,18 @@ export async function uploadPageLoader() {
   const projDir = await readTextFile("project_dir.txt", {
     dir: BaseDirectory.AppLocalData,
   });
-  const data: LocalCADFile[] = JSON.parse(str);
+  const data: Change[] = JSON.parse(str);
   console.log(data);
 
   for (let i = 0; i < data.length; i++) {
     // enable selected by default
     output.selectionList[i.toString()] = true;
-
-    // path, relativePath, change
     output.files.push({
       file: {
-        path: data[i].path,
-        size: data[i].size,
-        hash: data[i].hash,
-        relativePath: data[i].path.replace(projDir, ""),
+        path: data[i].file.path,
+        size: data[i].file.size,
+        hash: data[i].file.hash,
+        relativePath: data[i].file.path.replace(projDir, ""),
         change: data[i].change,
       },
     });

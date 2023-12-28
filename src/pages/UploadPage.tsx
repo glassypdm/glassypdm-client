@@ -15,7 +15,7 @@ import { UploadLoaderProps, columns } from "@/components/FileColumn";
 import { Progress } from "@/components/ui/progress";
 import { invoke } from "@tauri-apps/api/tauri";
 import { resolve, appLocalDataDir, BaseDirectory } from "@tauri-apps/api/path";
-import { CADFile, LocalCADFile } from "@/lib/types";
+import { CADFile, Change } from "@/lib/types";
 import { readTextFile } from "@tauri-apps/api/fs";
 import { listen } from "@tauri-apps/api/event";
 import {
@@ -62,14 +62,16 @@ export function UploadPage({ className }: UploadPageProps) {
     const startTime = performance.now();
 
     // get paths for upload/reset
-    let toUpload: LocalCADFile[] = [];
+    let toUpload: Change[] = [];
     for (let i = 0; i < Object.keys(selection).length; i++) {
       let key: string = Object.keys(selection)[i];
       const idx = parseInt(key);
       toUpload.push({
-        path: files.files[idx].file.path,
-        size: files.files[idx].file.size,
-        hash: files.files[idx].file.hash,
+        file: {
+          path: files.files[idx].file.path,
+          size: files.files[idx].file.size,
+          hash: files.files[idx].file.hash,
+        },
         change: files.files[idx].file.change,
       });
     }
@@ -87,10 +89,10 @@ export function UploadPage({ className }: UploadPageProps) {
       });
       const base: CADFile[] = JSON.parse(baseStr);
       for (let i = 0; i < toUpload.length; i++) {
-        const relPath: string = toUpload[i].path.replace(projDir, "");
+        const relPath: string = toUpload[i].file.path.replace(projDir, "");
         let found: boolean = false;
         for (let j = 0; j < base.length; j++) {
-          if (base[j].path === toUpload[i].path) {
+          if (base[j].path === toUpload[i].file.path) {
             info("resetting" + relPath);
             found = true;
             // from datastore, grab s3key
@@ -119,7 +121,7 @@ export function UploadPage({ className }: UploadPageProps) {
 
         if (!found) {
           // delete file
-          info(`deleting file ${toUpload[i].path}`);
+          info(`deleting file ${toUpload[i].file.path}`);
           await invoke("delete_file", { file: relPath });
         }
 
@@ -131,12 +133,12 @@ export function UploadPage({ className }: UploadPageProps) {
       const initUploadStr = await readTextFile(UPLOAD_JSON_FILE, {
         dir: BaseDirectory.AppLocalData,
       });
-      let initUpload: LocalCADFile[] = JSON.parse(initUploadStr);
+      let initUpload: Change[] = JSON.parse(initUploadStr);
       for (let i = 0; i < toUpload.length; i++) {
-        const downloadedPath: string = toUpload[i].path;
+        const downloadedPath: string = toUpload[i].file.path;
         let j = initUpload.length;
         while (j--) {
-          if (initUpload[j].path == downloadedPath) {
+          if (initUpload[j].file.path == downloadedPath) {
             initUpload.splice(j, 1);
           }
         }
@@ -230,12 +232,12 @@ export function UploadPage({ className }: UploadPageProps) {
       const str = await readTextFile(UPLOAD_JSON_FILE, {
         dir: BaseDirectory.AppLocalData,
       });
-      let initUpload: LocalCADFile[] = JSON.parse(str);
+      let initUpload: Change[] = JSON.parse(str);
       for (let i = 0; i < toUpload.length; i++) {
-        const downloadedPath: string = toUpload[i].path;
+        const downloadedPath: string = toUpload[i].file.path;
         let j = initUpload.length;
         while (j--) {
-          if (initUpload[j].path == downloadedPath) {
+          if (initUpload[j].file.path == downloadedPath) {
             initUpload.splice(j, 1);
           }
         }
@@ -243,7 +245,7 @@ export function UploadPage({ className }: UploadPageProps) {
       // ignore files that we did not upload
       let ignoreList: string[] = [];
       for (let i = 0; i < initUpload.length; i++) {
-        ignoreList.push(initUpload[i].path);
+        ignoreList.push(initUpload[i].file.path);
       }
 
       // afterwards update base.json and basecommit.txt

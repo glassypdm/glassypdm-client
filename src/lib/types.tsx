@@ -1,12 +1,12 @@
 export enum ChangeType {
-  CREATE,
-  UPDATE,
-  DELETE,
-  UNIDENTIFIED,
+  CREATE = "Create",
+  UPDATE = "Update",
+  DELETE = "Delete",
+  UNIDENTIFIED = "Unidentified",
 }
 
 export interface CADFile {
-  path: string;
+  path: string; // TODO confirm this is relative
   commit: number;
   s3Key: string;
   size: number;
@@ -19,25 +19,14 @@ export interface DownloadFile {
   size: number;
 }
 
-// TODO deprecate this type
 export interface LocalCADFile {
-  path: string;
-  size: number;
-  hash: string;
-  change: ChangeType;
-}
-
-// TODO rename to LocalCADFile
-// path is absolute
-export interface File {
-  path: string;
+  path: string; // absolute
   size: number;
   hash: string;
 }
 
-// TODO
 export interface Change {
-  file: File;
+  file: LocalCADFile;
   change: ChangeType;
 }
 
@@ -46,7 +35,9 @@ export interface ProjectState {
   files: CADFile[];
 }
 
+// only used for CADFileColumn
 export interface UpdatedCADFile {
+  // download: relative; upload: absolute
   path: string;
   size: number;
   hash: string;
@@ -60,7 +51,7 @@ export interface CADFileColumn {
 
 export interface WorkbenchLoaderProps {
   toDownload: CADFile[];
-  toUpload: LocalCADFile[];
+  toUpload: Change[];
   conflict: string[];
 }
 
@@ -82,7 +73,7 @@ export interface PermissionDashboardProps {
 }
 
 export interface SyncOutput {
-  upload: LocalCADFile[];
+  upload: Change[];
   download: CADFile[];
   conflict: string[];
 }

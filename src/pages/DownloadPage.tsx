@@ -16,7 +16,6 @@ import { Progress } from "../components/ui/progress";
 import { invoke } from "@tauri-apps/api/tauri";
 import { resolve, appLocalDataDir, BaseDirectory } from "@tauri-apps/api/path";
 import {
-  CADFile,
   DownloadFile,
   DownloadStatus,
   LocalCADFile,

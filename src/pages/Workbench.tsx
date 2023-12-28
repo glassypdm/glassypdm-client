@@ -6,7 +6,7 @@ import { resolve, appLocalDataDir } from "@tauri-apps/api/path";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
-  LocalCADFile,
+  Change,
   CADFile,
   ProjectState,
   WorkbenchLoaderProps,
@@ -37,7 +37,7 @@ interface WorkbenchProps extends React.HTMLAttributes<HTMLDivElement> {}
 export function Workbench({ className }: WorkbenchProps) {
   const loaderData: WorkbenchLoaderProps =
     useLoaderData() as WorkbenchLoaderProps;
-  const [upload, setUpload] = useState<LocalCADFile[]>(loaderData.toUpload);
+  const [upload, setUpload] = useState<Change[]>(loaderData.toUpload);
   const [download, setDownload] = useState<CADFile[]>(loaderData.toDownload);
   const [loading, setLoading] = useState(false);
   const [conflict, setConflict] = useState<string[]>(loaderData.conflict);
