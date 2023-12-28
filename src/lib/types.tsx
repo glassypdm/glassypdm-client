@@ -19,11 +19,25 @@ export interface DownloadFile {
   size: number;
 }
 
-// path is absolute
+// TODO deprecate this type
 export interface LocalCADFile {
   path: string;
   size: number;
   hash: string;
+  change: ChangeType;
+}
+
+// TODO rename to LocalCADFile
+// path is absolute
+export interface File {
+  path: string;
+  size: number;
+  hash: string;
+}
+
+// TODO
+export interface Change {
+  file: File;
   change: ChangeType;
 }
 

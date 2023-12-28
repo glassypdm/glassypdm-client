@@ -119,7 +119,6 @@ export function UploadPage({ className }: UploadPageProps) {
 
         if (!found) {
           // delete file
-          console.log("deleting a file " + toUpload[i].path);
           info(`deleting file ${toUpload[i].path}`);
           await invoke("delete_file", { file: relPath });
         }
@@ -224,8 +223,9 @@ export function UploadPage({ className }: UploadPageProps) {
         files: toUpload,
       });
 
-      console.log("finish uploading");
+      info("finished uploading files");
 
+      // TODO the below can/should be moved to the rust side
       // remove items that were in toUpload from toUpload.json
       const str = await readTextFile(UPLOAD_JSON_FILE, {
         dir: BaseDirectory.AppLocalData,

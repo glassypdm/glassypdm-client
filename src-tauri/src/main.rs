@@ -4,6 +4,7 @@
 mod sync;
 mod settings;
 mod types;
+mod upload;
 mod util;
 
 use std::path::Path;
@@ -18,6 +19,7 @@ use futures::{stream, StreamExt};
 use crate::sync::{hash_dir, sync_server};
 use crate::settings::{update_server_url, get_server_url, get_project_dir, update_project_dir};
 use crate::types::{UploadStatusPayload, Change, S3FileLink, FileUploadStatus, ReqwestError, DownloadFile, DownloadInformation, DownloadStatusPayload};
+use crate::upload::update_upload_list;
 use crate::util::get_file_as_byte_vec;
 
 const CONCURRENT_REQUESTS: usize = 4;
@@ -134,7 +136,8 @@ async fn upload_files(app_handle: tauri::AppHandle, files: Vec<Change>, commit: 
     let project_dir = get_project_dir(app_handle.clone());
     let total: u32 = files.len().try_into().unwrap();
     let mut uploaded: u32 = 0;
-    for file in files {
+    for change in files {
+        let file = change.file;
         let path: String = file.path;
         let rel_path = path.replace(&project_dir, "");
 
@@ -144,7 +147,7 @@ async fn upload_files(app_handle: tauri::AppHandle, files: Vec<Change>, commit: 
         .text("commit", commit.to_string())
         .text("path", rel_path.clone())
         .text("size", file.size.to_string())
-        .text("change", file.change.to_string())
+        .text("change", (change.change as u64).to_string())
         .text("hash", file.hash);
         // TODO consider using file.change instead of file.file.size to see if we delete the file
         if file.size != 0 {
@@ -180,7 +183,8 @@ fn main() {
             LogTarget::Stdout
         ]).build())
         .invoke_handler(tauri::generate_handler![
-            hash_dir, get_project_dir, update_server_url, upload_files, download_files, sync_server,
+            hash_dir, get_project_dir, update_server_url, upload_files,
+            download_files, sync_server, update_upload_list,
             get_server_url, download_s3_file, update_project_dir, delete_file])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

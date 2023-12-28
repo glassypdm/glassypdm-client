@@ -94,6 +94,7 @@ export function DownloadPage(props: DownloadPageProps) {
     console.log("finish downloading");
 
     unlisten();
+    // TODO the below can/should be moved to the rust side
     setDescription("Updating local data...");
     // determine which files to ignore whilst hashing
     const uploadStr = await readTextFile(UPLOAD_JSON_FILE, {

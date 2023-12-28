@@ -36,12 +36,11 @@ pub struct UploadStatusPayload {
     pub rel_path: String
 }
 
+// TODO use LocalCADFile to simplify this struct
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Change {
-    pub path: String, // absolute
-    pub size: u64,
-    pub hash: String,
-    pub change: u64
+    pub file: LocalCADFile,
+    pub change: ChangeType
 }
 
 #[derive(Serialize, Deserialize)]

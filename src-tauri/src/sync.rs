@@ -133,10 +133,12 @@ fn get_uploads(app_handle: &tauri::AppHandle, base_files: &Vec<LocalCADFile>) ->
     let intersection: Vec<LocalCADFile> = vec_lcf_intersection(base_files.to_vec(), &compare_files);
     for file in intersection.clone() {
         output.push(Change {
-            path: file.path,
-            size: file.size,
-            hash: file.hash,
-            change: ChangeType::Update as u64
+            file: LocalCADFile {
+                path: file.path,
+                size: file.size,
+                hash: file.hash
+            },
+            change: ChangeType::Update
         })
     }
     trace!("{} files found in the intersection", intersection.len());
@@ -145,10 +147,12 @@ fn get_uploads(app_handle: &tauri::AppHandle, base_files: &Vec<LocalCADFile>) ->
     let base_diff: Vec<LocalCADFile> = vec_lcf_diff(base_files.to_vec(), &compare_files);
     for file in base_diff.clone() {
         output.push(Change {
-            path: file.path,
-            size: 0,
-            hash: file.hash,
-            change: ChangeType::Delete as u64
+            file: LocalCADFile {
+                path: file.path,
+                size: 0,
+                hash: file.hash
+            },
+            change: ChangeType::Delete
         })
     }
     trace!("{} files found in the base diff", base_diff.len());
@@ -157,10 +161,12 @@ fn get_uploads(app_handle: &tauri::AppHandle, base_files: &Vec<LocalCADFile>) ->
     let compare_diff: Vec<LocalCADFile> = vec_lcf_diff(compare_files, base_files);
     for file in compare_diff.clone() {
         output.push(Change {
-            path: file.path,
-            size: file.size,
-            hash: file.hash,
-            change: ChangeType::Create as u64
+            file: LocalCADFile {
+                path: file.path,
+                size: file.size,
+                hash: file.hash
+            },
+            change: ChangeType::Create
         })
     }
     trace!("{} files found in the compare diff", compare_diff.len());
@@ -243,7 +249,7 @@ fn get_conflicts(upload: &Vec<Change>, download: &Vec<TrackedRemoteFile>, projec
     let mut output: Vec<String> = Vec::new();
     for u_file in upload {
         for d_file in download {
-            let u_path: String = u_file.path.replace(project_dir, "");
+            let u_path: String = u_file.file.path.replace(project_dir, "");
             if u_path == d_file.file.path {
                 info!("found conflicting file: {}", u_path);
                 output.push(u_path);
