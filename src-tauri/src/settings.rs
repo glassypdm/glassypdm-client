@@ -4,9 +4,13 @@ use log::info;
 use crate::changes::hash_dir;
 use crate::util::pathbuf_to_string;
 
+pub fn get_app_local_data_dir(app_handle: &tauri::AppHandle) -> PathBuf {
+    return app_handle.path_resolver().app_local_data_dir().unwrap();
+}
+
 #[tauri::command]
 pub fn update_server_url(app_handle: tauri::AppHandle, new_url: String) {
-    let appdir = app_handle.path_resolver().app_local_data_dir().unwrap();
+    let appdir = get_app_local_data_dir(&app_handle);
     let path = appdir.join("server_url.txt");
 
     let _ = fs::write(path, new_url.clone());
@@ -15,7 +19,7 @@ pub fn update_server_url(app_handle: tauri::AppHandle, new_url: String) {
 
 #[tauri::command]
 pub fn get_server_url(app_handle: tauri::AppHandle) -> String {
-    let appdir = app_handle.path_resolver().app_local_data_dir().unwrap();
+    let appdir = get_app_local_data_dir(&app_handle);
     let path = appdir.join("server_url.txt");
     let output: String = match fs::read_to_string(path) {
         Ok(contents) => return contents,
@@ -26,7 +30,7 @@ pub fn get_server_url(app_handle: tauri::AppHandle) -> String {
 
 #[tauri::command]
 pub fn get_project_dir(app_handle: tauri::AppHandle) -> String {
-    let appdir = app_handle.path_resolver().app_local_data_dir().unwrap();
+    let appdir = get_app_local_data_dir(&app_handle);
     let path = appdir.join("project_dir.txt");
     let output: String = match fs::read_to_string(path) {
         Ok(contents) => return contents,
@@ -37,7 +41,7 @@ pub fn get_project_dir(app_handle: tauri::AppHandle) -> String {
 
 #[tauri::command]
 pub fn update_project_dir(app_handle: tauri::AppHandle, dir: PathBuf) {
-    let appdir = app_handle.path_resolver().app_local_data_dir().unwrap();
+    let appdir = get_app_local_data_dir(&app_handle);
     let mut path = appdir.join("project_dir.txt");
     let _ = fs::write(path, pathbuf_to_string(dir));
 

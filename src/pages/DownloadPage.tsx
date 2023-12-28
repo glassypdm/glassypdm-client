@@ -147,7 +147,7 @@ export function DownloadPage(props: DownloadPageProps) {
     const delta =
       Math.round((endTime - startTime + Number.EPSILON) * 100) / 100;
     toast({
-      title: `Download took ${delta} milliseconds`,
+      title: `Download took ${delta} milliseconds to complete`,
     });
     info(`Download took ${delta} milliseconds`);
     setDescription("Complete!");

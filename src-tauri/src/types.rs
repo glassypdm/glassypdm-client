@@ -1,9 +1,10 @@
+use futures::future::Remote;
 use thiserror;
 use serde::{Serialize, Deserialize};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct LocalCADFile {
-    pub path: String,
+    pub path: String, // absolute
     pub size: u64,
     pub hash: String
 }
@@ -37,9 +38,9 @@ pub struct UploadStatusPayload {
     pub rel_path: String
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Change {
-    pub path: String,
+    pub path: String, // absolute
     pub size: u64,
     pub hash: String,
     pub change: u64
@@ -66,10 +67,39 @@ pub enum ReqwestError {
 
 // we must also implement serde::Serialize
 impl serde::Serialize for ReqwestError {
-  fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-  where
-    S: serde::ser::Serializer,
-  {
-    serializer.serialize_str(self.to_string().as_ref())
-  }
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where S: serde::ser::Serializer, {
+        serializer.serialize_str(self.to_string().as_ref())
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct SyncOutput {
+    pub upload: Vec<Change>,
+    pub download: Vec<TrackedRemoteFile>,
+    pub conflict: Vec<String>
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Clone, Copy, Default)]
+pub enum ChangeType {
+  Create,
+  Update,
+  Delete,
+  #[default]
+  Unidentified,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct RemoteFile {
+    pub path: String, // relative
+    pub commitid: u64,
+    // pub s3_key: String, // TODO handle this or whatever, probably on frontend. or maybe its fine now since we have default
+    pub size: u64,
+    pub hash: String,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct TrackedRemoteFile {
+  pub file: RemoteFile,
+  pub change: ChangeType
 }

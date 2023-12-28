@@ -66,3 +66,9 @@ export interface HistoryLoaderProps {
 export interface PermissionDashboardProps {
   level: number;
 }
+
+export interface SyncOutput {
+  upload: LocalCADFile[];
+  download: CADFile[];
+  conflict: string[];
+}

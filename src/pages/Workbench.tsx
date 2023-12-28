@@ -12,6 +12,7 @@ import {
   ProjectState,
   ChangeType,
   WorkbenchLoaderProps,
+  SyncOutput,
 } from "@/lib/types";
 import {
   BASE_COMMIT_FILE,
@@ -66,7 +67,6 @@ export function Workbench({ className }: WorkbenchProps) {
     }
 
     let serverUrl: string = await invoke("get_server_url");
-    let projDir: string = await invoke("get_project_dir");
 
     const appdata = await appLocalDataDir();
     const path = await resolve(appdata, COMPARE_JSON_FILE);
@@ -74,133 +74,18 @@ export function Workbench({ className }: WorkbenchProps) {
     try {
       const data = await fetch(serverUrl + "/info/project");
       const remote: ProjectState = await data.json();
+      console.log(remote.files);
 
       // write remote commit into some file
       const commit: string = remote.commit?.toString() || "0";
       await updateAppDataFile(BASE_COMMIT_FILE, commit);
 
-      let contents = await readTextFile(BASE_JSON_FILE, {
-        dir: BaseDirectory.AppLocalData,
+      const syncStatus: SyncOutput = await invoke("sync_server", {
+        remoteFiles: remote.files,
       });
-      const base = JSON.parse(contents);
-
-      contents = await readTextFile(COMPARE_JSON_FILE, {
-        dir: BaseDirectory.AppLocalData,
-      });
-      const compare = JSON.parse(contents);
-
-      // for getting what to download
-      let toDownload: CADFile[] = [];
-      // for each file in remote:
-      remote.files.forEach((file: CADFile) => {
-        if (file.size === 0) {
-          let found: boolean = false;
-          base.every((local: any) => {
-            // adjust path
-            const localPath: string = local.path.replace(projDir, "");
-            if (file.path === localPath) {
-              found = true;
-              return false;
-            }
-            return true;
-          });
-          if (found) {
-            file.change = ChangeType.DELETE;
-            toDownload.push(file); // file not deleted locally
-          }
-        } else {
-          let found: boolean = false;
-          base.forEach((local: any) => {
-            // adjust path
-            const localPath: string = local.path.replace(projDir, "");
-            if (file.path === localPath) {
-              found = true;
-              if (local.hash !== file.hash || local.size != file.size) {
-                file.change = ChangeType.UPDATE;
-                toDownload.push(file); // file has been updated
-              }
-            }
-          });
-          if (!found) {
-            console.log("not found locally");
-            file.change = ChangeType.CREATE;
-            toDownload.push(file); // file not downloaded locally
-          }
-        }
-      });
-      info(`Found ${toDownload.length} files to download`);
-      console.log(toDownload);
-      setDownload(toDownload);
-      await updateAppDataFile(DOWNLOAD_JSON_FILE, JSON.stringify(toDownload));
-
-      // for getting what to upload, compare base.json with compare.json
-      let toUpload: LocalCADFile[] = [];
-
-      base.forEach((bFile: LocalCADFile) => {
-        // if base && compare, add toUpload if size, hash is different
-        let found: boolean = false;
-        compare.every((cFile: LocalCADFile) => {
-          if (bFile.path === cFile.path) {
-            found = true;
-            if (bFile.hash !== cFile.hash) {
-              cFile.change = ChangeType.UPDATE;
-              toUpload.push(cFile);
-            }
-            return false;
-          }
-          return true;
-        });
-
-        // if base && !compare, add toUpload w/ size 0
-        if (!found) {
-          toUpload.push({
-            path: bFile.path,
-            size: 0,
-            hash: bFile.hash,
-            change: ChangeType.DELETE,
-          });
-        }
-      });
-
-      // if !base && compare, add toUpload
-      for (let i = 0; i < compare.length; i++) {
-        let cFile: LocalCADFile = compare[i];
-        let found: boolean = false;
-        for (let j = 0; j < base.length; j++) {
-          let bFile: LocalCADFile = base[j];
-          if (bFile.path === cFile.path) {
-            found = true;
-            break;
-          }
-        }
-
-        if (!found) {
-          cFile.change = ChangeType.CREATE;
-          toUpload.push(cFile);
-        }
-      }
-
-      info(`Found ${toUpload.length} files to upload`);
-      console.log(toUpload);
-      setUpload(toUpload);
-      await updateAppDataFile(UPLOAD_JSON_FILE, JSON.stringify(toUpload));
-
-      // compare download and upload lists
-      // intersection is conflicted files
-      let conflict: string[] = [];
-      for (let i = 0; i < toUpload.length; i++) {
-        const file: string = toUpload[i].path.replace(projDir, "");
-        for (let j = 0; j < toDownload.length; j++) {
-          if (file === toDownload[j].path) {
-            console.log("conflict!");
-            console.log(file);
-            conflict.push(file);
-            setConflictExists(true);
-          }
-        }
-      }
-      info(`Found ${conflict.length} conflicting files`);
-      setConflict(conflict);
+      setUpload(syncStatus.upload);
+      setDownload(syncStatus.download);
+      setConflict(syncStatus.conflict);
     } catch (err: any) {
       console.error(err);
     }
@@ -211,9 +96,9 @@ export function Workbench({ className }: WorkbenchProps) {
       Math.round((endTime - startTime + Number.EPSILON) * 100) / 100;
 
     toast({
-      title: `Download took ${delta} milliseconds`,
+      title: `Sync took ${delta} milliseconds to complete`,
     });
-    info(`Download took ${delta} milliseconds`);
+    info(`Sync took ${delta} milliseconds`);
     trace("Sync action complete");
     setLoading(false);
   }

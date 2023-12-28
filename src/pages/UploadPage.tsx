@@ -28,7 +28,7 @@ import { Textarea } from "../components/ui/textarea";
 import { useUser } from "@clerk/clerk-react";
 import { useToast } from "../components/ui/use-toast";
 import { Store } from "tauri-plugin-store-api";
-import { info } from "tauri-plugin-log-api";
+import { info, trace } from "tauri-plugin-log-api";
 
 interface UploadPageProps extends React.HTMLAttributes<HTMLDivElement> {}
 
@@ -50,7 +50,7 @@ export function UploadPage({ className }: UploadPageProps) {
     return null;
   }
 
-  async function handleClick() {
+  async function handleAction() {
     let serverUrl: string = await invoke("get_server_url");
     let projDir: string = await invoke("get_project_dir");
     const dataDir = await appLocalDataDir();
@@ -91,17 +91,18 @@ export function UploadPage({ className }: UploadPageProps) {
         let found: boolean = false;
         for (let j = 0; j < base.length; j++) {
           if (base[j].path === toUpload[i].path) {
+            info("resetting" + relPath);
             found = true;
             // from datastore, grab s3key
             // TODO properly type the store stuff
-            const s3Key = (
-              (await store.get(relPath.replaceAll("\\", "|"))) as any
-            )["value"];
+            const s3Key = (await store.get(relPath)) as any;
+            trace("found s3 key");
 
             // then fetch /download/s3/:key path
             const response = await fetch(serverUrl + "/download/s3/" + s3Key);
             const data = await response.json();
             const s3Url = data["s3Url"];
+            trace("found s3 url");
 
             // and download the file
             await invoke("download_s3_file", {
@@ -111,6 +112,7 @@ export function UploadPage({ className }: UploadPageProps) {
                 key: s3Key,
               },
             });
+            info("downloaded previous revision");
             break;
           }
         }
@@ -261,7 +263,7 @@ export function UploadPage({ className }: UploadPageProps) {
     const delta =
       Math.round((endTime - startTime + Number.EPSILON) * 100) / 100;
     toast({
-      title: `${action} took ${delta} milliseconds`,
+      title: `${action} took ${delta} milliseconds to complete`,
     });
     info(`${action} took ${delta} milliseconds`);
     setDescription("Complete!");
@@ -285,7 +287,7 @@ export function UploadPage({ className }: UploadPageProps) {
           disabled={
             disabled || Object.keys(selection).length == 0 || progress == 100
           }
-          onClick={handleClick}
+          onClick={handleAction}
           variant={action === "Reset" ? "destructive" : "default"}
         >
           {progress == 100 ? action + " Complete" : action + " Selected"}
