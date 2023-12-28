@@ -5,7 +5,6 @@ import {
   BASE_COMMIT_FILE,
   BASE_JSON_FILE,
   S3KEY_DAT_FILE,
-  UPLOAD_JSON_FILE,
   cn,
   updateAppDataFile,
 } from "@/lib/utils";
@@ -78,7 +77,6 @@ export function UploadPage({ className }: UploadPageProps) {
 
     setDisabled(true);
 
-    // TODO we definitely have duplicate code here we can refactor, lmao
     console.log(toUpload);
     if (action === "Reset") {
       info("resetting files");
@@ -130,21 +128,7 @@ export function UploadPage({ className }: UploadPageProps) {
       }
 
       // update toUpload.json
-      const initUploadStr = await readTextFile(UPLOAD_JSON_FILE, {
-        dir: BaseDirectory.AppLocalData,
-      });
-      let initUpload: Change[] = JSON.parse(initUploadStr);
-      for (let i = 0; i < toUpload.length; i++) {
-        const downloadedPath: string = toUpload[i].file.path;
-        let j = initUpload.length;
-        while (j--) {
-          if (initUpload[j].file.path == downloadedPath) {
-            initUpload.splice(j, 1);
-          }
-        }
-      }
-
-      await updateAppDataFile(UPLOAD_JSON_FILE, JSON.stringify(initUpload));
+      await invoke("update_upload_list", { changes: toUpload });
     } else if (action === "Upload") {
       // 0. check if we have permissions to upload
       const email = user?.primaryEmailAddress?.emailAddress as string;
@@ -227,21 +211,11 @@ export function UploadPage({ className }: UploadPageProps) {
 
       info("finished uploading files");
 
-      // TODO the below can/should be moved to the rust side
-      // remove items that were in toUpload from toUpload.json
-      const str = await readTextFile(UPLOAD_JSON_FILE, {
-        dir: BaseDirectory.AppLocalData,
+      // update toUpload.json
+      let initUpload: Change[] = await invoke("update_upload_list", {
+        changes: toUpload,
       });
-      let initUpload: Change[] = JSON.parse(str);
-      for (let i = 0; i < toUpload.length; i++) {
-        const downloadedPath: string = toUpload[i].file.path;
-        let j = initUpload.length;
-        while (j--) {
-          if (initUpload[j].file.path == downloadedPath) {
-            initUpload.splice(j, 1);
-          }
-        }
-      }
+
       // ignore files that we did not upload
       let ignoreList: string[] = [];
       for (let i = 0; i < initUpload.length; i++) {
@@ -254,9 +228,6 @@ export function UploadPage({ className }: UploadPageProps) {
       await invoke("hash_dir", { resultsPath: path, ignoreList: ignoreList });
 
       await updateAppDataFile(BASE_COMMIT_FILE, newCommit.toString());
-
-      // update toUpload
-      await updateAppDataFile(UPLOAD_JSON_FILE, JSON.stringify(initUpload));
 
       unlisten();
     }
