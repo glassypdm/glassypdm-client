@@ -52,7 +52,9 @@ export function Workbench({ className }: WorkbenchProps) {
   const navigate = useNavigate();
 
   async function getChanges() {
-    console.log("click sync");
+    // time function
+    const startTime = performance.now();
+
     setLoading(true);
     if (!(await isClientCurrent())) {
       setLoading(false);
@@ -202,6 +204,16 @@ export function Workbench({ className }: WorkbenchProps) {
     } catch (err: any) {
       console.error(err);
     }
+
+    // stop timing function
+    const endTime = performance.now();
+    const delta =
+      Math.round((endTime - startTime + Number.EPSILON) * 100) / 100;
+
+    toast({
+      title: `Download took ${delta} milliseconds`,
+    });
+    info(`Download took ${delta} milliseconds`);
     trace("Sync action complete");
     setLoading(false);
   }

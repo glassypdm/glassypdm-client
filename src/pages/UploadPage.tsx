@@ -258,10 +258,12 @@ export function UploadPage({ className }: UploadPageProps) {
     }
 
     const endTime = performance.now();
+    const delta =
+      Math.round((endTime - startTime + Number.EPSILON) * 100) / 100;
     toast({
-      title: `${action} took ${endTime - startTime} milliseconds`,
+      title: `${action} took ${delta} milliseconds`,
     });
-    info(`${action} took ${endTime - startTime} milliseconds`);
+    info(`${action} took ${delta} milliseconds`);
     setDescription("Complete!");
     setDisabled(false);
   }
