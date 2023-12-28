@@ -20,14 +20,13 @@ use crate::settings::{update_server_url, get_server_url, get_project_dir, update
 use crate::types::{UploadStatusPayload, Change, S3FileLink, FileUploadStatus, ReqwestError, DownloadFile, DownloadInformation, DownloadStatusPayload};
 use crate::util::get_file_as_byte_vec;
 
-const CONCURRENT_REQUESTS: usize = 3;
+const CONCURRENT_REQUESTS: usize = 4;
 
 #[tauri::command]
 async fn download_files(app_handle: tauri::AppHandle, files: Vec<DownloadFile>, server_url: String) -> Result<(), ReqwestError> {
     let glassy_client: Client = reqwest::Client::new();
     let aws_client: Client = reqwest::Client::new();
     let project_dir = get_project_dir(app_handle.clone());
-    let total: u32 = files.len().try_into().unwrap();
 
     let mut to_download: Vec<DownloadFile> = Vec::new();
     let mut to_delete: Vec<DownloadFile> = Vec::new();
@@ -63,7 +62,6 @@ async fn download_files(app_handle: tauri::AppHandle, files: Vec<DownloadFile>, 
             let mut rel_path: String = "bruh".to_string();
             match b {
                 Ok(b) => {
-                    println!("hehehe {}", b.relPath);
                     key = b.key.to_string();
                     rel_path = b.relPath.to_string();
                     let _ = hehe_file(b, &aws_client, &project_dir).await;
@@ -72,7 +70,6 @@ async fn download_files(app_handle: tauri::AppHandle, files: Vec<DownloadFile>, 
             }
 
             handle.emit_all("downloadStatus", DownloadStatusPayload {
-                total,
                 s3: key.to_string(),
                 rel_path: rel_path.to_string()
             }).unwrap();
@@ -82,7 +79,6 @@ async fn download_files(app_handle: tauri::AppHandle, files: Vec<DownloadFile>, 
         delete_file(app_handle.clone(), file.rel_path);
 
         app_handle.emit_all("downloadStatus", DownloadStatusPayload {
-            total,
             s3: "delete".to_string(),
             rel_path: "delete".to_string()
         }).unwrap();
@@ -103,7 +99,6 @@ async fn hehe_file(download: DownloadInformation, client: &Client, dir: &String)
 
     // create necessary folders
     let prefix = p.parent().unwrap();
-    println!("prefix: {}", &prefix.display());
     fs::create_dir_all(prefix).unwrap();
 
     // create file

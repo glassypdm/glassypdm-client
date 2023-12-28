@@ -23,7 +23,6 @@ pub struct DownloadInformation {
 
 #[derive(Clone, Serialize)]
 pub struct DownloadStatusPayload {
-    pub total: u32, // TODO remove
     pub s3: String,
     pub rel_path: String
 }

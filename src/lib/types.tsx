@@ -72,3 +72,20 @@ export interface SyncOutput {
   download: CADFile[];
   conflict: string[];
 }
+
+export interface DownloadStatus {
+  s3: string;
+  rel_path: string;
+}
+
+export interface RemoteFile {
+  path: string; // relative
+  commitid: number;
+  size: number;
+  hash: string;
+}
+
+export interface TrackedRemoteFile {
+  file: RemoteFile;
+  change: string;
+}

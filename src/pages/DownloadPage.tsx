@@ -15,12 +15,18 @@ import { DownloadLoaderProps, columns } from "../components/FileColumn";
 import { Progress } from "../components/ui/progress";
 import { invoke } from "@tauri-apps/api/tauri";
 import { resolve, appLocalDataDir, BaseDirectory } from "@tauri-apps/api/path";
-import { CADFile, DownloadFile, LocalCADFile } from "@/lib/types";
+import {
+  CADFile,
+  DownloadFile,
+  DownloadStatus,
+  LocalCADFile,
+  TrackedRemoteFile,
+} from "@/lib/types";
 import { readTextFile } from "@tauri-apps/api/fs";
 import { Store } from "tauri-plugin-store-api";
 import { useToast } from "@/components/ui/use-toast";
 import { listen } from "@tauri-apps/api/event";
-import { info } from "tauri-plugin-log-api";
+import { error, info } from "tauri-plugin-log-api";
 
 interface DownloadPageProps extends React.HTMLAttributes<HTMLDivElement> {}
 
@@ -62,15 +68,21 @@ export function DownloadPage(props: DownloadPageProps) {
     // setup event listener
     let cntr = 0;
     const unlisten = await listen("downloadStatus", (event) => {
-      const output: any = event.payload; // TODO type the payload
-      if (output.s3 !== "dne" || output.s3 !== "delete") {
+      const output: DownloadStatus = event.payload as DownloadStatus;
+      if (output.s3 !== "dne" && output.s3 !== "delete") {
         store.set(output.rel_path, output.s3);
         store.save();
+      } else {
+        error(
+          `download: got invalid s3 key ${output.s3} for ${output.rel_path}`,
+        );
       }
       cntr += 1;
 
-      setDescription(`${cntr} of ${output.total} files downloaded...`);
-      setProgress((100 * cntr) / output.total);
+      setDescription(
+        `${cntr} of ${selectedDownload.length} files downloaded...`,
+      );
+      setProgress((100 * cntr) / selectedDownload.length);
     });
 
     // download files
@@ -124,12 +136,12 @@ export function DownloadPage(props: DownloadPageProps) {
     const str = await readTextFile(DOWNLOAD_JSON_FILE, {
       dir: BaseDirectory.AppLocalData,
     });
-    let initDownload: CADFile[] = JSON.parse(str);
+    let initDownload: TrackedRemoteFile[] = JSON.parse(str);
     for (let i = 0; i < selectedDownload.length; i++) {
       const downloadedPath: string = selectedDownload[i].rel_path;
       let j = initDownload.length;
       while (j--) {
-        if (initDownload[j].path == downloadedPath) {
+        if (initDownload[j].file.path == downloadedPath) {
           initDownload.splice(j, 1);
         }
       }
