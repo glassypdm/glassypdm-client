@@ -17,6 +17,7 @@ pub fn hash_dir(app_handle: tauri::AppHandle, results_path: &str, ignore_list: V
     
     let mut files: Vec<LocalCADFile> = Vec::new();
 
+    info!("ignoring {} files", ignore_list.len());
     // first, handle ignorelist
     let base_data: String = match fs::read_to_string(results_path) {
         Ok(content) => content,
@@ -130,6 +131,9 @@ fn get_uploads(app_handle: &tauri::AppHandle, base_files: &Vec<LocalCADFile>) ->
     let mut output: Vec<Change> = Vec::new();
 
     // if files in base \cap compare differ, they should be uploaded
+    // TODO intersection technically isn't right here, because 
+    // intersection implies that file\in v1 \cap v2 is the same file (hash/path/size) in both sets
+    // but the current implementation means intersection as in only path is the same
     let intersection: Vec<LocalCADFile> = vec_lcf_intersection(base_files.to_vec(), &compare_files);
     for file in intersection.clone() {
         output.push(Change {

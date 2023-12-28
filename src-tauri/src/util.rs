@@ -50,13 +50,14 @@ pub fn vec_lcf_diff(v1: Vec<LocalCADFile>, v2: &Vec<LocalCADFile>) -> Vec<LocalC
 }
 
 // TODO ?????
+// returns items in v2 that are also in v1
 pub fn vec_lcf_intersection(v1: Vec<LocalCADFile>, v2: &Vec<LocalCADFile>) -> Vec<LocalCADFile> {
     let mut output: Vec<LocalCADFile> = Vec::new();
 
     for a in &v1 {
         for b in v2 {
             if a.path == b.path && (a.hash != b.hash || a.size != b.size) {
-                output.push(a.clone());
+                output.push(b.clone());
             }
         }
     }

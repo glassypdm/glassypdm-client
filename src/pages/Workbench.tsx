@@ -81,6 +81,7 @@ export function Workbench({ className }: WorkbenchProps) {
       setUpload(syncStatus.upload);
       setDownload(syncStatus.download);
       setConflict(syncStatus.conflict);
+      setConflictExists(syncStatus.conflict.length > 0);
     } catch (err: any) {
       console.error(err);
     }

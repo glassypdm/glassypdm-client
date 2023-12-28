@@ -16,6 +16,7 @@ import { Progress } from "../components/ui/progress";
 import { invoke } from "@tauri-apps/api/tauri";
 import { resolve, appLocalDataDir, BaseDirectory } from "@tauri-apps/api/path";
 import {
+  Change,
   DownloadFile,
   DownloadStatus,
   LocalCADFile,
@@ -99,8 +100,8 @@ export function DownloadPage(props: DownloadPageProps) {
     const uploadStr = await readTextFile(UPLOAD_JSON_FILE, {
       dir: BaseDirectory.AppLocalData,
     });
-    const toUpload: LocalCADFile[] = JSON.parse(uploadStr);
-    const newUploadList: LocalCADFile[] = [];
+    const toUpload: Change[] = JSON.parse(uploadStr);
+    const newUploadList: Change[] = [];
     let ignoreList: string[] = [];
 
     for (let i = 0; i < toUpload.length; i++) {
@@ -111,7 +112,7 @@ export function DownloadPage(props: DownloadPageProps) {
         const absolute: string = await getAbsolutePath(
           selectedDownload[j].rel_path,
         );
-        if (absolute === toUpload[i].path) {
+        if (absolute === toUpload[i].file.path) {
           found = true;
           break;
         }
@@ -120,7 +121,7 @@ export function DownloadPage(props: DownloadPageProps) {
       // if not found, add it to ignore list
       if (!found) {
         newUploadList.push(toUpload[i]);
-        ignoreList.push(toUpload[i].path);
+        ignoreList.push(toUpload[i].file.path);
       }
     }
 

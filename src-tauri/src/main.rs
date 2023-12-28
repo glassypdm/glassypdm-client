@@ -28,6 +28,7 @@ async fn download_files(app_handle: tauri::AppHandle, files: Vec<DownloadFile>, 
     let aws_client: Client = reqwest::Client::new();
     let project_dir = get_project_dir(app_handle.clone());
 
+    // separate files that need to be downloaded vs deleted
     let mut to_download: Vec<DownloadFile> = Vec::new();
     let mut to_delete: Vec<DownloadFile> = Vec::new();
     for file in files {
@@ -42,6 +43,7 @@ async fn download_files(app_handle: tauri::AppHandle, files: Vec<DownloadFile>, 
     let bodies = stream::iter(to_download)
         .map(|file| {
             let g_client = &glassy_client;
+            info!("downloading file {}", file.rel_path);
             let key = file.rel_path.replace("\\", "|");
             let url = server_url.clone() + "/download/file/" + &key;
             async move {
