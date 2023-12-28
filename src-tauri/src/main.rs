@@ -1,7 +1,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-mod changes;
+mod sync;
 mod settings;
 mod types;
 mod util;
@@ -15,7 +15,7 @@ use reqwest::multipart::*;
 use tauri_plugin_log::LogTarget;
 use log::{info, trace, error};
 use futures::{stream, StreamExt};
-use crate::changes::{hash_dir, sync_server};
+use crate::sync::{hash_dir, sync_server};
 use crate::settings::{update_server_url, get_server_url, get_project_dir, update_project_dir};
 use crate::types::{UploadStatusPayload, Change, S3FileLink, FileUploadStatus, ReqwestError, DownloadFile, DownloadInformation, DownloadStatusPayload};
 use crate::util::get_file_as_byte_vec;

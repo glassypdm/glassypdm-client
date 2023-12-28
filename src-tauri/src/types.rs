@@ -1,4 +1,3 @@
-use futures::future::Remote;
 use thiserror;
 use serde::{Serialize, Deserialize};
 

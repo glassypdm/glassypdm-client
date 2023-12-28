@@ -1,5 +1,5 @@
 use std::fs::{File, self};
-use std::io::{Read};
+use std::io::Read;
 use std::path::PathBuf;
 use crate::types::LocalCADFile;
 

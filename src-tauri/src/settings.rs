@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use std::fs::{self};
 use log::info;
-use crate::changes::hash_dir;
+use crate::sync::hash_dir;
 use crate::util::pathbuf_to_string;
 
 pub fn get_app_local_data_dir(app_handle: &tauri::AppHandle) -> PathBuf {

@@ -188,7 +188,6 @@ fn get_downloads(app_handle: &tauri::AppHandle, base_files: &Vec<LocalCADFile>, 
 
     // populate download list
     for r_file in remote_files {
-        let mut change: ChangeType = ChangeType::Unidentified;
         let mut t_file: TrackedRemoteFile = TrackedRemoteFile {
             file: r_file.clone(),
             change: ChangeType::Unidentified
@@ -198,16 +197,14 @@ fn get_downloads(app_handle: &tauri::AppHandle, base_files: &Vec<LocalCADFile>, 
             let b_path: String = b_file.path.replace(project_dir, "");
             if r_file.path == b_path && r_file.size == 0 {
                 found = true;
-                change = ChangeType::Delete;
-                t_file.change = change;
+                t_file.change = ChangeType::Delete;
                 info!("Detected file to delete: {}", t_file.file.path);
                 output.push(t_file.clone());
                 break;
             }
             else if r_file.path == b_path && (r_file.size != b_file.size || r_file.hash != b_file.hash) {
                 found = true;
-                change = ChangeType::Update;
-                t_file.change = change;
+                t_file.change = ChangeType::Update;
                 output.push(t_file.clone());
                 info!("Detected file to update: {}", t_file.file.path);
                 break;
@@ -218,8 +215,7 @@ fn get_downloads(app_handle: &tauri::AppHandle, base_files: &Vec<LocalCADFile>, 
         }
 
         if !found && r_file.size != 0 {
-            change = ChangeType::Create;
-            t_file.change = change;
+            t_file.change = ChangeType::Create;
             info!("Detected file to create: {}", t_file.file.path);
             output.push(t_file);
         }

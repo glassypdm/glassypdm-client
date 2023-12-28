@@ -3,23 +3,18 @@ import { useState } from "react";
 import { useLoaderData, useNavigate } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/tauri";
 import { resolve, appLocalDataDir } from "@tauri-apps/api/path";
-import { readTextFile, BaseDirectory } from "@tauri-apps/api/fs";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   LocalCADFile,
   CADFile,
   ProjectState,
-  ChangeType,
   WorkbenchLoaderProps,
   SyncOutput,
 } from "@/lib/types";
 import {
   BASE_COMMIT_FILE,
-  BASE_JSON_FILE,
   COMPARE_JSON_FILE,
-  DOWNLOAD_JSON_FILE,
-  UPLOAD_JSON_FILE,
   cn,
   isClientCurrent,
   updateAppDataFile,
