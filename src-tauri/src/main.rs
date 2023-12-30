@@ -110,7 +110,7 @@ async fn hehe_file(download: DownloadInformation, client: &Client, dir: &String)
 }
 
 #[tauri::command]
-fn download_s3_file(app_handle: tauri::AppHandle, link: S3FileLink) {
+fn download_s3_file(app_handle: tauri::AppHandle, link: S3FileLink) -> bool {
     info!("downloading a file");
     let mut resp = reqwest::blocking::get(link.url).unwrap();
     let path = get_project_dir(app_handle.clone()) + link.path.as_str();
@@ -118,8 +118,17 @@ fn download_s3_file(app_handle: tauri::AppHandle, link: S3FileLink) {
     let prefix = p.parent().unwrap();
     fs::create_dir_all(prefix).unwrap();
 
-    let mut f = File::create(&path).expect("Unable to create file");
+    let mut f = match File::create(&path) {
+        Ok(file) => file,
+        Err(err) => {
+            error!("Encountered error: {err}");
+            return false;
+            //panic!("unable to create file object for writing");
+        }
+    };
     io::copy(&mut resp, &mut f).expect("Unable to copy data");
+
+    return true;
 }
 
 #[tauri::command]

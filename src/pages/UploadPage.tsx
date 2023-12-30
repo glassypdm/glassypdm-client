@@ -27,7 +27,7 @@ import { Textarea } from "../components/ui/textarea";
 import { useUser } from "@clerk/clerk-react";
 import { useToast } from "../components/ui/use-toast";
 import { Store } from "tauri-plugin-store-api";
-import { info, trace } from "tauri-plugin-log-api";
+import { error, info, trace } from "tauri-plugin-log-api";
 
 interface UploadPageProps extends React.HTMLAttributes<HTMLDivElement> {}
 
@@ -105,13 +105,23 @@ export function UploadPage({ className }: UploadPageProps) {
             trace("found s3 url");
 
             // and download the file
-            await invoke("download_s3_file", {
+            const result = await invoke("download_s3_file", {
               link: {
                 path: relPath,
                 url: s3Url,
                 key: s3Key,
               },
             });
+            if (!result) {
+              error("couldn't download previous revision");
+              toast({
+                title: "Error encountered",
+                description:
+                  "Couldn't reset file. Try exiting any programs that have opened your file and try again.",
+              });
+              setDisabled(false);
+              return;
+            }
             info("downloaded previous revision");
             break;
           }
