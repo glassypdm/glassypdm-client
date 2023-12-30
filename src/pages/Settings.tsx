@@ -20,6 +20,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { appLocalDataDir, appLogDir } from "@tauri-apps/api/path";
+import { SettingsSection } from "@/components/settings/SettingsSection";
 
 interface SettingsProps extends React.HTMLAttributes<HTMLDivElement> {}
 
@@ -29,7 +30,7 @@ export function Settings({ className }: SettingsProps) {
   const [projDir, setProjDir] = useState(defaults.projectDir);
   const { toast } = useToast();
   const [deleteDisabled, setDeleteDisabled] = useState(false);
-  const [alertText, setAlertText] = useState("Delete Local Data");
+  const [alertText, setAlertText] = useState("Delete App Data");
   const navigate = useNavigate();
 
   async function findProjectDir() {
@@ -47,7 +48,7 @@ export function Settings({ className }: SettingsProps) {
     }
   }
 
-  async function saveChanges() {
+  async function saveURL() {
     let newUrl: string = serverURL;
     newUrl.trim();
     newUrl.toLowerCase();
@@ -72,7 +73,7 @@ export function Settings({ className }: SettingsProps) {
 
   function resetAlert() {
     setDeleteDisabled(false);
-    setAlertText("Delete Local Data");
+    setAlertText("Delete App Data");
   }
 
   async function deleteLocalData() {
@@ -94,53 +95,57 @@ export function Settings({ className }: SettingsProps) {
 
   return (
     <div className={cn("", className)}>
-      <h1 className="text-2xl">Client Settings</h1>
-      <h2 className="text-xl">Set Project Directory</h2>
-      <p>Selected Project Directory: {projDir}</p>
-      <Button onClick={findProjectDir}>Set Project Directory</Button>
+      <h1 className="text-2xl ">Client Settings</h1>
+      <SettingsSection title="Set Project Directory">
+        <p>Selected Project Directory: {projDir}</p>
+        <Button onClick={findProjectDir}>Set Project Directory</Button>
+      </SettingsSection>
       <Separator className="my-5" />
-      <h2 className="text-xl">Set Server URL</h2>
-      <Input
-        className="w-3/4"
-        id="server_url"
-        onChange={(e: any) => setServerURL(e.target.value)}
-        value={serverURL}
-      />
+      <SettingsSection title="Set Server URL">
+        <div className="flex flex-row space-x-2">
+          <Input
+            className="w-3/4"
+            id="server_url"
+            onChange={(e: any) => setServerURL(e.target.value)}
+            value={serverURL}
+            placeholder="https://example.com"
+          />
+          <Button onClick={saveURL}>Save URL</Button>
+        </div>
+      </SettingsSection>
       <Separator className="my-5" />
-      <div className="space-x-4">
-        <Button onClick={saveChanges}>Save Changes</Button>
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button variant="destructive" onClick={resetAlert}>
-              Delete Local Data
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete Local Data</AlertDialogTitle>
-              <AlertDialogDescription>
-                This action cannot be undone. You will need to reconfigure your
-                client settings.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <Button
-                variant="destructive"
-                disabled={deleteDisabled}
-                onClick={deleteLocalData}
-              >
-                {alertText}
+      <SettingsSection title="Manage App Data">
+        <div className="space-x-4">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" onClick={resetAlert}>
+                Delete App Data
               </Button>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
-      <Separator className="my-5" />
-      <div className="space-x-4">
-        <Button onClick={openAppLocalDataDir}>View App Data</Button>
-        <Button onClick={openLogsDir}>View App Logs</Button>
-      </div>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Local App Data</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. You will need to reconfigure
+                  your client settings.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <Button
+                  variant="destructive"
+                  disabled={deleteDisabled}
+                  onClick={deleteLocalData}
+                >
+                  {alertText}
+                </Button>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+          <Button onClick={openAppLocalDataDir}>View App Data</Button>
+          <Button onClick={openLogsDir}>View App Logs</Button>
+        </div>
+      </SettingsSection>
     </div>
   );
 }

@@ -23,7 +23,7 @@ pub fn get_server_url(app_handle: tauri::AppHandle) -> String {
     let path = appdir.join("server_url.txt");
     let output: String = match fs::read_to_string(path) {
         Ok(contents) => return contents,
-        Err(_err) => "http://example.com/".to_string(),
+        Err(_err) => "".to_string(),
     };
     return output;
 }
@@ -41,6 +41,7 @@ pub fn get_project_dir(app_handle: tauri::AppHandle) -> String {
 
 #[tauri::command]
 pub fn update_project_dir(app_handle: tauri::AppHandle, dir: PathBuf) {
+    info!("Updating project directory");
     let appdir = get_app_local_data_dir(&app_handle);
     let mut path = appdir.join("project_dir.txt");
     let _ = fs::write(path, pathbuf_to_string(dir));
