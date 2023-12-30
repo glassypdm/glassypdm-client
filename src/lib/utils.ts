@@ -8,6 +8,7 @@ import {
 import { invoke } from "@tauri-apps/api/tauri";
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { error } from "tauri-plugin-log-api";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -76,4 +77,16 @@ export async function isClientCurrent() {
 
 export function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// TODO: extend this to testing internet connection
+export async function pingServer(): Promise<boolean> {
+  const serverURL = await invoke("get_server_url");
+  try {
+    let resp = await fetch(serverURL as string);
+    return resp.ok;
+  } catch (err) {
+    error("Ping: Server connection failed");
+    return false;
+  }
 }
