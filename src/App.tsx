@@ -80,15 +80,15 @@ const router = createHashRouter([
 export default function App() {
   return (
     <ClerkProvider publishableKey={REACT_APP_CLERK_PUBLISHABLE_KEY}>
-      <SignedOut>
-        <RedirectToSignIn />
-      </SignedOut>
-      <SignedIn>
-        <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+        <SignedOut>
+          <RedirectToSignIn />
+        </SignedOut>
+        <SignedIn>
           <RouterProvider router={router} />
           <Toaster />
-        </ThemeProvider>
-      </SignedIn>
+        </SignedIn>
+      </ThemeProvider>
     </ClerkProvider>
   );
 }
