@@ -17,7 +17,7 @@ use log::{info, trace, error};
 use futures::{stream, StreamExt};
 use crate::sync::{hash_dir, sync_server};
 use crate::settings::{update_server_url, get_server_url, get_project_dir, update_project_dir};
-use crate::types::{S3FileLink, ReqwestError, DownloadFile, DownloadInformation, DownloadStatusPayload};
+use crate::types::{S3FileLink, ReqwestError, DownloadFile, DownloadInformation, DownloadStatusPayload, SingleInstancePayload};
 use crate::upload::{update_upload_list, upload_files};
 
 const CONCURRENT_REQUESTS: usize = 4;
@@ -140,6 +140,10 @@ fn delete_file(app_handle: tauri::AppHandle, file: String) {
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_store::Builder::default().build())
+        .plugin(tauri_plugin_single_instance::init(|app, argv, cwd| {
+            println!("{}, {argv:?}, {cwd}", app.package_info().name);
+            app.emit_all("single-instance", SingleInstancePayload { args: argv, cwd }).unwrap();
+        }))
         .plugin(tauri_plugin_log::Builder::default().targets([
             LogTarget::LogDir,
             LogTarget::Stdout

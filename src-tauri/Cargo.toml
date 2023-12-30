@@ -15,6 +15,7 @@ tauri-build = { version = "1.4", features = [] }
 [dependencies]
 tauri = { version = "1.4", features = [ "shell-all", "path-all", "dialog-all", "fs-all"] }
 tauri-plugin-store = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
+tauri-plugin-single-instance = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
 tauri-plugin-log = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
 log = "^0.4"
 serde = { version = "1.0", features = ["derive"] }

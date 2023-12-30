@@ -100,3 +100,9 @@ pub struct TrackedRemoteFile {
   pub file: RemoteFile,
   pub change: ChangeType
 }
+
+#[derive(Clone, serde::Serialize)]
+pub struct SingleInstancePayload {
+  pub args: Vec<String>,
+  pub cwd: String,
+}
