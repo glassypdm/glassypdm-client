@@ -71,12 +71,7 @@ export async function isClientCurrent() {
   const data = await response.json();
   const version = data["version"];
   const localVersion = await getVersion();
-  //return false;
   return localVersion === version;
-}
-
-export function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 // TODO: extend this to testing internet connection
