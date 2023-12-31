@@ -66,7 +66,7 @@ async fn download_files(app_handle: tauri::AppHandle, files: Vec<DownloadFile>, 
                 Ok(b) => {
                     key = b.key.to_string();
                     rel_path = b.relPath.to_string();
-                    let _ = hehe_file(b, &aws_client, &project_dir).await;
+                    let _ = download_with_client(b, &aws_client, &project_dir).await;
                 }
                 Err(e) => error!("Got an error: {}", e),
             }
@@ -89,7 +89,7 @@ async fn download_files(app_handle: tauri::AppHandle, files: Vec<DownloadFile>, 
     Ok(())
 }
 
-async fn hehe_file(download: DownloadInformation, client: &Client, dir: &String) -> Result<(), ReqwestError> {
+async fn download_with_client(download: DownloadInformation, client: &Client, dir: &String) -> Result<(), ReqwestError> {
     let resp = client
         .get(download.s3Url)
         .send()
@@ -107,6 +107,63 @@ async fn hehe_file(download: DownloadInformation, client: &Client, dir: &String)
     let mut f = File::create(&abs_path).expect("Unable to create file");
     io::copy(&mut &resp[..], &mut f).expect("Unable to copy data");
     Ok(())
+}
+
+async fn download_to_cache(download: DownloadInformation, client: &Client, dir: &String) -> Result<(), ReqwestError> {
+    let resp = client
+        .get(download.s3Url)
+        .send()
+        .await?
+        .bytes()
+        .await?;
+    // TODO: util function for getting cache dir automatically
+    let abs_path = dir.to_owned() + "\\.glassypdm\\" + &download.key;
+    let p: &Path = std::path::Path::new(&abs_path);
+
+    // create necessary folders
+    let prefix = p.parent().unwrap();
+    fs::create_dir_all(prefix).unwrap();
+
+    // create file
+    let mut f = File::create(&abs_path).expect("Unable to create file");
+    io::copy(&mut &resp[..], &mut f).expect("Unable to copy data");
+    Ok(())
+}
+
+#[tauri::command]
+fn copy_from_cache(app_handle: tauri::AppHandle, downloads: Vec<DownloadInformation>, proj_dir: String) -> bool {
+    let cache_prefix: String = proj_dir.to_owned() + "\\.glassypdm\\";
+    for download in downloads {
+        let cache_path_str: String = cache_prefix.clone() + &download.key;
+        let abs_path_str: String = proj_dir.to_owned() + download.relPath.as_str();
+        let proj_path: &Path = std::path::Path::new(&abs_path_str);
+        let cache_path: &Path = std::path::Path::new(&cache_path_str);
+
+        // create necessary folders
+        // TODO break out the below into a function?
+        let prefix = proj_path.parent().unwrap();
+        fs::create_dir_all(prefix).unwrap();
+
+        // copy the file from the cache
+        let _ = match fs::copy(cache_path, proj_path) {
+            Ok(hehe) => hehe,
+            Err(err) => {
+                error!("Encountered error when copying file {} to {}: {}", &download.key, abs_path_str, err);
+                return false;
+            },
+        };
+    }
+
+    // delete files since we don't need cache
+    // TODO this should be configurable
+    clear_cache(&proj_dir);
+    return true;
+} 
+
+fn clear_cache(proj_dir: &String) -> bool {
+    let cache_dir_str: String = proj_dir.to_owned() + "\\.glassypdm";
+    fs::remove_dir_all(cache_dir_str).unwrap();
+    return true;
 }
 
 #[tauri::command]
@@ -150,7 +207,7 @@ fn main() {
         ]).build())
         .invoke_handler(tauri::generate_handler![
             hash_dir, get_project_dir, update_server_url, upload_files,
-            download_files, sync_server, update_upload_list,
+            download_files, sync_server, update_upload_list, copy_from_cache,
             get_server_url, download_s3_file, update_project_dir, delete_file])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
