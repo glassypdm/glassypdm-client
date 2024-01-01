@@ -96,9 +96,11 @@ export function UploadPage({ className }: UploadPageProps) {
             // from datastore, grab s3key
             // TODO properly type the store stuff
             const s3Key = (await store.get(relPath)) as any;
+            console.log(s3Key);
             trace("found s3 key");
 
             // then fetch /download/s3/:key path
+            console.log(serverUrl + "/download/s3/" + s3Key);
             const response = await fetch(serverUrl + "/download/s3/" + s3Key);
             const data = await response.json();
             const s3Url = data["s3Url"];
@@ -107,8 +109,8 @@ export function UploadPage({ className }: UploadPageProps) {
             // and download the file
             const result = await invoke("download_s3_file", {
               link: {
-                path: relPath,
-                url: s3Url,
+                relPath: relPath,
+                s3Url: s3Url,
                 key: s3Key,
               },
             });

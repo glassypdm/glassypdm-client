@@ -21,6 +21,12 @@ pub struct DownloadInformation {
   pub relPath: String // likewise as above
 }
 
+#[derive(Clone, Serialize, Deserialize)]
+pub struct FileLink {
+  pub key: String,
+  pub rel_path: String // likewise as above
+}
+
 #[derive(Clone, Serialize)]
 pub struct DownloadStatusPayload {
     pub s3: String,
@@ -41,13 +47,6 @@ pub struct UploadStatusPayload {
 pub struct Change {
     pub file: LocalCADFile,
     pub change: ChangeType
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct S3FileLink {
-    pub path: String,
-    pub url: String,
-    pub key: String
 }
 
 #[derive(Serialize, Deserialize)]

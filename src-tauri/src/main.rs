@@ -17,7 +17,7 @@ use log::{info, trace, error};
 use futures::{stream, StreamExt};
 use crate::sync::{hash_dir, sync_server};
 use crate::settings::{update_server_url, get_server_url, get_project_dir, update_project_dir};
-use crate::types::{S3FileLink, ReqwestError, DownloadFile, DownloadInformation, DownloadStatusPayload, SingleInstancePayload};
+use crate::types::{ReqwestError, DownloadFile, DownloadInformation, DownloadStatusPayload, SingleInstancePayload};
 use crate::upload::{update_upload_list, upload_files};
 
 const CONCURRENT_REQUESTS: usize = 4;
@@ -131,7 +131,7 @@ async fn download_to_cache(download: DownloadInformation, client: &Client, dir: 
 }
 
 #[tauri::command]
-fn copy_from_cache(app_handle: tauri::AppHandle, downloads: Vec<DownloadInformation>, proj_dir: String) -> bool {
+fn copy_all_from_cache(app_handle: tauri::AppHandle, downloads: Vec<DownloadInformation>, proj_dir: String) -> bool {
     let cache_prefix: String = proj_dir.to_owned() + "\\.glassypdm\\";
     for download in downloads {
         let cache_path_str: String = cache_prefix.clone() + &download.key;
@@ -167,10 +167,10 @@ fn clear_cache(proj_dir: &String) -> bool {
 }
 
 #[tauri::command]
-fn download_s3_file(app_handle: tauri::AppHandle, link: S3FileLink) -> bool {
+fn download_s3_file(app_handle: tauri::AppHandle, link: DownloadInformation) -> bool {
     info!("downloading a file");
-    let mut resp = reqwest::blocking::get(link.url).unwrap();
-    let path = get_project_dir(app_handle.clone()) + link.path.as_str();
+    let mut resp = reqwest::blocking::get(link.s3Url).unwrap();
+    let path = get_project_dir(app_handle.clone()) + link.relPath.as_str();
     let p: &Path = std::path::Path::new(&path);
     let prefix = p.parent().unwrap();
     fs::create_dir_all(prefix).unwrap();
@@ -183,7 +183,7 @@ fn download_s3_file(app_handle: tauri::AppHandle, link: S3FileLink) -> bool {
             //panic!("unable to create file object for writing");
         }
     };
-    io::copy(&mut resp, &mut f).expect("Unable to copy data");
+    io::copy(&mut resp, &mut f).expect("Unable to download data");
 
     return true;
 }
@@ -207,7 +207,7 @@ fn main() {
         ]).build())
         .invoke_handler(tauri::generate_handler![
             hash_dir, get_project_dir, update_server_url, upload_files,
-            download_files, sync_server, update_upload_list, copy_from_cache,
+            download_files, sync_server, update_upload_list, copy_all_from_cache,
             get_server_url, download_s3_file, update_project_dir, delete_file])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
