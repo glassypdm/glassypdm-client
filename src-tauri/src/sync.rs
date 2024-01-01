@@ -1,10 +1,11 @@
 use merkle_hash::{bytes_to_hex, Algorithm, MerkleTree, anyhow::Error};
+use tauri::Manager;
 use std::fs::{File, self};
 use std::io::Write;
 use log::{info, trace, error};
-use crate::util::{is_key_in_list, vec_lcf_intersection, vec_lcf_diff};
+use crate::util::{is_key_in_list, vec_lcf_diff};
 use crate::settings::{get_project_dir, get_app_local_data_dir};
-use crate::types::{LocalCADFile, Change, SyncOutput, RemoteFile, ChangeType, TrackedRemoteFile};
+use crate::types::{LocalCADFile, Change, SyncOutput, RemoteFile, ChangeType, TrackedRemoteFile, FileLink};
 
 #[tauri::command]
 pub fn hash_dir(app_handle: tauri::AppHandle, results_path: &str, ignore_list: Vec<String>) {
@@ -114,7 +115,7 @@ pub fn sync_server(app_handle: tauri::AppHandle, remote_files: Vec<RemoteFile>) 
     let conflict: Vec<String> = get_conflicts(&upload, &download, &project_dir);
 
     let output: SyncOutput = SyncOutput {
-        upload: upload, download, conflict
+        upload, download, conflict
     };
 
     return output;
@@ -131,21 +132,20 @@ fn get_uploads(app_handle: &tauri::AppHandle, base_files: &Vec<LocalCADFile>) ->
     let mut output: Vec<Change> = Vec::new();
 
     // if files in base \cap compare differ, they should be uploaded
-    // TODO intersection technically isn't right here, because 
-    // intersection implies that file\in v1 \cap v2 is the same file (hash/path/size) in both sets
-    // but the current implementation means intersection as in only path is the same
-    let intersection: Vec<LocalCADFile> = vec_lcf_intersection(base_files.to_vec(), &compare_files);
-    for file in intersection.clone() {
-        output.push(Change {
-            file: LocalCADFile {
-                path: file.path,
-                size: file.size,
-                hash: file.hash
-            },
-            change: ChangeType::Update
-        })
+    for b_file in base_files {
+        for c_file in compare_files.clone() {
+            if b_file.path == c_file.path && (b_file.hash != c_file.hash || b_file.size != c_file.size) {
+                output.push(Change {
+                    file: LocalCADFile {
+                        path: c_file.path,
+                        size: c_file.size,
+                        hash: c_file.hash
+                    },
+                    change: ChangeType::Update
+                });
+            }
+        }
     }
-    trace!("{} files found in the intersection", intersection.len());
 
     // if files are in base \setminus compare, they should be deleted
     let base_diff: Vec<LocalCADFile> = vec_lcf_diff(base_files.to_vec(), &compare_files);
@@ -208,7 +208,7 @@ fn get_downloads(app_handle: &tauri::AppHandle, base_files: &Vec<LocalCADFile>, 
             if r_file.path == b_path && r_file.size == 0 {
                 found = true;
                 t_file.change = ChangeType::Delete;
-                info!("Detected file to delete: {}", t_file.file.path);
+                info!("Detected file to delete: {}", t_file.clone().file.path);
                 output.push(t_file.clone());
                 break;
             }
@@ -216,11 +216,16 @@ fn get_downloads(app_handle: &tauri::AppHandle, base_files: &Vec<LocalCADFile>, 
                 found = true;
                 t_file.change = ChangeType::Update;
                 output.push(t_file.clone());
-                info!("Detected file to update: {}", t_file.file.path);
+                info!("Detected file to update: {}", t_file.clone().file.path);
                 break;
             }
             else if r_file.path == b_path {
                 found = true;
+                // ensure s3key.dat is up-to-date
+                let _ = match &t_file.file.s3key {
+                    Some(key) => app_handle.emit_all("updateKeyStore", FileLink { rel_path: t_file.clone().file.path, key: key.to_string() }),
+                    None => Ok(())
+                };
             }
         }
 

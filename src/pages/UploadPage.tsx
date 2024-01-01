@@ -97,6 +97,15 @@ export function UploadPage({ className }: UploadPageProps) {
             // TODO properly type the store stuff
             const s3Key = (await store.get(relPath)) as any;
             console.log(s3Key);
+            if (!s3Key) {
+              error(`s3key for ${relPath} is not found in cache.`);
+              toast({
+                title: "Issue resetting a file",
+                description: `Couldn't reset ${relPath}. Try re-syncing.`,
+              });
+              setDisabled(false);
+              return;
+            }
             trace("found s3 key");
 
             // then fetch /download/s3/:key path

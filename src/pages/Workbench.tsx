@@ -15,6 +15,7 @@ import {
 import {
   BASE_COMMIT_FILE,
   COMPARE_JSON_FILE,
+  S3KEY_DAT_FILE,
   cn,
   isClientCurrent,
   updateAppDataFile,
@@ -31,6 +32,8 @@ import { Separator } from "@/components/ui/separator";
 import { open } from "@tauri-apps/api/shell";
 import { useToast } from "@/components/ui/use-toast";
 import { trace, info } from "tauri-plugin-log-api";
+import { listen } from "@tauri-apps/api/event";
+import { Store } from "tauri-plugin-store-api";
 
 interface WorkbenchProps extends React.HTMLAttributes<HTMLDivElement> {}
 
@@ -50,6 +53,9 @@ export function Workbench({ className }: WorkbenchProps) {
   async function getChanges() {
     // time function
     const startTime = performance.now();
+    const dataDir = await appLocalDataDir();
+    const storePath = await resolve(dataDir, S3KEY_DAT_FILE);
+    const store = new Store(storePath);
 
     setLoading(true);
     if (!(await isClientCurrent())) {
@@ -75,13 +81,21 @@ export function Workbench({ className }: WorkbenchProps) {
       const commit: string = remote.commit?.toString() || "0";
       await updateAppDataFile(BASE_COMMIT_FILE, commit);
 
+      const unlistenS3Event = await listen("updateKeyStore", (event: any) => {
+        const data = event.payload;
+        store.set(data.rel_path, data.key);
+      });
+
       const syncStatus: SyncOutput = await invoke("sync_server", {
         remoteFiles: remote.files,
       });
+
+      unlistenS3Event();
       setUpload(syncStatus.upload);
       setDownload(syncStatus.download);
       setConflict(syncStatus.conflict);
       setConflictExists(syncStatus.conflict.length > 0);
+      await store.save();
     } catch (err: any) {
       console.error(err);
     }

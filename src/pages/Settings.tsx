@@ -127,7 +127,8 @@ export function Settings({ className }: SettingsProps) {
                 <AlertDialogTitle>Delete Local App Data</AlertDialogTitle>
                 <AlertDialogDescription>
                   This action cannot be undone. You will need to reconfigure
-                  your client settings.
+                  your client settings, and may need to redownload the project
+                  somewhere else.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

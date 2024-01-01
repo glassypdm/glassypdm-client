@@ -8,7 +8,7 @@ export enum ChangeType {
 export interface CADFile {
   path: string; // TODO confirm this is relative
   commit: number;
-  s3Key: string;
+  s3key: string;
   size: number;
   hash: string;
   change: ChangeType;

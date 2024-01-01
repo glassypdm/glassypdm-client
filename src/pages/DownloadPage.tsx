@@ -71,7 +71,6 @@ export function DownloadPage(props: DownloadPageProps) {
       const output: DownloadStatus = event.payload as DownloadStatus;
       if (output.s3 !== "dne" && output.s3 !== "delete") {
         store.set(output.rel_path, output.s3);
-        store.save();
       } else {
         error(
           `download: got invalid s3 key ${output.s3} for ${output.rel_path}`,
@@ -90,7 +89,7 @@ export function DownloadPage(props: DownloadPageProps) {
       files: selectedDownload,
       serverUrl: serverUrl,
     });
-
+    await store.save();
     console.log("finish downloading");
 
     unlisten();

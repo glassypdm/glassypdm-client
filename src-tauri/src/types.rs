@@ -89,7 +89,7 @@ pub enum ChangeType {
 pub struct RemoteFile {
     pub path: String, // relative
     pub commitid: u64,
-    // pub s3_key: String, // TODO handle this or whatever, probably on frontend. or maybe its fine now since we have default
+    pub s3key: Option<String>,
     pub size: u64,
     pub hash: String,
 }
