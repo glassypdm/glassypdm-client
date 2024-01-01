@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useLoaderData, useNavigate } from "react-router-dom";
 import { RowSelectionState } from "@tanstack/react-table";
 import {
+  BASE_JSON_FILE,
   DOWNLOAD_JSON_FILE,
   S3KEY_DAT_FILE,
   UPLOAD_JSON_FILE,
@@ -126,7 +127,7 @@ export function DownloadPage(props: DownloadPageProps) {
 
     // after download, hash dir to base.json
     const appdata = await appLocalDataDir();
-    const path = await resolve(appdata, "base.json");
+    const path = await resolve(appdata, BASE_JSON_FILE);
     await invoke("hash_dir", { resultsPath: path, ignoreList: ignoreList });
 
     // update toUpload.json

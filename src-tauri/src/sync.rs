@@ -220,6 +220,7 @@ fn get_downloads(app_handle: &tauri::AppHandle, base_files: &Vec<LocalCADFile>, 
                 break;
             }
             else if r_file.path == b_path {
+                // file exists and hasn't been changed
                 found = true;
                 // ensure s3key.dat is up-to-date
                 let _ = match &t_file.file.s3key {
