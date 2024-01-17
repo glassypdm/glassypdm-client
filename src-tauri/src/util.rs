@@ -1,10 +1,12 @@
 use merkle_hash::{bytes_to_hex, Algorithm, MerkleTree};
+use tauri::Runtime;
 use std::fs::{File, self};
+use serde_json::{json, Value, from_value};
 use tauri_plugin_store::StoreBuilder;
 use std::io::Read;
 use log::{info, trace, error};
 use std::path::PathBuf;
-use crate::types::LocalCADFile;
+use crate::{types::LocalCADFile, settings::{get_project_dir, get_app_local_data_dir}};
 
 pub fn pathbuf_to_string(path: PathBuf) -> String {
     let output: String = path.into_os_string().into_string().unwrap();
@@ -29,7 +31,16 @@ pub fn get_file_as_byte_vec(filename: &String) -> Vec<u8> {
     buffer
 }
 
-// TODO generalize
+pub fn store_to_vec<'a>(iter: impl Iterator<Item = &'a Value>) -> Vec<LocalCADFile> {
+    let mut output: Vec<LocalCADFile> = Vec::new();
+
+    for val in iter {
+        output.push(from_value(val.clone()).unwrap());
+    }
+    return output;
+}
+
+// TODO generalize (or find the rust way to do this, lol)
 // i.e., LocalCADFile should implement some equal thing
 // v1 - v2
 pub fn vec_lcf_diff(v1: Vec<LocalCADFile>, v2: &Vec<LocalCADFile>) -> Vec<LocalCADFile> {
@@ -71,9 +82,12 @@ pub fn hash_file(file_abs_path: &str) -> LocalCADFile {
     return output;
 }
 
-pub fn upsert_into_base_store(app_handle: tauri::AppHandle, file: LocalCADFile, base_path: &str) -> bool {
+pub fn upsert_into_base_store(app_handle: tauri::AppHandle, file: LocalCADFile) -> bool {
     trace!("upserting into base.dat...");
-    let mut store = StoreBuilder::new(app_handle, base_path.parse().unwrap()).build();
+    let mut base_path = get_app_local_data_dir(&app_handle);
+    base_path.push("base.dat");
+    let mut store = StoreBuilder::new(app_handle, base_path).build();
+    let _ = store.load();
     match store.insert(file.clone().path, json!(file)) {
         Ok(()) => {},
         Err(e) => {error!("encountered error {}", e); return false;}
@@ -88,11 +102,15 @@ pub fn upsert_into_base_store(app_handle: tauri::AppHandle, file: LocalCADFile, 
     return true;
 }
 
-pub fn delete_from_base_store(app_handle: tauri::AppHandle, file: LocalCADFile, base_path: &str) -> bool {
+pub fn delete_from_base_store(app_handle: tauri::AppHandle, rel_path: &str) -> bool {
     trace!("deleting from base.dat...");
-    let mut store = StoreBuilder::new(app_handle, base_path.parse().unwrap()).build();
+    let mut base_path = get_app_local_data_dir(&app_handle);
+    base_path.push("base.dat");
+    let abs_path = get_project_dir(app_handle.clone()) + rel_path;
+    let mut store = StoreBuilder::new(app_handle, base_path).build();
+    let _ = store.load();
     let mut output = true;
-    match store.delete(file.path) {
+    match store.delete(abs_path) {
         Ok(res) => {output = res},
         Err(e) => {error!("encountered error {}", e); return false;}
     };

@@ -47,7 +47,7 @@ pub fn update_project_dir(app_handle: tauri::AppHandle, dir: PathBuf) {
     let _ = fs::write(path, pathbuf_to_string(dir));
 
     // update base.json
-    path = appdir.join("base.json");
+    path = appdir.join("base.dat");
     //let _ = fs::write(path, "[]");
     hash_dir(app_handle, &pathbuf_to_string(path), Vec::new());
 }

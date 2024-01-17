@@ -1,47 +1,43 @@
 use merkle_hash::{bytes_to_hex, Algorithm, MerkleTree, anyhow::Error};
 use tauri::Manager;
+use tauri_plugin_store::StoreBuilder;
+use serde_json::json;
 use std::fs::{File, self};
 use std::io::Write;
 use log::{info, trace, error};
-use crate::util::{is_key_in_list, vec_lcf_diff};
+use crate::util::{is_key_in_list, vec_lcf_diff, store_to_vec};
 use crate::settings::{get_project_dir, get_app_local_data_dir};
 use crate::types::{LocalCADFile, Change, SyncOutput, RemoteFile, ChangeType, TrackedRemoteFile, FileLink};
 
 #[tauri::command]
 pub fn hash_dir(app_handle: tauri::AppHandle, results_path: &str, ignore_list: Vec<String>) {
     trace!("hashing project directory");
-    let path: String = get_project_dir(app_handle);
+    let path: String = get_project_dir(app_handle.clone());
     if path == "no lol" {
         error!("hashing failed; invalid project directory");
         return;
     }
-    
+    let mut store = StoreBuilder::new(app_handle, results_path.parse().unwrap()).build();
+    let _ = store.clear().unwrap();
+
     let mut files: Vec<LocalCADFile> = Vec::new();
 
     info!("ignoring {} files", ignore_list.len());
     // first, handle ignorelist
-    let base_data: String = match fs::read_to_string(results_path) {
-        Ok(content) => content,
-        Err(_error) => "bruh".to_string(),
-    };
-    if base_data != "bruh" {
-        let base_json: Vec<LocalCADFile> = serde_json::from_str(&base_data).expect("base.json not formatted");
-        for ignored_file in &ignore_list {
-            info!("ignoring file {}", ignored_file);
-            for file in &base_json {
-                if file.path == ignored_file.clone() {
-                    let output: LocalCADFile = LocalCADFile {
-                        path: ignored_file.clone(),
-                        size: file.size,
-                        hash: file.hash.clone()
-                    };
-                    files.push(output);
-                }
+    let base_json: Vec<LocalCADFile> = store_to_vec(store.values());
+    for ignored_file in &ignore_list {
+        info!("ignoring file {}", ignored_file);
+        for file in &base_json {
+            if file.path == ignored_file.clone() {
+                let output: LocalCADFile = LocalCADFile {
+                    path: ignored_file.clone(),
+                    size: file.size,
+                    hash: file.hash.clone()
+                };
+                let _ = store.insert(ignored_file.clone(), json!(output));
+                files.push(output);
             }
         }
-    }
-    else {
-        error!("base.json DNE");
     }
 
     // build hash
@@ -81,16 +77,18 @@ pub fn hash_dir(app_handle: tauri::AppHandle, results_path: &str, ignore_list: V
             //println!("{}: {}", pathbuf, s_hash);
             let file = LocalCADFile {
                 hash: s_hash,
-                path: pathbuf,
+                path: pathbuf.clone(),
                 size: filesize,
             };
+            let _ = store.insert(pathbuf, json!(file));
             files.push(file);
         }
 
-        let json = serde_json::to_string(&files)?;
+        //let json = serde_json::to_string(&files)?;
 
-        let mut file = File::create(results_path)?;
-        file.write_all(json.as_bytes())?;
+        //let mut file = File::create(results_path)?;
+        //file.write_all(json.as_bytes())?;
+        let _ = store.save();
         Ok(())
     };
     let _ = do_steps();
@@ -105,9 +103,12 @@ pub fn sync_server(app_handle: tauri::AppHandle, remote_files: Vec<RemoteFile>) 
 
     // read in base.json
     let mut base_path = get_app_local_data_dir(&app_handle);
-    base_path.push("base.json");
-    let base_str = fs::read_to_string(base_path).unwrap();
-    let base_files: Vec<LocalCADFile> = serde_json::from_str(&base_str).unwrap();
+    base_path.push("base.dat");
+    //let base_str = fs::read_to_string(base_path).unwrap();
+    //let base_files: Vec<LocalCADFile> = serde_json::from_str(&base_str).unwrap();
+    let mut store = StoreBuilder::new(app_handle.clone(), base_path).build();
+    let _ = store.load();
+    let base_files = store_to_vec(store.values());
 
     // do comparisons
     let upload: Vec<Change> = get_uploads(&app_handle, &base_files);
@@ -124,9 +125,11 @@ pub fn sync_server(app_handle: tauri::AppHandle, remote_files: Vec<RemoteFile>) 
 fn get_uploads(app_handle: &tauri::AppHandle, base_files: &Vec<LocalCADFile>) -> Vec<Change> {
     // read in compare.json
     let mut compare_path = get_app_local_data_dir(&app_handle);
-    compare_path.push("compare.json");
-    let compare_str = fs::read_to_string(compare_path).unwrap();
-    let compare_files: Vec<LocalCADFile> = serde_json::from_str(&compare_str).unwrap();
+    compare_path.push("compare.dat");
+    let mut store = StoreBuilder::new(app_handle.clone(), compare_path).build();
+    let _ = store.load();
+    //let compare_str = fs::read_to_string(compare_path).unwrap();
+    let compare_files: Vec<LocalCADFile> = store_to_vec(store.values());
 
     // populate upload list
     let mut output: Vec<Change> = Vec::new();

@@ -7,6 +7,7 @@ use log::{info, trace, error};
 use futures::{stream, StreamExt};
 use crate::settings::get_project_dir;
 use crate::types::{ReqwestError, DownloadFile, DownloadInformation, DownloadStatusPayload};
+use crate::util::{delete_from_base_store, upsert_into_base_store, hash_file};
 
 
 const CONCURRENT_REQUESTS: usize = 4;
@@ -55,7 +56,7 @@ pub async fn download_files(app_handle: tauri::AppHandle, files: Vec<DownloadFil
                 Ok(b) => {
                     key = b.key.to_string();
                     rel_path = b.relPath.to_string();
-                    let _ = download_with_client(b, &aws_client, &project_dir).await;
+                    let _ = download_with_client(handle, b, &aws_client, &project_dir).await;
                 }
                 Err(e) => error!("Got an error: {}", e),
             }
@@ -67,8 +68,8 @@ pub async fn download_files(app_handle: tauri::AppHandle, files: Vec<DownloadFil
         }).await;
     
     for file in to_delete {
-        delete_file(app_handle.clone(), file.rel_path);
-
+        delete_file(app_handle.clone(), file.rel_path.clone());
+        delete_from_base_store(app_handle.clone(), &file.rel_path);
         app_handle.emit_all("downloadStatus", DownloadStatusPayload {
             s3: "delete".to_string(),
             rel_path: "delete".to_string()
@@ -78,7 +79,7 @@ pub async fn download_files(app_handle: tauri::AppHandle, files: Vec<DownloadFil
     Ok(())
 }
 
-async fn download_with_client(download: DownloadInformation, client: &Client, dir: &String) -> Result<(), ReqwestError> {
+async fn download_with_client(app_handle: &tauri::AppHandle, download: DownloadInformation, client: &Client, dir: &String) -> Result<(), ReqwestError> {
     let resp = client
         .get(download.s3Url)
         .send()
@@ -95,6 +96,8 @@ async fn download_with_client(download: DownloadInformation, client: &Client, di
     // create file
     let mut f = File::create(&abs_path).expect("Unable to create file");
     io::copy(&mut &resp[..], &mut f).expect("Unable to copy data");
+
+    upsert_into_base_store(app_handle.clone(), hash_file(&abs_path));
     Ok(())
 }
 

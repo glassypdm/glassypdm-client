@@ -30,9 +30,9 @@ export async function deleteFileIfExist(filename: string) {
   }
 }
 
-export let BASE_JSON_FILE: string = "base.json";
+export let BASE_JSON_FILE: string = "base.dat";
 export let BASE_COMMIT_FILE: string = "basecommit.txt";
-export let COMPARE_JSON_FILE: string = "compare.json";
+export let COMPARE_JSON_FILE: string = "compare.dat";
 export let PROJECT_DIR_FILE: string = "project_dir.txt";
 export let S3KEY_DAT_FILE: string = "s3key.dat";
 export let SERVER_URL_FILE: string = "server_url.txt";

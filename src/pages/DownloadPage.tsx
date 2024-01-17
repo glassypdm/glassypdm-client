@@ -124,10 +124,11 @@ export function DownloadPage(props: DownloadPageProps) {
       }
     }
 
+    // TODO: this should not be necessary anymore because we hash while we download
     // after download, hash dir to base.json
-    const appdata = await appLocalDataDir();
-    const path = await resolve(appdata, BASE_JSON_FILE);
-    await invoke("hash_dir", { resultsPath: path, ignoreList: ignoreList });
+    //const appdata = await appLocalDataDir();
+    //const path = await resolve(appdata, BASE_JSON_FILE);
+    //await invoke("hash_dir", { resultsPath: path, ignoreList: ignoreList });
 
     // update toUpload.json
     await updateAppDataFile(UPLOAD_JSON_FILE, JSON.stringify(newUploadList));
