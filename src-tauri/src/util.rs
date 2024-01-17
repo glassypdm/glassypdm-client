@@ -1,7 +1,8 @@
-use merkle_hash::{bytes_to_hex, Algorithm, MerkleTree, anyhow::Error};
-use tauri::api::file;
+use merkle_hash::{bytes_to_hex, Algorithm, MerkleTree};
 use std::fs::{File, self};
+use tauri_plugin_store::StoreBuilder;
 use std::io::Read;
+use log::{info, trace, error};
 use std::path::PathBuf;
 use crate::types::LocalCADFile;
 
@@ -66,6 +67,40 @@ pub fn hash_file(file_abs_path: &str) -> LocalCADFile {
         path: file_abs_path.to_string(),
         size: file_size,
         hash: bytes_to_hex(tree.root.item.hash)
+    };
+    return output;
+}
+
+pub fn upsert_into_base_store(app_handle: tauri::AppHandle, file: LocalCADFile, base_path: &str) -> bool {
+    trace!("upserting into base.dat...");
+    let mut store = StoreBuilder::new(app_handle, base_path.parse().unwrap()).build();
+    match store.insert(file.clone().path, json!(file)) {
+        Ok(()) => {},
+        Err(e) => {error!("encountered error {}", e); return false;}
+    };
+
+    let res = store.save();
+    match res {
+        Ok(()) => {},
+        Err(e) => {error!("encountered error {}", e); return false;}
+    };
+
+    return true;
+}
+
+pub fn delete_from_base_store(app_handle: tauri::AppHandle, file: LocalCADFile, base_path: &str) -> bool {
+    trace!("deleting from base.dat...");
+    let mut store = StoreBuilder::new(app_handle, base_path.parse().unwrap()).build();
+    let mut output = true;
+    match store.delete(file.path) {
+        Ok(res) => {output = res},
+        Err(e) => {error!("encountered error {}", e); return false;}
+    };
+
+    let res = store.save();
+    match res {
+        Ok(()) => {},
+        Err(e) => {error!("encountered error {}", e); return false;}
     };
     return output;
 }
