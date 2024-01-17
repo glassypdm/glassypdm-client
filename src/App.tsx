@@ -95,7 +95,7 @@ export default function App() {
 
 function Layout() {
   return (
-    <div className="grid grid-cols-4 grid-flow-row gap-4 h-full">
+    <div className="grid grid-cols-4 grid-flow-row gap-1 h-full">
       <Sidebar className="row-span-1" />
       <Outlet />
     </div>

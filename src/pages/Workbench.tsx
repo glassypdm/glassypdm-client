@@ -174,33 +174,39 @@ export function Workbench({ className }: WorkbenchProps) {
         </DialogContent>
       </Dialog>
       <h1 className="text-2xl">SDM-24</h1>
-      <div className="space-x-4">
-        <Button
-          onClick={navigateDownload}
-          disabled={download.length === 0 ? true : false}
-        >
-          {download.length === 0
-            ? "Up to date"
-            : download.length + " files ready to download"}
-        </Button>
-        <Button onClick={getChanges} disabled={loading}>
+      <div className="grid grid-cols-3 gap-6 p-4 h-48">
+        <div className="flex flex-col gap-4">
+          <Button
+            className="grow"
+            onClick={navigateDownload}
+            disabled={download.length === 0 ? true : false}
+          >
+            {download.length === 0
+              ? "Up to date"
+              : download.length + " files ready to download"}
+          </Button>
+          <Button className="" onClick={openWebsite} variant="outline">
+            Open Website
+          </Button>
+        </div>
+        <Button className="flex h-full" onClick={getChanges} disabled={loading}>
           {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Sync"}
         </Button>
-        <Button
-          onClick={navigateUpload}
-          disabled={upload.length === 0 ? true : false}
-        >
-          {upload.length === 0
-            ? "Up to date"
-            : upload.length + " files ready for upload"}
-        </Button>
+        <div className="flex flex-col gap-4">
+          <Button
+            className="grow"
+            onClick={navigateUpload}
+            disabled={upload.length === 0 ? true : false}
+          >
+            {upload.length === 0
+              ? "Up to date"
+              : upload.length + " files ready for upload"}
+          </Button>
+          <Button className="" onClick={openFolder} variant="outline">
+            Open Project Folder
+          </Button>
+        </div>
       </div>
-      <Button className="my-4" onClick={openFolder}>
-        Open Project Folder
-      </Button>
-      <Button className="m-4" onClick={openWebsite}>
-        Open Website
-      </Button>
     </div>
   );
 }
