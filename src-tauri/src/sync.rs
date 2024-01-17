@@ -1,5 +1,7 @@
 use merkle_hash::{bytes_to_hex, Algorithm, MerkleTree, anyhow::Error};
 use tauri::Manager;
+use tauri_plugin_store::StoreBuilder;
+use serde_json::json;
 use std::fs::{File, self};
 use std::io::Write;
 use log::{info, trace, error};
@@ -269,4 +271,22 @@ fn get_conflicts(upload: &Vec<Change>, download: &Vec<TrackedRemoteFile>, projec
 
     info!("{} conflicting files", output.len());
     return output;
+}
+
+
+pub fn upsert_base_store(app_handle: tauri::AppHandle, file: LocalCADFile, base_path: &str) -> bool {
+    trace!("upserting into base.dat...");
+    let mut store = StoreBuilder::new(app_handle, base_path.parse().unwrap()).build();
+    match store.insert(file.clone().path, json!(file)) {
+        Ok(()) => {},
+        Err(e) => {error!("encountered error {}", e); return false;}
+    };
+
+    let res = store.save();
+    match res {
+        Ok(()) => {},
+        Err(e) => {error!("encountered error {}", e); return false;}
+    };
+
+    return true;
 }

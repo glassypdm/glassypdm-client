@@ -20,7 +20,6 @@ import {
   Change,
   DownloadFile,
   DownloadStatus,
-  LocalCADFile,
   TrackedRemoteFile,
 } from "@/lib/types";
 import { readTextFile } from "@tauri-apps/api/fs";

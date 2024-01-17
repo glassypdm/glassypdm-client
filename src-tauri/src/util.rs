@@ -1,3 +1,5 @@
+use merkle_hash::{bytes_to_hex, Algorithm, MerkleTree, anyhow::Error};
+use tauri::api::file;
 use std::fs::{File, self};
 use std::io::Read;
 use std::path::PathBuf;
@@ -46,5 +48,24 @@ pub fn vec_lcf_diff(v1: Vec<LocalCADFile>, v2: &Vec<LocalCADFile>) -> Vec<LocalC
         }
     }
 
+    return output;
+}
+
+// hash a specific file
+pub fn hash_file(file_abs_path: &str) -> LocalCADFile {
+    let tree = MerkleTree::builder(file_abs_path)
+    .algorithm(Algorithm::Blake3)
+    .hash_names(true)
+    .build().unwrap();
+
+    let metadata = std::fs::metadata(file_abs_path).unwrap();
+    let file_size = metadata.len();
+    
+    // return object with size and hash (and path)
+    let output: LocalCADFile = LocalCADFile {
+        path: file_abs_path.to_string(),
+        size: file_size,
+        hash: bytes_to_hex(tree.root.item.hash)
+    };
     return output;
 }
