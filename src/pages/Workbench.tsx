@@ -42,7 +42,8 @@ export function Workbench({ className }: WorkbenchProps) {
     useLoaderData() as WorkbenchLoaderProps;
   const [upload, setUpload] = useState<Change[]>(loaderData.toUpload);
   const [download, setDownload] = useState<CADFile[]>(loaderData.toDownload);
-  const [loading, setLoading] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [initial, setInitial] = useState(false);
   const [conflict, setConflict] = useState<string[]>(loaderData.conflict);
   const [conflictExists, setConflictExists] = useState(
     loaderData.conflict.length > 0,
@@ -57,9 +58,9 @@ export function Workbench({ className }: WorkbenchProps) {
     const storePath = await resolve(dataDir, S3KEY_DAT_FILE);
     const store = new Store(storePath);
 
-    setLoading(true);
+    setSyncing(true);
     if (!(await isClientCurrent())) {
-      setLoading(false);
+      setSyncing(false);
       toast({
         title: "New glassyPDM version available!",
         description: "Talk to your team lead for the new installer.",
@@ -110,7 +111,7 @@ export function Workbench({ className }: WorkbenchProps) {
     });
     info(`Sync took ${delta} milliseconds`);
     trace("Sync action complete");
-    setLoading(false);
+    setSyncing(false);
   }
 
   async function openFolder() {
@@ -189,8 +190,8 @@ export function Workbench({ className }: WorkbenchProps) {
             Open Website
           </Button>
         </div>
-        <Button className="flex h-full" onClick={getChanges} disabled={loading}>
-          {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Sync"}
+        <Button className="flex h-full" onClick={getChanges} disabled={syncing}>
+          {syncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Sync"}
         </Button>
         <div className="flex flex-col gap-4">
           <Button

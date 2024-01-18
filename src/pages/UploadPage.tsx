@@ -230,7 +230,7 @@ export function UploadPage({ className }: UploadPageProps) {
         files: toUpload,
       });
 
-      info("finished uploading files");
+      info(`finished uploading ${toUpload.length} files`);
 
       // update toUpload.json
       let initUpload: Change[] = await invoke("update_upload_list", {
@@ -243,11 +243,7 @@ export function UploadPage({ className }: UploadPageProps) {
         ignoreList.push(initUpload[i].file.path);
       }
 
-      // afterwards update base.json and basecommit.txt
-      //const appdata = await appLocalDataDir();
-      //const path = await resolve(appdata, BASE_JSON_FILE);
-      //await invoke("hash_dir", { resultsPath: path, ignoreList: ignoreList });
-
+      // afterwards basecommit.txt
       await updateAppDataFile(BASE_COMMIT_FILE, newCommit.toString());
 
       unlisten();

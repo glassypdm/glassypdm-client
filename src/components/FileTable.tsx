@@ -41,7 +41,7 @@ export function FileTable<TData, TValue>({
 
   return (
     <div className="rounded-md border">
-      <ScrollArea className="h-[25rem]">
+      <ScrollArea className="h-96">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (

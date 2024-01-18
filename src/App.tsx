@@ -59,21 +59,17 @@ const router = createHashRouter([
         path: "/about",
         element: <About className="col-span-3" />,
       },
-      {
-        path: "/download",
-        element: (
-          <DownloadPage className="absolute col-span-4 z-10 bg-slate-950" />
-        ),
-        loader: downloadPageLoader,
-      },
-      {
-        path: "/upload",
-        element: (
-          <UploadPage className="absolute col-span-4 z-10 bg-slate-950 w-full" />
-        ),
-        loader: uploadPageLoader,
-      },
     ],
+  },
+  {
+    path: "/download",
+    element: <DownloadPage className="" />,
+    loader: downloadPageLoader,
+  },
+  {
+    path: "/upload",
+    element: <UploadPage className="" />,
+    loader: uploadPageLoader,
   },
 ]);
 

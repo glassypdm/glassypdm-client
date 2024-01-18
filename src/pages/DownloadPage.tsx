@@ -161,7 +161,9 @@ export function DownloadPage(props: DownloadPageProps) {
     toast({
       title: `Download took ${delta} milliseconds to complete`,
     });
-    info(`Download took ${delta} milliseconds`);
+    info(
+      `Downloading ${selectedDownload.length} files took ${delta} milliseconds`,
+    );
     setDescription("Complete!");
   }
 
