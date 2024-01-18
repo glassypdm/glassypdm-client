@@ -7,7 +7,7 @@ use reqwest::{Client, Response};
 use reqwest::multipart::*;
 use crate::settings::{get_app_local_data_dir, get_project_dir};
 use crate::types::{UploadStatusPayload, Change, FileUploadStatus, ReqwestError};
-use crate::util::get_file_as_byte_vec;
+use crate::util::{get_file_as_byte_vec, upsert_into_base_store, delete_from_base_store};
 
 #[tauri::command]
 pub async fn upload_files(app_handle: tauri::AppHandle, files: Vec<Change>, commit: u64, server_url: String) -> Result<(), ReqwestError> {
@@ -19,7 +19,7 @@ pub async fn upload_files(app_handle: tauri::AppHandle, files: Vec<Change>, comm
     let mut uploaded: u32 = 0;
     for change in files {
         let file = change.file;
-        let path: String = file.path;
+        let path: String = file.path.clone();
         let rel_path = path.replace(&project_dir, "");
 
         // create request
@@ -29,7 +29,7 @@ pub async fn upload_files(app_handle: tauri::AppHandle, files: Vec<Change>, comm
         .text("path", rel_path.clone())
         .text("size", file.size.to_string())
         .text("change", (change.change as u64).to_string())
-        .text("hash", file.hash);
+        .text("hash", file.hash.clone());
         // TODO consider using file.change instead of file.file.size to see if we delete the file
         if file.size != 0 {
             let content: Vec<u8> = get_file_as_byte_vec(&path);
@@ -47,6 +47,13 @@ pub async fn upload_files(app_handle: tauri::AppHandle, files: Vec<Change>, comm
         let mut s3 = "oops".to_string();
         if data.result {
             s3 = data.s3key;
+        }
+
+        // update hash
+        if file.size != 0 {
+            upsert_into_base_store(app_handle.clone(), file);
+        } else {
+            delete_from_base_store(app_handle.clone(), &rel_path);
         }
 
         // emit status event

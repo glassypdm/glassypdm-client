@@ -244,9 +244,9 @@ export function UploadPage({ className }: UploadPageProps) {
       }
 
       // afterwards update base.json and basecommit.txt
-      const appdata = await appLocalDataDir();
-      const path = await resolve(appdata, BASE_JSON_FILE);
-      await invoke("hash_dir", { resultsPath: path, ignoreList: ignoreList });
+      //const appdata = await appLocalDataDir();
+      //const path = await resolve(appdata, BASE_JSON_FILE);
+      //await invoke("hash_dir", { resultsPath: path, ignoreList: ignoreList });
 
       await updateAppDataFile(BASE_COMMIT_FILE, newCommit.toString());
 

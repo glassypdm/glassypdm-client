@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useLoaderData, useNavigate } from "react-router-dom";
 import { RowSelectionState } from "@tanstack/react-table";
 import {
-  BASE_JSON_FILE,
   DOWNLOAD_JSON_FILE,
   S3KEY_DAT_FILE,
   UPLOAD_JSON_FILE,
