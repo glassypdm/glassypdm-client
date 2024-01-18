@@ -43,7 +43,6 @@ export function Workbench({ className }: WorkbenchProps) {
   const [upload, setUpload] = useState<Change[]>(loaderData.toUpload);
   const [download, setDownload] = useState<CADFile[]>(loaderData.toDownload);
   const [syncing, setSyncing] = useState(false);
-  const [initial, setInitial] = useState(false);
   const [conflict, setConflict] = useState<string[]>(loaderData.conflict);
   const [conflictExists, setConflictExists] = useState(
     loaderData.conflict.length > 0,
