@@ -80,65 +80,57 @@ export function UploadPage({ className }: UploadPageProps) {
     console.log(toUpload);
     if (action === "Reset") {
       info("resetting files");
-      // if file is not in base.json, then we just need to delete the file
-      // otherwise, get the s3 url from the server and download the file
-      const baseStr = await readTextFile(BASE_DAT_FILE, {
-        dir: BaseDirectory.AppLocalData,
-      });
-      const base: CADFile[] = JSON.parse(baseStr);
       for (let i = 0; i < toUpload.length; i++) {
         const relPath: string = toUpload[i].file.path.replace(projDir, "");
-        let found: boolean = false;
-        for (let j = 0; j < base.length; j++) {
-          if (base[j].path === toUpload[i].file.path) {
-            info("resetting" + relPath);
-            found = true;
-            // from datastore, grab s3key
-            // TODO properly type the store stuff
-            const s3Key = (await store.get(relPath)) as any;
-            console.log(s3Key);
-            if (!s3Key) {
-              error(`s3key for ${relPath} is not found in cache.`);
-              toast({
-                title: "Issue resetting a file",
-                description: `Couldn't reset ${relPath}. Try re-syncing.`,
-              });
-              setDisabled(false);
-              return;
-            }
-            trace("found s3 key");
+        if (
+          (await invoke("is_file_in_base", {
+            absPath: toUpload[i].file.path,
+          })) as boolean
+        ) {
+          info("resetting" + relPath);
 
-            // then fetch /download/s3/:key path
-            console.log(serverUrl + "/download/s3/" + s3Key);
-            const response = await fetch(serverUrl + "/download/s3/" + s3Key);
-            const data = await response.json();
-            const s3Url = data["s3Url"];
-            trace("found s3 url");
-
-            // and download the file
-            const result = await invoke("download_s3_file", {
-              link: {
-                relPath: relPath,
-                s3Url: s3Url,
-                key: s3Key,
-              },
+          // from datastore, grab s3key
+          // TODO properly type the store stuff
+          const s3Key = (await store.get(relPath)) as any;
+          console.log(s3Key);
+          if (!s3Key) {
+            error(`s3key for ${relPath} is not found in cache.`);
+            toast({
+              title: "Issue resetting a file",
+              description: `Couldn't reset ${relPath}. Try re-syncing.`,
             });
-            if (!result) {
-              error("couldn't download previous revision");
-              toast({
-                title: "Error encountered",
-                description:
-                  "Couldn't reset file. Try exiting any programs that have opened your file and try again.",
-              });
-              setDisabled(false);
-              return;
-            }
-            info("downloaded previous revision");
-            break;
+            setDisabled(false);
+            return;
           }
-        }
+          trace("found s3 key");
 
-        if (!found) {
+          // then fetch /download/s3/:key path
+          console.log(serverUrl + "/download/s3/" + s3Key);
+          const response = await fetch(serverUrl + "/download/s3/" + s3Key);
+          const data = await response.json();
+          const s3Url = data["s3Url"];
+          trace("found s3 url");
+
+          // and download the file
+          const result = await invoke("download_s3_file", {
+            link: {
+              relPath: relPath,
+              s3Url: s3Url,
+              key: s3Key,
+            },
+          });
+          if (!result) {
+            error("couldn't download previous revision");
+            toast({
+              title: "Error encountered",
+              description:
+                "Couldn't reset file. Try exiting any programs that have opened your file and try again.",
+            });
+            setDisabled(false);
+            return;
+          }
+          info("downloaded previous revision");
+        } else {
           // delete file
           info(`deleting file ${toUpload[i].file.path}`);
           await invoke("delete_file", { file: relPath });

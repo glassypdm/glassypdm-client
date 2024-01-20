@@ -5,6 +5,7 @@ use log::{error, info};
 use tauri::Manager;
 use reqwest::{Client, Response};
 use reqwest::multipart::*;
+use tauri_plugin_store::StoreBuilder;
 use crate::settings::{get_app_local_data_dir, get_project_dir};
 use crate::types::{UploadStatusPayload, Change, FileUploadStatus, ReqwestError};
 use crate::util::{get_file_as_byte_vec, upsert_into_base_store, delete_from_base_store};
@@ -99,4 +100,14 @@ pub fn update_upload_list(app_handle: tauri::AppHandle, changes: Vec<Change>) ->
 
     info!("toUpload.json updated");
     return upload_list;
+}
+
+#[tauri::command]
+pub fn is_file_in_base(app_handle: tauri::AppHandle, abs_path: String) -> bool {
+    let mut base_path = get_app_local_data_dir(&app_handle);
+    base_path.push("base.dat");
+    let mut store = StoreBuilder::new(app_handle.clone(), base_path).build();
+    let _ = store.load();
+
+    return store.has(abs_path);
 }

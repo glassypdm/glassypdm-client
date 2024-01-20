@@ -13,7 +13,7 @@ use tauri_plugin_log::LogTarget;
 use crate::sync::{hash_dir, sync_server};
 use crate::settings::{update_server_url, get_server_url, get_project_dir, update_project_dir};
 use crate::types::SingleInstancePayload;
-use crate::upload::{update_upload_list, upload_files};
+use crate::upload::{update_upload_list, upload_files, is_file_in_base};
 use crate::download::{download_s3_file, download_files, delete_file};
 
 
@@ -31,7 +31,7 @@ fn main() {
         ]).build())
         .invoke_handler(tauri::generate_handler![
             hash_dir, get_project_dir, update_server_url, upload_files,
-            download_files, sync_server, update_upload_list,
+            download_files, sync_server, update_upload_list, is_file_in_base,
             get_server_url, download_s3_file, update_project_dir, delete_file])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
