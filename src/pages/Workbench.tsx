@@ -31,7 +31,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { open } from "@tauri-apps/api/shell";
 import { useToast } from "@/components/ui/use-toast";
-import { trace, info } from "tauri-plugin-log-api";
+import { trace, info, error } from "tauri-plugin-log-api";
 import { listen } from "@tauri-apps/api/event";
 import { Store } from "tauri-plugin-store-api";
 
@@ -99,6 +99,7 @@ export function Workbench({ className }: WorkbenchProps) {
       setConflictExists(syncStatus.conflict.length > 0);
       await store.save();
     } catch (err: any) {
+      error(`received error while syncing: ${err}`);
       console.error(err);
     }
 
