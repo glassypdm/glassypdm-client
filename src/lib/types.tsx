@@ -50,7 +50,7 @@ export interface CADFileColumn {
 }
 
 export interface WorkbenchLoaderProps {
-  toDownload: CADFile[];
+  toDownload: TrackedRemoteFile[];
   toUpload: Change[];
   conflict: string[];
 }
@@ -74,7 +74,7 @@ export interface PermissionDashboardProps {
 
 export interface SyncOutput {
   upload: Change[];
-  download: CADFile[];
+  download: TrackedRemoteFile[];
   conflict: string[];
 }
 

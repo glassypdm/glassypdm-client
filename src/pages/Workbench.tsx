@@ -7,7 +7,7 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Change,
-  CADFile,
+  TrackedRemoteFile,
   ProjectState,
   WorkbenchLoaderProps,
   SyncOutput,
@@ -41,7 +41,9 @@ export function Workbench({ className }: WorkbenchProps) {
   const loaderData: WorkbenchLoaderProps =
     useLoaderData() as WorkbenchLoaderProps;
   const [upload, setUpload] = useState<Change[]>(loaderData.toUpload);
-  const [download, setDownload] = useState<CADFile[]>(loaderData.toDownload);
+  const [download, setDownload] = useState<TrackedRemoteFile[]>(
+    loaderData.toDownload,
+  );
   const [syncing, setSyncing] = useState(false);
   const [conflict, setConflict] = useState<string[]>(loaderData.conflict);
   const [conflictExists, setConflictExists] = useState(
@@ -75,7 +77,6 @@ export function Workbench({ className }: WorkbenchProps) {
     try {
       const data = await fetch(serverUrl + "/info/project");
       const remote: ProjectState = await data.json();
-      console.log(remote.files);
 
       // write remote commit into some file
       const commit: string = remote.commit?.toString() || "0";
@@ -86,9 +87,15 @@ export function Workbench({ className }: WorkbenchProps) {
         store.set(data.rel_path, data.key);
       });
 
-      const syncStatus: SyncOutput = await invoke("sync_server", {
+      let syncStatus: SyncOutput = await invoke("sync_server", {
         remoteFiles: remote.files,
       });
+      /*
+      for(let i = 0; i < syncStatus.download.length; i++) {
+        console.log(syncStatus.download[i].file.path)
+        syncStatus.conflict.push(syncStatus.download[i].file.path as string);
+      }
+      */
 
       unlistenS3Event();
       setUpload(syncStatus.upload);
