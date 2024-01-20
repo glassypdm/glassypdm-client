@@ -1,5 +1,3 @@
-"use client";
-
 import { ColumnDef, RowSelectionState } from "@tanstack/react-table";
 import {
   CADFileColumn,
