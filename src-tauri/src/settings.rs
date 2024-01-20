@@ -31,7 +31,7 @@ pub fn get_server_url(app_handle: tauri::AppHandle) -> String {
 #[tauri::command]
 pub fn get_project_dir(app_handle: tauri::AppHandle) -> String {
     let appdir = get_app_local_data_dir(&app_handle);
-    let path = appdir.join("project_dir.txt");
+    let path = appdir.join("project_dir.benji");
     let output: String = match fs::read_to_string(path) {
         Ok(contents) => return contents,
         Err(_err) => "no project directory set".to_string(),
@@ -43,10 +43,10 @@ pub fn get_project_dir(app_handle: tauri::AppHandle) -> String {
 pub fn update_project_dir(app_handle: tauri::AppHandle, dir: PathBuf) {
     info!("Updating project directory");
     let appdir = get_app_local_data_dir(&app_handle);
-    let mut path = appdir.join("project_dir.txt");
+    let mut path = appdir.join("project_dir.benji");
     let _ = fs::write(path, pathbuf_to_string(dir));
 
-    // update base.json
+    // update base.dat
     path = appdir.join("base.dat");
     //let _ = fs::write(path, "[]");
     hash_dir(app_handle, &pathbuf_to_string(path), Vec::new());

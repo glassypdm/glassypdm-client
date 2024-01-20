@@ -10,6 +10,7 @@ import {
 } from "@/lib/types";
 import { Checkbox } from "./ui/checkbox";
 import { BaseDirectory, readTextFile } from "@tauri-apps/api/fs";
+import { invoke } from "@tauri-apps/api/tauri";
 export const columns: ColumnDef<CADFileColumn>[] = [
   {
     id: "select",
@@ -120,9 +121,7 @@ export async function uploadPageLoader() {
   const str = await readTextFile("toUpload.json", {
     dir: BaseDirectory.AppLocalData,
   });
-  const projDir = await readTextFile("project_dir.txt", {
-    dir: BaseDirectory.AppLocalData,
-  });
+  const projDir: string = await invoke("get_project_dir");
   const data: Change[] = JSON.parse(str);
   console.log(data);
 

@@ -14,7 +14,7 @@ import {
 } from "@/lib/types";
 import {
   BASE_COMMIT_FILE,
-  COMPARE_JSON_FILE,
+  COMPARE_DAT_FILE,
   S3KEY_DAT_FILE,
   cn,
   isClientCurrent,
@@ -59,6 +59,7 @@ export function Workbench({ className }: WorkbenchProps) {
     const storePath = await resolve(dataDir, S3KEY_DAT_FILE);
     const store = new Store(storePath);
 
+    trace("starting to sync with server...");
     setSyncing(true);
     if (!(await isClientCurrent())) {
       setSyncing(false);
@@ -72,7 +73,7 @@ export function Workbench({ className }: WorkbenchProps) {
     let serverUrl: string = await invoke("get_server_url");
 
     const appdata = await appLocalDataDir();
-    const path = await resolve(appdata, COMPARE_JSON_FILE);
+    const path = await resolve(appdata, COMPARE_DAT_FILE);
     await invoke("hash_dir", { resultsPath: path, ignoreList: [] });
     try {
       const data = await fetch(serverUrl + "/info/project");

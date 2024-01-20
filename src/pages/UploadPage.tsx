@@ -3,7 +3,7 @@ import { useLoaderData, useNavigate } from "react-router-dom";
 import { RowSelectionState } from "@tanstack/react-table";
 import {
   BASE_COMMIT_FILE,
-  BASE_JSON_FILE,
+  BASE_DAT_FILE,
   S3KEY_DAT_FILE,
   cn,
   updateAppDataFile,
@@ -82,7 +82,7 @@ export function UploadPage({ className }: UploadPageProps) {
       info("resetting files");
       // if file is not in base.json, then we just need to delete the file
       // otherwise, get the s3 url from the server and download the file
-      const baseStr = await readTextFile(BASE_JSON_FILE, {
+      const baseStr = await readTextFile(BASE_DAT_FILE, {
         dir: BaseDirectory.AppLocalData,
       });
       const base: CADFile[] = JSON.parse(baseStr);

@@ -30,10 +30,10 @@ export async function deleteFileIfExist(filename: string) {
   }
 }
 
-export let BASE_JSON_FILE: string = "base.dat";
+export let BASE_DAT_FILE: string = "base.dat";
 export let BASE_COMMIT_FILE: string = "basecommit.txt";
-export let COMPARE_JSON_FILE: string = "compare.dat";
-export let PROJECT_DIR_FILE: string = "project_dir.txt";
+export let COMPARE_DAT_FILE: string = "compare.dat";
+export let PROJECT_DIR_FILE: string = "project_dir.benji";
 export let S3KEY_DAT_FILE: string = "s3key.dat";
 export let SERVER_URL_FILE: string = "server_url.txt";
 export let DOWNLOAD_JSON_FILE: string = "toDownload.json";
@@ -41,9 +41,9 @@ export let UPLOAD_JSON_FILE: string = "toUpload.json";
 export let LOCAL_CONFIG_DAT: string = "config.dat";
 
 export async function clearLocalData() {
-  deleteFileIfExist(BASE_JSON_FILE);
+  deleteFileIfExist(BASE_DAT_FILE);
   deleteFileIfExist(BASE_COMMIT_FILE);
-  deleteFileIfExist(COMPARE_JSON_FILE);
+  deleteFileIfExist(COMPARE_DAT_FILE);
   deleteFileIfExist(PROJECT_DIR_FILE);
   deleteFileIfExist(S3KEY_DAT_FILE);
   deleteFileIfExist(SERVER_URL_FILE);
