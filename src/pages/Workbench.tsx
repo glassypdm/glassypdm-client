@@ -90,12 +90,6 @@ export function Workbench({ className }: WorkbenchProps) {
       let syncStatus: SyncOutput = await invoke("sync_server", {
         remoteFiles: remote.files,
       });
-      /*
-      for(let i = 0; i < syncStatus.download.length; i++) {
-        console.log(syncStatus.download[i].file.path)
-        syncStatus.conflict.push(syncStatus.download[i].file.path as string);
-      }
-      */
 
       unlistenS3Event();
       setUpload(syncStatus.upload);
@@ -154,7 +148,7 @@ export function Workbench({ className }: WorkbenchProps) {
   return (
     <div className={cn("", className)}>
       <Dialog defaultOpen={conflictExists} open={conflictExists}>
-        <DialogContent className="overflow-y-scroll max-h-screen">
+        <DialogContent className="h-4/5">
           <DialogHeader>
             <DialogTitle>File conflicts detected!</DialogTitle>
             <DialogDescription>
