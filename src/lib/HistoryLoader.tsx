@@ -5,7 +5,7 @@ import { redirect } from "react-router-dom";
 export async function historyLoader() {
   const serverUrl = await invoke("get_server_url");
 
-  if (serverUrl === "http://example.com/") {
+  if (serverUrl === "") {
     return redirect("/settings");
   }
 
