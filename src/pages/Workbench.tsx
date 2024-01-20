@@ -88,7 +88,7 @@ export function Workbench({ className }: WorkbenchProps) {
         store.set(data.rel_path, data.key);
       });
 
-      let syncStatus: SyncOutput = await invoke("sync_server", {
+      const syncStatus: SyncOutput = await invoke("sync_server", {
         remoteFiles: remote.files,
       });
 

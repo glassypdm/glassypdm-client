@@ -2,7 +2,7 @@ use merkle_hash::{bytes_to_hex, Algorithm, MerkleTree, anyhow::Error};
 use tauri::Manager;
 use tauri_plugin_store::StoreBuilder;
 use serde_json::json;
-use std::fs::{File, self};
+use std::fs::File;
 use std::io::Write;
 use log::{info, trace, error};
 use crate::util::{is_key_in_list, vec_lcf_diff, store_to_vec};

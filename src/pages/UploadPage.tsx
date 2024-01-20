@@ -3,7 +3,6 @@ import { useLoaderData, useNavigate } from "react-router-dom";
 import { RowSelectionState } from "@tanstack/react-table";
 import {
   BASE_COMMIT_FILE,
-  BASE_DAT_FILE,
   S3KEY_DAT_FILE,
   cn,
   updateAppDataFile,
@@ -14,7 +13,7 @@ import { UploadLoaderProps, columns } from "@/components/FileColumn";
 import { Progress } from "@/components/ui/progress";
 import { invoke } from "@tauri-apps/api/tauri";
 import { resolve, appLocalDataDir, BaseDirectory } from "@tauri-apps/api/path";
-import { CADFile, Change } from "@/lib/types";
+import { Change } from "@/lib/types";
 import { readTextFile } from "@tauri-apps/api/fs";
 import { listen } from "@tauri-apps/api/event";
 import {

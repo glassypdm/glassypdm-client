@@ -1,5 +1,4 @@
 use merkle_hash::{bytes_to_hex, Algorithm, MerkleTree};
-use tauri::Runtime;
 use std::fs::{File, self};
 use serde_json::{json, Value, from_value};
 use tauri_plugin_store::StoreBuilder;

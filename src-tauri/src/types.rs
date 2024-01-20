@@ -1,6 +1,5 @@
 use thiserror;
 use serde::{Serialize, Deserialize};
-use serde_json;
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct LocalCADFile {
