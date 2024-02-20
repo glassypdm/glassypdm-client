@@ -3,17 +3,23 @@ import { useState } from "react";
 import { useLoaderData, useNavigate } from "react-router-dom";
 import { invoke } from "@tauri-apps/api/tauri";
 import { resolve, appLocalDataDir } from "@tauri-apps/api/path";
-import { readTextFile, writeTextFile, BaseDirectory } from "@tauri-apps/api/fs";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
-  LocalCADFile,
-  CADFile,
+  Change,
+  TrackedRemoteFile,
   ProjectState,
-  ChangeType,
   WorkbenchLoaderProps,
+  SyncOutput,
 } from "@/lib/types";
-import { cn, deleteFileIfExist, isClientCurrent } from "@/lib/utils";
+import {
+  BASE_COMMIT_FILE,
+  COMPARE_DAT_FILE,
+  S3KEY_DAT_FILE,
+  cn,
+  isClientCurrent,
+  updateAppDataFile,
+} from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -25,15 +31,20 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { open } from "@tauri-apps/api/shell";
 import { useToast } from "@/components/ui/use-toast";
+import { trace, info, error } from "tauri-plugin-log-api";
+import { listen } from "@tauri-apps/api/event";
+import { Store } from "tauri-plugin-store-api";
 
 interface WorkbenchProps extends React.HTMLAttributes<HTMLDivElement> {}
 
 export function Workbench({ className }: WorkbenchProps) {
   const loaderData: WorkbenchLoaderProps =
     useLoaderData() as WorkbenchLoaderProps;
-  const [upload, setUpload] = useState<LocalCADFile[]>(loaderData.toUpload);
-  const [download, setDownload] = useState<CADFile[]>(loaderData.toDownload);
-  const [loading, setLoading] = useState(false);
+  const [upload, setUpload] = useState<Change[]>(loaderData.toUpload);
+  const [download, setDownload] = useState<TrackedRemoteFile[]>(
+    loaderData.toDownload,
+  );
+  const [syncing, setSyncing] = useState(false);
   const [conflict, setConflict] = useState<string[]>(loaderData.conflict);
   const [conflictExists, setConflictExists] = useState(
     loaderData.conflict.length > 0,
@@ -42,170 +53,67 @@ export function Workbench({ className }: WorkbenchProps) {
   const navigate = useNavigate();
 
   async function getChanges() {
-    console.log("click sync");
-    setLoading(true);
+    // time function
+    const startTime = performance.now();
+    const dataDir = await appLocalDataDir();
+    const storePath = await resolve(dataDir, S3KEY_DAT_FILE);
+    const store = new Store(storePath);
+
+    trace("starting to sync with server...");
+    setSyncing(true);
     if (!(await isClientCurrent())) {
-      setLoading(false);
+      setSyncing(false);
       toast({
         title: "New glassyPDM version available!",
         description: "Talk to your team lead for the new installer.",
       });
-      // TODO we probably want to force users to update to the newest client
-      // version until client is a bit more stable in terms of
-      // update frequency
       return;
     }
+
     let serverUrl: string = await invoke("get_server_url");
-    let projDir: string = await invoke("get_project_dir");
 
     const appdata = await appLocalDataDir();
-    const path = await resolve(appdata, "compare.json");
-    console.log(path);
+    const path = await resolve(appdata, COMPARE_DAT_FILE);
     await invoke("hash_dir", { resultsPath: path, ignoreList: [] });
     try {
       const data = await fetch(serverUrl + "/info/project");
       const remote: ProjectState = await data.json();
-      console.log(remote);
 
       // write remote commit into some file
       const commit: string = remote.commit?.toString() || "0";
-      await deleteFileIfExist("basecommit.txt");
-      await writeTextFile("basecommit.txt", commit, {
-        dir: BaseDirectory.AppLocalData,
-        append: false,
+      await updateAppDataFile(BASE_COMMIT_FILE, commit);
+
+      const unlistenS3Event = await listen("updateKeyStore", (event: any) => {
+        const data = event.payload;
+        store.set(data.rel_path, data.key);
       });
 
-      let contents = await readTextFile("base.json", {
-        dir: BaseDirectory.AppLocalData,
-      });
-      const base = JSON.parse(contents);
-
-      contents = await readTextFile("compare.json", {
-        dir: BaseDirectory.AppLocalData,
-      });
-      const compare = JSON.parse(contents);
-
-      // for getting what to download
-      let toDownload: CADFile[] = [];
-      // for each file in remote:
-      remote.files.forEach((file: CADFile) => {
-        if (file.size === 0) {
-          let found: boolean = false;
-          base.every((local: any) => {
-            // adjust path
-            const localPath: string = local.path.replace(projDir, "");
-            if (file.path === localPath) {
-              found = true;
-              return false;
-            }
-            return true;
-          });
-          if (found) {
-            file.change = ChangeType.DELETE;
-            toDownload.push(file); // file not deleted locally
-          }
-        } else {
-          let found: boolean = false;
-          base.forEach((local: any) => {
-            // adjust path
-            const localPath: string = local.path.replace(projDir, "");
-            if (file.path === localPath) {
-              found = true;
-              if (local.hash !== file.hash || local.size != file.size) {
-                file.change = ChangeType.UPDATE;
-                toDownload.push(file); // file has been updated
-              }
-            }
-          });
-          if (!found) {
-            console.log("not found locally");
-            file.change = ChangeType.CREATE;
-            toDownload.push(file); // file not downloaded locally
-          }
-        }
-      });
-      console.log(toDownload);
-      setDownload(toDownload);
-      await deleteFileIfExist("toDownload.json");
-      await writeTextFile("toDownload.json", JSON.stringify(toDownload), {
-        dir: BaseDirectory.AppLocalData,
-        append: false,
+      const syncStatus: SyncOutput = await invoke("sync_server", {
+        remoteFiles: remote.files,
       });
 
-      // for getting what to upload, compare base.json with compare.json
-      let toUpload: LocalCADFile[] = [];
-
-      base.forEach((bFile: LocalCADFile) => {
-        // if base && compare, add toUpload if size, hash is different
-        let found: boolean = false;
-        compare.every((cFile: LocalCADFile) => {
-          if (bFile.path === cFile.path) {
-            found = true;
-            if (bFile.hash !== cFile.hash) {
-              cFile.change = ChangeType.UPDATE;
-              toUpload.push(cFile);
-            }
-            return false;
-          }
-          return true;
-        });
-
-        // if base && !compare, add toUpload w/ size 0
-        if (!found) {
-          toUpload.push({
-            path: bFile.path,
-            size: 0,
-            hash: bFile.hash,
-            change: ChangeType.DELETE,
-          });
-        }
-      });
-
-      // if !base && compare, add toUpload
-      compare.forEach((cFile: LocalCADFile) => {
-        let found: boolean = false;
-        base.every((bFile: LocalCADFile) => {
-          if (bFile.path == cFile.path) {
-            found = true;
-            return false;
-          }
-          return true;
-        });
-
-        if (!found) {
-          cFile.change = ChangeType.CREATE;
-          toUpload.push(cFile);
-        }
-      });
-
-      console.log(toUpload);
-      setUpload(toUpload);
-      await deleteFileIfExist("toUpload.json");
-      await writeTextFile("toUpload.json", JSON.stringify(toUpload), {
-        dir: BaseDirectory.AppLocalData,
-        append: false,
-      });
-
-      // compare download and upload lists
-      // intersection is conflicted files
-      let conflict: string[] = [];
-      for (let i = 0; i < toUpload.length; i++) {
-        const file: string = toUpload[i].path.replace(projDir, "");
-        for (let j = 0; j < toDownload.length; j++) {
-          if (file === toDownload[j].path) {
-            console.log("conflict!");
-            console.log(file);
-            conflict.push(file);
-            setConflictExists(true);
-          }
-        }
-      }
-      setConflict(conflict);
+      unlistenS3Event();
+      setUpload(syncStatus.upload);
+      setDownload(syncStatus.download);
+      setConflict(syncStatus.conflict);
+      setConflictExists(syncStatus.conflict.length > 0);
+      await store.save();
     } catch (err: any) {
+      error(`received error while syncing: ${err}`);
       console.error(err);
     }
 
-    setLoading(false);
+    // stop timing function
+    const endTime = performance.now();
+    const delta =
+      Math.round((endTime - startTime + Number.EPSILON) * 100) / 100;
+
+    toast({
+      title: `Sync took ${delta} milliseconds to complete`,
+    });
+    info(`Sync took ${delta} milliseconds`);
+    trace("Sync action complete");
+    setSyncing(false);
   }
 
   async function openFolder() {
@@ -223,9 +131,6 @@ export function Workbench({ className }: WorkbenchProps) {
         title: "New glassyPDM version available!",
         description: "Talk to your team lead for the new installer.",
       });
-      // TODO we probably want to force users to update to the newest client
-      // version until project is a bit more stable in terms of
-      // update frequency and bugs
       return;
     }
     navigate("/download");
@@ -237,9 +142,6 @@ export function Workbench({ className }: WorkbenchProps) {
         title: "New glassyPDM version available!",
         description: "Talk to your team lead for the new installer.",
       });
-      // TODO we probably want to force users to update to the newest client
-      // version until client is a bit more stable in terms of
-      // update frequency
       return;
     }
     navigate("/upload");
@@ -248,7 +150,7 @@ export function Workbench({ className }: WorkbenchProps) {
   return (
     <div className={cn("", className)}>
       <Dialog defaultOpen={conflictExists} open={conflictExists}>
-        <DialogContent className="overflow-y-scroll max-h-screen">
+        <DialogContent className="h-4/5">
           <DialogHeader>
             <DialogTitle>File conflicts detected!</DialogTitle>
             <DialogDescription>
@@ -275,33 +177,39 @@ export function Workbench({ className }: WorkbenchProps) {
         </DialogContent>
       </Dialog>
       <h1 className="text-2xl">SDM-24</h1>
-      <div className="space-x-4">
-        <Button
-          onClick={navigateDownload}
-          disabled={download.length === 0 ? true : false}
-        >
-          {download.length === 0
-            ? "Up to date"
-            : download.length + " files ready to download"}
+      <div className="grid grid-cols-3 gap-6 p-4 h-48">
+        <div className="flex flex-col gap-4">
+          <Button
+            className="grow"
+            onClick={navigateDownload}
+            disabled={download.length === 0 ? true : false}
+          >
+            {download.length === 0
+              ? "Up to date"
+              : download.length + " files ready to download"}
+          </Button>
+          <Button className="" onClick={openWebsite} variant="outline">
+            Open Website
+          </Button>
+        </div>
+        <Button className="flex h-full" onClick={getChanges} disabled={syncing}>
+          {syncing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Sync"}
         </Button>
-        <Button onClick={getChanges} disabled={loading}>
-          {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Sync"}
-        </Button>
-        <Button
-          onClick={navigateUpload}
-          disabled={upload.length === 0 ? true : false}
-        >
-          {upload.length === 0
-            ? "Up to date"
-            : upload.length + " files ready for upload"}
-        </Button>
+        <div className="flex flex-col gap-4">
+          <Button
+            className="grow"
+            onClick={navigateUpload}
+            disabled={upload.length === 0 ? true : false}
+          >
+            {upload.length === 0
+              ? "Up to date"
+              : upload.length + " files ready for upload"}
+          </Button>
+          <Button className="" onClick={openFolder} variant="outline">
+            Open Project Folder
+          </Button>
+        </div>
       </div>
-      <Button className="my-4" onClick={openFolder}>
-        Open Project Folder
-      </Button>
-      <Button className="m-4" onClick={openWebsite}>
-        Open Website
-      </Button>
     </div>
   );
 }

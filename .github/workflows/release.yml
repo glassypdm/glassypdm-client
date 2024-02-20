@@ -41,5 +41,10 @@ jobs:
             "type": "style",
             "section": "Miscellaneous",
             "hidden": false
+          },
+          {
+            "type": "misc",
+            "section": "Miscellaneous",
+            "hidden": false
           }
           ]'

@@ -8,6 +8,7 @@ import {
 import { invoke } from "@tauri-apps/api/tauri";
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { error } from "tauri-plugin-log-api";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -29,21 +30,29 @@ export async function deleteFileIfExist(filename: string) {
   }
 }
 
+export let BASE_DAT_FILE: string = "base.dat";
+export let BASE_COMMIT_FILE: string = "basecommit.txt";
+export let COMPARE_DAT_FILE: string = "compare.dat";
+export let PROJECT_DIR_FILE: string = "project_dir.benji";
+export let S3KEY_DAT_FILE: string = "s3key.dat";
+export let SERVER_URL_FILE: string = "server_url.txt";
+export let DOWNLOAD_JSON_FILE: string = "toDownload.json";
+export let UPLOAD_JSON_FILE: string = "toUpload.json";
+export let LOCAL_CONFIG_DAT: string = "config.dat";
+
 export async function clearLocalData() {
-  deleteFileIfExist("base.json");
-  deleteFileIfExist("basecommit.txt");
-  deleteFileIfExist("compare.json");
-  deleteFileIfExist("project_dir.txt");
-  deleteFileIfExist("s3key.dat");
-  deleteFileIfExist("server_url.txt");
-  deleteFileIfExist("toDownload.json");
-  deleteFileIfExist("toUpload.json");
+  deleteFileIfExist(BASE_DAT_FILE);
+  deleteFileIfExist(BASE_COMMIT_FILE);
+  deleteFileIfExist(COMPARE_DAT_FILE);
+  deleteFileIfExist(PROJECT_DIR_FILE);
+  deleteFileIfExist(S3KEY_DAT_FILE);
+  deleteFileIfExist(SERVER_URL_FILE);
+  deleteFileIfExist(DOWNLOAD_JSON_FILE);
+  deleteFileIfExist(UPLOAD_JSON_FILE);
+  deleteFileIfExist(LOCAL_CONFIG_DAT);
 }
 
-export async function updateApplicationDataFile(
-  filename: string,
-  data: string,
-) {
+export async function updateAppDataFile(filename: string, data: string) {
   await deleteFileIfExist(filename);
   await writeTextFile(filename, data, {
     dir: BaseDirectory.AppLocalData,
@@ -62,10 +71,17 @@ export async function isClientCurrent() {
   const data = await response.json();
   const version = data["version"];
   const localVersion = await getVersion();
-  //return false;
   return localVersion === version;
 }
 
-export function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+// TODO: extend this to testing internet connection
+export async function pingServer(): Promise<boolean> {
+  const serverURL = await invoke("get_server_url");
+  try {
+    let resp = await fetch(serverURL as string);
+    return resp.ok;
+  } catch (err) {
+    error("Ping: Server connection failed");
+    return false;
+  }
 }

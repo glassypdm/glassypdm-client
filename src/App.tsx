@@ -59,43 +59,39 @@ const router = createHashRouter([
         path: "/about",
         element: <About className="col-span-3" />,
       },
-      {
-        path: "/download",
-        element: (
-          <DownloadPage className="absolute col-span-4 z-10 bg-slate-950" />
-        ),
-        loader: downloadPageLoader,
-      },
-      {
-        path: "/upload",
-        element: (
-          <UploadPage className="absolute col-span-4 z-10 bg-slate-950 w-full" />
-        ),
-        loader: uploadPageLoader,
-      },
     ],
+  },
+  {
+    path: "/download",
+    element: <DownloadPage className="" />,
+    loader: downloadPageLoader,
+  },
+  {
+    path: "/upload",
+    element: <UploadPage className="" />,
+    loader: uploadPageLoader,
   },
 ]);
 
 export default function App() {
   return (
     <ClerkProvider publishableKey={REACT_APP_CLERK_PUBLISHABLE_KEY}>
-      <SignedOut>
-        <RedirectToSignIn />
-      </SignedOut>
-      <SignedIn>
-        <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+        <SignedOut>
+          <RedirectToSignIn />
+        </SignedOut>
+        <SignedIn>
           <RouterProvider router={router} />
           <Toaster />
-        </ThemeProvider>
-      </SignedIn>
+        </SignedIn>
+      </ThemeProvider>
     </ClerkProvider>
   );
 }
 
 function Layout() {
   return (
-    <div className="grid grid-cols-4 grid-flow-row gap-4 h-full">
+    <div className="grid grid-cols-4 grid-flow-row gap-1 h-full">
       <Sidebar className="row-span-1" />
       <Outlet />
     </div>

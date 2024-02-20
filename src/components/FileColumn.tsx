@@ -1,15 +1,14 @@
-"use client";
-
 import { ColumnDef, RowSelectionState } from "@tanstack/react-table";
 import {
   CADFileColumn,
   UpdatedCADFile,
   ChangeType,
-  CADFile,
-  LocalCADFile,
+  TrackedRemoteFile,
+  Change,
 } from "@/lib/types";
 import { Checkbox } from "./ui/checkbox";
 import { BaseDirectory, readTextFile } from "@tauri-apps/api/fs";
+import { invoke } from "@tauri-apps/api/tauri";
 export const columns: ColumnDef<CADFileColumn>[] = [
   {
     id: "select",
@@ -71,21 +70,35 @@ export async function downloadPageLoader() {
   const str = await readTextFile("toDownload.json", {
     dir: BaseDirectory.AppLocalData,
   });
-  const data: CADFile[] = JSON.parse(str);
+  const data: TrackedRemoteFile[] = JSON.parse(str);
   console.log(data);
 
   for (let i = 0; i < data.length; i++) {
     // enable selected by default
     output.selectionList[i.toString()] = true;
+    let change: ChangeType = ChangeType.UNIDENTIFIED;
+    switch (data[i].change) {
+      case "Create":
+        change = ChangeType.CREATE;
+        break;
+      case "Update":
+        change = ChangeType.UPDATE;
+        break;
+      case "Delete":
+        change = ChangeType.DELETE;
+        break;
+      default:
+        change = ChangeType.UNIDENTIFIED;
+        break;
+    }
 
-    // path, relativePath, change
     output.files.push({
       file: {
-        path: data[i].path,
-        size: data[i].size,
-        hash: data[i].hash,
-        relativePath: data[i].path,
-        change: data[i].change,
+        path: data[i].file.path,
+        size: data[i].file.size,
+        hash: data[i].file.hash,
+        relativePath: data[i].file.path,
+        change: change,
       },
     });
   }
@@ -106,23 +119,19 @@ export async function uploadPageLoader() {
   const str = await readTextFile("toUpload.json", {
     dir: BaseDirectory.AppLocalData,
   });
-  const projDir = await readTextFile("project_dir.txt", {
-    dir: BaseDirectory.AppLocalData,
-  });
-  const data: LocalCADFile[] = JSON.parse(str);
+  const projDir: string = await invoke("get_project_dir");
+  const data: Change[] = JSON.parse(str);
   console.log(data);
 
   for (let i = 0; i < data.length; i++) {
     // enable selected by default
     output.selectionList[i.toString()] = true;
-
-    // path, relativePath, change
     output.files.push({
       file: {
-        path: data[i].path,
-        size: data[i].size,
-        hash: data[i].hash,
-        relativePath: data[i].path.replace(projDir, ""),
+        path: data[i].file.path,
+        size: data[i].file.size,
+        hash: data[i].file.hash,
+        relativePath: data[i].file.path.replace(projDir, ""),
         change: data[i].change,
       },
     });

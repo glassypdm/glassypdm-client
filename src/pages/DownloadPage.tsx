@@ -2,10 +2,12 @@ import { useState } from "react";
 import { useLoaderData, useNavigate } from "react-router-dom";
 import { RowSelectionState } from "@tanstack/react-table";
 import {
+  DOWNLOAD_JSON_FILE,
+  S3KEY_DAT_FILE,
+  UPLOAD_JSON_FILE,
   cn,
-  delay,
   getAbsolutePath,
-  updateApplicationDataFile,
+  updateAppDataFile,
 } from "@/lib/utils";
 import { Button } from "../components/ui/button";
 import { FileTable } from "../components/FileTable";
@@ -13,10 +15,17 @@ import { DownloadLoaderProps, columns } from "../components/FileColumn";
 import { Progress } from "../components/ui/progress";
 import { invoke } from "@tauri-apps/api/tauri";
 import { resolve, appLocalDataDir, BaseDirectory } from "@tauri-apps/api/path";
-import { CADFile, DownloadFile, LocalCADFile } from "@/lib/types";
+import {
+  Change,
+  DownloadFile,
+  DownloadStatus,
+  TrackedRemoteFile,
+} from "@/lib/types";
 import { readTextFile } from "@tauri-apps/api/fs";
 import { Store } from "tauri-plugin-store-api";
 import { useToast } from "@/components/ui/use-toast";
+import { listen } from "@tauri-apps/api/event";
+import { error, info } from "tauri-plugin-log-api";
 
 interface DownloadPageProps extends React.HTMLAttributes<HTMLDivElement> {}
 
@@ -34,7 +43,7 @@ export function DownloadPage(props: DownloadPageProps) {
   async function handleDownload() {
     const serverUrl: string = await invoke("get_server_url");
     const dataDir = await appLocalDataDir();
-    const storePath = await resolve(dataDir, "s3key.dat");
+    const storePath = await resolve(dataDir, S3KEY_DAT_FILE);
     const store = new Store(storePath);
     console.log(storePath);
     console.log("downloading files");
@@ -50,62 +59,47 @@ export function DownloadPage(props: DownloadPageProps) {
       let key: string = Object.keys(selection)[i];
       const idx = parseInt(key);
       selectedDownload.push({
-        path: files.files[idx].file.path,
+        rel_path: files.files[idx].file.path,
         size: files.files[idx].file.size,
       });
     }
 
+    // setup event listener
+    let cntr = 0;
+    const unlisten = await listen("downloadStatus", (event) => {
+      const output: DownloadStatus = event.payload as DownloadStatus;
+      if (output.s3 !== "dne" && output.s3 !== "delete") {
+        store.set(output.rel_path, output.s3);
+      } else {
+        error(
+          `download: got invalid s3 key ${output.s3} for ${output.rel_path}`,
+        );
+      }
+      cntr += 1;
+
+      setDescription(
+        `${cntr} of ${selectedDownload.length} files downloaded...`,
+      );
+      setProgress((100 * cntr) / selectedDownload.length);
+    });
+
     // download files
-    console.log(selectedDownload);
-    const length = selectedDownload.length;
-    //for (let i = 0; i < length; i++) {
-    let cnt = 0;
-    await Promise.all(
-      selectedDownload.map(async (file: DownloadFile) => {
-        //const file: DownloadFile = selectedDownload[i];
-        if (file.size != 0) {
-          const key: string = file.path.replaceAll("\\", "|");
-          console.log(key);
-
-          // get s3 url
-          const response = await fetch(serverUrl + "/download/file/" + key);
-          const data = await response.json();
-          const s3Url = data["s3Url"];
-          const s3Key = data["key"];
-          console.log(s3Url);
-          console.log(s3Key);
-
-          // save key in store
-          await store.set(key, { value: s3Key });
-
-          // have rust backend download the file
-          await invoke("download_s3_file", {
-            link: {
-              path: file.path,
-              url: s3Url,
-              key: s3Key,
-            },
-          });
-        } else {
-          console.log("deleting file " + file.path);
-          await invoke("delete_file", { file: file.path });
-        }
-        // handle progress bar
-        setProgress((100 * ++cnt) / length);
-        setDescription(`${cnt} of ${length} downloaded...`);
-        await delay(2);
-      }),
-    );
-
+    await invoke("download_files", {
+      files: selectedDownload,
+      serverUrl: serverUrl,
+    });
+    await store.save();
     console.log("finish downloading");
 
+    unlisten();
+    // TODO the below can/should be moved to the rust side
     setDescription("Updating local data...");
     // determine which files to ignore whilst hashing
-    const uploadStr = await readTextFile("toUpload.json", {
+    const uploadStr = await readTextFile(UPLOAD_JSON_FILE, {
       dir: BaseDirectory.AppLocalData,
     });
-    const toUpload: LocalCADFile[] = JSON.parse(uploadStr);
-    const newUploadList: LocalCADFile[] = [];
+    const toUpload: Change[] = JSON.parse(uploadStr);
+    const newUploadList: Change[] = [];
     let ignoreList: string[] = [];
 
     for (let i = 0; i < toUpload.length; i++) {
@@ -114,9 +108,9 @@ export function DownloadPage(props: DownloadPageProps) {
       // iterate through selected download list
       for (let j = 0; j < selectedDownload.length; j++) {
         const absolute: string = await getAbsolutePath(
-          selectedDownload[j].path,
+          selectedDownload[j].rel_path,
         );
-        if (absolute === toUpload[i].path) {
+        if (absolute === toUpload[i].file.path) {
           found = true;
           break;
         }
@@ -125,41 +119,36 @@ export function DownloadPage(props: DownloadPageProps) {
       // if not found, add it to ignore list
       if (!found) {
         newUploadList.push(toUpload[i]);
-        ignoreList.push(toUpload[i].path);
+        ignoreList.push(toUpload[i].file.path);
       }
     }
 
+    // TODO: this should not be necessary anymore because we hash while we download
     // after download, hash dir to base.json
-    const appdata = await appLocalDataDir();
-    const path = await resolve(appdata, "base.json");
-    await invoke("hash_dir", { resultsPath: path, ignoreList: ignoreList });
+    //const appdata = await appLocalDataDir();
+    //const path = await resolve(appdata, BASE_JSON_FILE);
+    //await invoke("hash_dir", { resultsPath: path, ignoreList: ignoreList });
 
     // update toUpload.json
-    await updateApplicationDataFile(
-      "toUpload.json",
-      JSON.stringify(newUploadList),
-    );
+    await updateAppDataFile(UPLOAD_JSON_FILE, JSON.stringify(newUploadList));
 
     // remove items that were in toDownload from toDownload.json
-    const str = await readTextFile("toDownload.json", {
+    const str = await readTextFile(DOWNLOAD_JSON_FILE, {
       dir: BaseDirectory.AppLocalData,
     });
-    let initDownload: CADFile[] = JSON.parse(str);
+    let initDownload: TrackedRemoteFile[] = JSON.parse(str);
     for (let i = 0; i < selectedDownload.length; i++) {
-      const downloadedPath: string = selectedDownload[i].path;
+      const downloadedPath: string = selectedDownload[i].rel_path;
       let j = initDownload.length;
       while (j--) {
-        if (initDownload[j].path == downloadedPath) {
+        if (initDownload[j].file.path == downloadedPath) {
           initDownload.splice(j, 1);
         }
       }
     }
 
     // update toDownload
-    await updateApplicationDataFile(
-      "toDownload.json",
-      JSON.stringify(initDownload),
-    );
+    await updateAppDataFile(DOWNLOAD_JSON_FILE, JSON.stringify(initDownload));
 
     // save store
     await store.save();
@@ -167,9 +156,14 @@ export function DownloadPage(props: DownloadPageProps) {
 
     // stop timing function
     const endTime = performance.now();
+    const delta =
+      Math.round((endTime - startTime + Number.EPSILON) * 100) / 100;
     toast({
-      title: `Download took ${endTime - startTime} milliseconds`,
+      title: `Download took ${delta} milliseconds to complete`,
     });
+    info(
+      `Downloading ${selectedDownload.length} files took ${delta} milliseconds`,
+    );
     setDescription("Complete!");
   }
 
