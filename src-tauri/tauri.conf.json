@@ -1,71 +1,33 @@
 {
+  "productName": "glassyPDM",
+  "version": "0.5.0",
+  "identifier": "org.18x18az.pdm",
   "build": {
-    "beforeDevCommand": "yarn dev",
-    "beforeBuildCommand": "yarn build",
-    "devPath": "http://localhost:1420",
-    "distDir": "../dist",
-    "withGlobalTauri": false
+    "beforeDevCommand": "pnpm dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "pnpm build",
+    "frontendDist": "../dist"
   },
-  "package": {
-    "productName": "glassyPDM",
-    "version": "0.5.0"
-  },
-  "tauri": {
-    "allowlist": {
-      "all": false,
-      "fs": {
-        "all": true,
-        "scope": {
-          "allow": [
-            "$APPDATA", "$APPDATA/*", "$APPLOCALDATA", "$APPLOCALDATA/**/*", "$RESOURCE/resources/*"
-          ]
-        }
-      },
-      "dialog": {
-        "all": true
-      },
-      "path": {
-        "all": true
-      },
-      "shell": {
-        "all": true,
-        "open": "^"
-      }
-    },
-    "bundle": {
-      "active": true,
-      "targets": "all",
-      "publisher": "18x18az",
-      "identifier": "org.18x18az.pdm",
-      "icon": [
-        "icons/32x32.png",
-        "icons/128x128.png",
-        "icons/128x128@2x.png",
-        "icons/icon.icns",
-        "icons/icon.ico"
-      ],
-      "resources": [
-        "resources/clerk.txt",
-        "resources/clerk-profile.txt"
-      ],
-      "category": "DeveloperTool",
-      "windows": {
-        "certificateThumbprint": null,
-        "digestAlgorithm": "sha256",
-        "timestampUrl": ""
-      }
-    },
-    "security": {
-      "csp": null
-    },
-    "windows": [
+  "app": {"windows": [
       {
-        "fullscreen": false,
-        "resizable": true,
         "title": "glassyPDM",
         "width": 800,
         "height": 600
       }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
     ]
   }
 }

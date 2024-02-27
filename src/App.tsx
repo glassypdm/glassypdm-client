@@ -1,99 +1,53 @@
-import {
-  ClerkProvider,
-  RedirectToSignIn,
-  SignedIn,
-  SignedOut,
-} from "@clerk/clerk-react";
-import { createHashRouter, Outlet, RouterProvider } from "react-router-dom";
-import { resolveResource } from "@tauri-apps/api/path";
-import { readTextFile } from "@tauri-apps/api/fs";
-import { ThemeProvider } from "@/components/theme-provider";
-import { Workbench } from "@/pages/Workbench";
-import { Sidebar } from "./components/Sidebar";
-import "@/App.css";
-import { Settings } from "./pages/Settings";
-import { Account } from "./pages/Account";
-import { History } from "./pages/History";
-import { About } from "./pages/About";
-import { DownloadPage } from "./pages/DownloadPage";
-import { downloadPageLoader, uploadPageLoader } from "./components/FileColumn";
-import { UploadPage } from "./pages/UploadPage";
-import { settingsLoader } from "./lib/SettingsLoader";
-import { workbenchLoader } from "./lib/WorkbenchLoader";
-import { Toaster } from "./components/ui/toaster";
-import { historyLoader } from "./lib/HistoryLoader";
+import { useState } from "react";
+import reactLogo from "./assets/react.svg";
+import { invoke } from "@tauri-apps/api/core";
+import "./App.css";
 
-const clerkPath = await resolveResource("resources/clerk.txt");
-const REACT_APP_CLERK_PUBLISHABLE_KEY = await readTextFile(clerkPath);
+function App() {
+  const [greetMsg, setGreetMsg] = useState("");
+  const [name, setName] = useState("");
 
-const router = createHashRouter([
-  {
-    path: "",
-    element: <Layout />,
-    children: [
-      {
-        path: "*",
-        element: <Workbench className="col-span-3" />,
-        loader: workbenchLoader,
-      },
-      {
-        path: "/",
-        element: <Workbench className="col-span-3" />,
-        loader: workbenchLoader,
-      },
-      {
-        path: "/history",
-        element: <History className="col-span-3" />,
-        loader: historyLoader,
-      },
-      {
-        path: "/settings",
-        element: <Settings className="col-span-3" />,
-        loader: settingsLoader,
-      },
-      {
-        path: "/account",
-        element: <Account className="col-span-3" />,
-      },
-      {
-        path: "/about",
-        element: <About className="col-span-3" />,
-      },
-    ],
-  },
-  {
-    path: "/download",
-    element: <DownloadPage className="" />,
-    loader: downloadPageLoader,
-  },
-  {
-    path: "/upload",
-    element: <UploadPage className="" />,
-    loader: uploadPageLoader,
-  },
-]);
+  async function greet() {
+    // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
+    setGreetMsg(await invoke("greet", { name }));
+  }
 
-export default function App() {
   return (
-    <ClerkProvider publishableKey={REACT_APP_CLERK_PUBLISHABLE_KEY}>
-      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-        <SignedOut>
-          <RedirectToSignIn />
-        </SignedOut>
-        <SignedIn>
-          <RouterProvider router={router} />
-          <Toaster />
-        </SignedIn>
-      </ThemeProvider>
-    </ClerkProvider>
-  );
-}
+    <div className="container">
+      <h1>Welcome to Tauri!</h1>
 
-function Layout() {
-  return (
-    <div className="grid grid-cols-4 grid-flow-row gap-1 h-full">
-      <Sidebar className="row-span-1" />
-      <Outlet />
+      <div className="row">
+        <a href="https://vitejs.dev" target="_blank">
+          <img src="/vite.svg" className="logo vite" alt="Vite logo" />
+        </a>
+        <a href="https://tauri.app" target="_blank">
+          <img src="/tauri.svg" className="logo tauri" alt="Tauri logo" />
+        </a>
+        <a href="https://reactjs.org" target="_blank">
+          <img src={reactLogo} className="logo react" alt="React logo" />
+        </a>
+      </div>
+
+      <p>Click on the Tauri, Vite, and React logos to learn more.</p>
+
+      <form
+        className="row"
+        onSubmit={(e) => {
+          e.preventDefault();
+          greet();
+        }}
+      >
+        <input
+          id="greet-input"
+          onChange={(e) => setName(e.currentTarget.value)}
+          placeholder="Enter a name..."
+        />
+        <button type="submit">Greet</button>
+      </form>
+
+      <p>{greetMsg}</p>
     </div>
   );
 }
+
+export default App;
