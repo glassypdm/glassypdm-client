@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.0.2",
+    "@tanstack/react-router": "^1.19.1",
     "@tauri-apps/api": ">=2.0.0-beta.0",
     "@tauri-apps/plugin-shell": ">=2.0.0-beta.0",
     "class-variance-authority": "^0.7.0",
@@ -19,9 +20,12 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "tailwind-merge": "^2.2.1",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@tanstack/router-devtools": "^1.19.1",
+    "@tanstack/router-vite-plugin": "^1.19.0",
     "@tauri-apps/cli": ">=2.0.0-beta.0",
     "@types/node": "^20.11.20",
     "@types/react": "^18.2.15",
