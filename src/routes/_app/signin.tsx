@@ -102,7 +102,7 @@ function SignIn() {
         </Button>
         </SignedOut>
         <SignedIn>
-            <Navigate to='/workbench'/>
+            <Navigate to='/projects'/>
         </SignedIn>
     </div>
   )

@@ -1,4 +1,4 @@
-import { Navigate, Outlet, createFileRoute } from '@tanstack/react-router'
+import { Outlet, createFileRoute } from '@tanstack/react-router'
 import Database from "@tauri-apps/plugin-sql";
 import { ClerkProvider, SignedIn, SignedOut } from "@clerk/clerk-react"
 import SignIn from './_app/signin';
@@ -14,7 +14,6 @@ export const Route = createFileRoute('/_app')({
 
 const db = new Database("sqlite:test.db");
 
-// TODO is this more secure than having <SignedOut> and <SignedIn> in _workbench.tsx ?
 function AppLayout() {
   return (
     <div>
