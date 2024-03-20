@@ -13,23 +13,11 @@ function WorkbenchLayout() {
     const { userId, isLoaded, isSignedIn, signOut } = useAuth();
     const navigate = useNavigate();
 
-    /*
-    useEffect(() => {
-        if(!userId) {
-            console.log("navigating back to /signin");
-            navigate({ to: "/signin" });
-        }
-    })
-    */
+
     return (
         <div>
-            <SignedOut>
-                <Navigate to='/signin'/>
-            </SignedOut>
-            <SignedIn>
-                <Button onClick={() => signOut()}>Sign Out</Button>
-                <Outlet />
-            </SignedIn>
+        <Button onClick={() => signOut()}>Sign Out</Button>
+        <Outlet />
         </div>
     )
 }
