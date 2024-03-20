@@ -3,10 +3,10 @@ import { Form, FormControl, FormItem, FormLabel, FormField, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator'
 import { zodResolver } from '@hookform/resolvers/zod';
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, Navigate, useNavigate } from '@tanstack/react-router'
 import { useForm } from 'react-hook-form';
 import { z } from "zod";
-import { useSignIn } from "@clerk/clerk-react";
+import { SignedIn, SignedOut, useSignIn } from "@clerk/clerk-react";
 
 export const Route = createFileRoute('/_app/signin')({
     component: SignIn,
@@ -19,7 +19,7 @@ const signInSchema = z.object({
 
 function SignIn() {
     const { isLoaded, signIn, setActive } = useSignIn();
-
+    const navigate = useNavigate(); 
 
     const signInForm = useForm<z.infer<typeof signInSchema>>({
         resolver: zodResolver(signInSchema),
@@ -49,8 +49,7 @@ function SignIn() {
             }
             else if (completeSignin.status === "complete") {
                 console.log("sign in complete!");
-                await setActive({ session: completeSignin.createdSessionId });
-                // TODO redirect to project view
+                await setActive({ session: signIn.createdSessionId });
             }
         } catch (err: any) {
             // This can return an array of errors.
@@ -62,7 +61,8 @@ function SignIn() {
 
     return (
     <div className='flex flex-col place-items-center'>
-        <h1 className='text-2xl mb-4'>Sign In</h1>
+        <SignedOut>
+        <h1 className='text-2xl my-4'>Sign In</h1>
         <Form {...signInForm}>
         <form onSubmit={signInForm.handleSubmit(onSigninSubmit)}>
             <FormField
@@ -100,6 +100,10 @@ function SignIn() {
         <Button>
         <Link from='/about' to='/signup'>Create an Account</Link>
         </Button>
+        </SignedOut>
+        <SignedIn>
+            <Navigate to='/workbench'/>
+        </SignedIn>
     </div>
   )
 }

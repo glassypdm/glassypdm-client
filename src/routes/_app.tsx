@@ -17,7 +17,6 @@ function AppLayout() {
   return (
     <div>
         <ClerkProvider publishableKey={""}>
-        AppLayout
         <Outlet />
         </ClerkProvider>
     </div>

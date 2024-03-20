@@ -6,7 +6,7 @@ export const Route = createFileRoute('/')({
   beforeLoad: async ({ location }) => {
     
     throw redirect({
-      to: '/signin',
+      to: '/workbench',
       search: {
         redirect: location.href
       }

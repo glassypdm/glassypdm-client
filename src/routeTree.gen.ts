@@ -18,6 +18,8 @@ import { Route as AppImport } from './routes/_app'
 import { Route as IndexImport } from './routes/index'
 import { Route as AppSignupImport } from './routes/_app/signup'
 import { Route as AppSigninImport } from './routes/_app/signin'
+import { Route as AppWorkbenchImport } from './routes/_app/_workbench'
+import { Route as AppWorkbenchWorkbenchImport } from './routes/_app/_workbench/workbench'
 
 // Create Virtual Routes
 
@@ -55,6 +57,16 @@ const AppSigninRoute = AppSigninImport.update({
   getParentRoute: () => AppRoute,
 } as any)
 
+const AppWorkbenchRoute = AppWorkbenchImport.update({
+  id: '/_workbench',
+  getParentRoute: () => AppRoute,
+} as any)
+
+const AppWorkbenchWorkbenchRoute = AppWorkbenchWorkbenchImport.update({
+  path: '/workbench',
+  getParentRoute: () => AppWorkbenchRoute,
+} as any)
+
 // Populate the FileRoutesByPath interface
 
 declare module '@tanstack/react-router' {
@@ -75,6 +87,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AboutLazyImport
       parentRoute: typeof rootRoute
     }
+    '/_app/_workbench': {
+      preLoaderRoute: typeof AppWorkbenchImport
+      parentRoute: typeof AppImport
+    }
     '/_app/signin': {
       preLoaderRoute: typeof AppSigninImport
       parentRoute: typeof AppImport
@@ -83,6 +99,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSignupImport
       parentRoute: typeof AppImport
     }
+    '/_app/_workbench/workbench': {
+      preLoaderRoute: typeof AppWorkbenchWorkbenchImport
+      parentRoute: typeof AppWorkbenchImport
+    }
   }
 }
 
@@ -90,7 +110,11 @@ declare module '@tanstack/react-router' {
 
 export const routeTree = rootRoute.addChildren([
   IndexRoute,
-  AppRoute.addChildren([AppSigninRoute, AppSignupRoute]),
+  AppRoute.addChildren([
+    AppWorkbenchRoute.addChildren([AppWorkbenchWorkbenchRoute]),
+    AppSigninRoute,
+    AppSignupRoute,
+  ]),
   ServersetupRoute,
   AboutLazyRoute,
 ])
