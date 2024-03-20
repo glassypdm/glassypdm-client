@@ -14,8 +14,10 @@ import { createFileRoute } from '@tanstack/react-router'
 
 import { Route as rootRoute } from './routes/__root'
 import { Route as ServersetupImport } from './routes/serversetup'
-import { Route as OwoImport } from './routes/owo'
+import { Route as AppImport } from './routes/_app'
 import { Route as IndexImport } from './routes/index'
+import { Route as AppSignupImport } from './routes/_app/signup'
+import { Route as AppSigninImport } from './routes/_app/signin'
 
 // Create Virtual Routes
 
@@ -33,14 +35,24 @@ const ServersetupRoute = ServersetupImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
-const OwoRoute = OwoImport.update({
-  path: '/owo',
+const AppRoute = AppImport.update({
+  id: '/_app',
   getParentRoute: () => rootRoute,
 } as any)
 
 const IndexRoute = IndexImport.update({
   path: '/',
   getParentRoute: () => rootRoute,
+} as any)
+
+const AppSignupRoute = AppSignupImport.update({
+  path: '/signup',
+  getParentRoute: () => AppRoute,
+} as any)
+
+const AppSigninRoute = AppSigninImport.update({
+  path: '/signin',
+  getParentRoute: () => AppRoute,
 } as any)
 
 // Populate the FileRoutesByPath interface
@@ -51,8 +63,8 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexImport
       parentRoute: typeof rootRoute
     }
-    '/owo': {
-      preLoaderRoute: typeof OwoImport
+    '/_app': {
+      preLoaderRoute: typeof AppImport
       parentRoute: typeof rootRoute
     }
     '/serversetup': {
@@ -63,6 +75,14 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AboutLazyImport
       parentRoute: typeof rootRoute
     }
+    '/_app/signin': {
+      preLoaderRoute: typeof AppSigninImport
+      parentRoute: typeof AppImport
+    }
+    '/_app/signup': {
+      preLoaderRoute: typeof AppSignupImport
+      parentRoute: typeof AppImport
+    }
   }
 }
 
@@ -70,7 +90,7 @@ declare module '@tanstack/react-router' {
 
 export const routeTree = rootRoute.addChildren([
   IndexRoute,
-  OwoRoute,
+  AppRoute.addChildren([AppSigninRoute, AppSignupRoute]),
   ServersetupRoute,
   AboutLazyRoute,
 ])

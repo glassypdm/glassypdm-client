@@ -2170,6 +2170,12 @@
                 "identifier": {
                   "oneOf": [
                     {
+                      "type": "string",
+                      "enum": [
+                        "shell:default"
+                      ]
+                    },
+                    {
                       "description": "shell:allow-execute -> Enables the execute command without any pre-configured scope.",
                       "type": "string",
                       "enum": [
@@ -4455,13 +4461,6 @@
           ]
         },
         {
-          "description": "image:allow-height -> Enables the height command without any pre-configured scope.",
-          "type": "string",
-          "enum": [
-            "image:allow-height"
-          ]
-        },
-        {
           "description": "image:allow-new -> Enables the new command without any pre-configured scope.",
           "type": "string",
           "enum": [
@@ -4476,10 +4475,10 @@
           ]
         },
         {
-          "description": "image:allow-width -> Enables the width command without any pre-configured scope.",
+          "description": "image:allow-size -> Enables the size command without any pre-configured scope.",
           "type": "string",
           "enum": [
-            "image:allow-width"
+            "image:allow-size"
           ]
         },
         {
@@ -4497,13 +4496,6 @@
           ]
         },
         {
-          "description": "image:deny-height -> Denies the height command without any pre-configured scope.",
-          "type": "string",
-          "enum": [
-            "image:deny-height"
-          ]
-        },
-        {
           "description": "image:deny-new -> Denies the new command without any pre-configured scope.",
           "type": "string",
           "enum": [
@@ -4518,10 +4510,10 @@
           ]
         },
         {
-          "description": "image:deny-width -> Denies the width command without any pre-configured scope.",
+          "description": "image:deny-size -> Denies the size command without any pre-configured scope.",
           "type": "string",
           "enum": [
-            "image:deny-width"
+            "image:deny-size"
           ]
         },
         {
@@ -4980,6 +4972,12 @@
           ]
         },
         {
+          "type": "string",
+          "enum": [
+            "shell:default"
+          ]
+        },
+        {
           "description": "shell:allow-execute -> Enables the execute command without any pre-configured scope.",
           "type": "string",
           "enum": [
@@ -5033,6 +5031,74 @@
           "type": "string",
           "enum": [
             "shell:deny-stdin-write"
+          ]
+        },
+        {
+          "type": "string",
+          "enum": [
+            "sql:default"
+          ]
+        },
+        {
+          "description": "sql:allow-close -> Enables the close command without any pre-configured scope.",
+          "type": "string",
+          "enum": [
+            "sql:allow-close"
+          ]
+        },
+        {
+          "description": "sql:allow-execute -> Enables the execute command without any pre-configured scope.",
+          "type": "string",
+          "enum": [
+            "sql:allow-execute"
+          ]
+        },
+        {
+          "description": "sql:allow-load -> Enables the load command without any pre-configured scope.",
+          "type": "string",
+          "enum": [
+            "sql:allow-load"
+          ]
+        },
+        {
+          "description": "sql:allow-select -> Enables the select command without any pre-configured scope.",
+          "type": "string",
+          "enum": [
+            "sql:allow-select"
+          ]
+        },
+        {
+          "description": "sql:deny-close -> Denies the close command without any pre-configured scope.",
+          "type": "string",
+          "enum": [
+            "sql:deny-close"
+          ]
+        },
+        {
+          "description": "sql:deny-execute -> Denies the execute command without any pre-configured scope.",
+          "type": "string",
+          "enum": [
+            "sql:deny-execute"
+          ]
+        },
+        {
+          "description": "sql:deny-load -> Denies the load command without any pre-configured scope.",
+          "type": "string",
+          "enum": [
+            "sql:deny-load"
+          ]
+        },
+        {
+          "description": "sql:deny-select -> Denies the select command without any pre-configured scope.",
+          "type": "string",
+          "enum": [
+            "sql:deny-select"
+          ]
+        },
+        {
+          "type": "string",
+          "enum": [
+            "store:default"
           ]
         },
         {
@@ -5211,10 +5277,24 @@
           ]
         },
         {
+          "description": "tray:allow-get-by-id -> Enables the get_by_id command without any pre-configured scope.",
+          "type": "string",
+          "enum": [
+            "tray:allow-get-by-id"
+          ]
+        },
+        {
           "description": "tray:allow-new -> Enables the new command without any pre-configured scope.",
           "type": "string",
           "enum": [
             "tray:allow-new"
+          ]
+        },
+        {
+          "description": "tray:allow-remove-by-id -> Enables the remove_by_id command without any pre-configured scope.",
+          "type": "string",
+          "enum": [
+            "tray:allow-remove-by-id"
           ]
         },
         {
@@ -5274,10 +5354,24 @@
           ]
         },
         {
+          "description": "tray:deny-get-by-id -> Denies the get_by_id command without any pre-configured scope.",
+          "type": "string",
+          "enum": [
+            "tray:deny-get-by-id"
+          ]
+        },
+        {
           "description": "tray:deny-new -> Denies the new command without any pre-configured scope.",
           "type": "string",
           "enum": [
             "tray:deny-new"
+          ]
+        },
+        {
+          "description": "tray:deny-remove-by-id -> Denies the remove_by_id command without any pre-configured scope.",
+          "type": "string",
+          "enum": [
+            "tray:deny-remove-by-id"
           ]
         },
         {

@@ -11,6 +11,5 @@ function About() {
     <Button variant={'outline'} asChild>
         <Link from='/about' to='../'>hehea</Link>
     </Button>
-    <Button asChild><Link to='/owo' search={{origin: "/about"}}>owo</Link></Button>
     </div>
 }

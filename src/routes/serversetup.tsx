@@ -7,6 +7,7 @@ import { z } from 'zod'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useState } from "react";
 import { Loader2 } from "lucide-react"
+import Database from "@tauri-apps/plugin-sql"
 
 export const Route = createFileRoute('/serversetup')({
     component: ServerSetup,
@@ -33,11 +34,17 @@ function ServerSetup() {
         setSubmitText(<Loader2 className="h-4 w-4 animate-spin" />);
 
         // fetch data from server/daijin-config
-        const data = await fetch(values.serverURL + "/daijin-config")
+        //const data = await fetch(values.serverURL + "/daijin-config")
         // FIXME cors
-        console.log(data)
+        //console.log(data)
         setSubmitStatus(false);
         setSubmitText(<p>Submit</p>)
+        const db = await Database.load("sqlite:glassy.db")
+
+        const result = await db.execute(
+            "CREATE TABLE servers (url TEXT PRIMARY KEY, clerk_publickey TEXT);"
+        );
+        db.close();
         // if its valid, store server url (and clerk key?)
         // and redirect to login/register
       }

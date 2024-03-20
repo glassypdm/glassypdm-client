@@ -11,6 +11,7 @@
     "shadcn": "npx shadcn-ui@latest"
   },
   "dependencies": {
+    "@clerk/clerk-react": "5.0.0-beta.30",
     "@hookform/resolvers": "^3.3.4",
     "@radix-ui/react-label": "^2.0.2",
     "@radix-ui/react-separator": "^1.0.3",
@@ -19,6 +20,7 @@
     "@tauri-apps/api": "2.0.0-beta.5",
     "@tauri-apps/plugin-fs": "2.0.0-beta.2",
     "@tauri-apps/plugin-shell": "2.0.0-beta.2",
+    "@tauri-apps/plugin-sql": "github:tauri-apps/tauri-plugin-sql#v2",
     "@tauri-apps/plugin-store": "2.0.0-beta.2",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
