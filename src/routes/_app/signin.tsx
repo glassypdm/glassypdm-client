@@ -49,7 +49,8 @@ function SignIn() {
             }
             else if (completeSignin.status === "complete") {
                 console.log("sign in complete!");
-                await setActive({ session: completeSignin.createdSessionId });;
+                await setActive({ session: completeSignin.createdSessionId });
+                // TODO redirect to project view
             }
         } catch (err: any) {
             // This can return an array of errors.
