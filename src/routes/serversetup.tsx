@@ -2,7 +2,7 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form";
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { z } from 'zod'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useState } from "react";
@@ -20,6 +20,7 @@ const formSchema = z.object({
 function ServerSetup() {
     const [submitStatus, setSubmitStatus] = useState(false);
     const [submitText, setSubmitText] = useState(<p>Submit</p>);
+    const navigate = useNavigate();
     
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -34,21 +35,21 @@ function ServerSetup() {
         setSubmitText(<Loader2 className="h-4 w-4 animate-spin" />);
 
         // fetch data from server/daijin-config
-        //const data = await fetch(values.serverURL + "/daijin-config")
-        // FIXME cors
-        //console.log(data)
+        // TODO error handling; if response isnt what we expected
+        const data = await (await fetch(values.serverURL + "/daijin-config")).json();
+        console.log(data)
         setSubmitStatus(false);
         setSubmitText(<p>Submit</p>)
-        const db = await Database.load("sqlite:glassy.db")
-
+        
+        const db = await Database.load("sqlite:testing.db")
         const result = await db.execute(
-            "CREATE TABLE servers (url TEXT PRIMARY KEY, clerk_publickey TEXT);"
+            "INSERT INTO server (url, clerk_publickey, local_dir, active) VALUES (?, ?, ?, ?);",
+            [values.serverURL, data.clerk_publickey, "", 1]
         );
         db.close();
-        // if its valid, store server url (and clerk key?)
-        // and redirect to login/register
-      }
-
+        
+        navigate({ to: "/" })
+    }
 
   return (
     <div className="flex flex-col place-items-center">
@@ -61,7 +62,7 @@ function ServerSetup() {
                     name="serverURL"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel className="text-xl">Server URL</FormLabel>
+                            <FormLabel className="text-md">Server URL</FormLabel>
                             <FormControl>
                                 <Input  {...field} />
                             </FormControl>

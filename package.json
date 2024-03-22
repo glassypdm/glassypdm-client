@@ -1,7 +1,7 @@
 {
   "name": "glassy_pdm_client",
   "private": true,
-  "version": "0.5.0",
+  "version": "0.6.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -19,6 +19,7 @@
     "@radix-ui/react-slot": "^1.0.2",
     "@tanstack/react-router": "^1.20.1",
     "@tauri-apps/api": "2.0.0-beta.5",
+    "@tauri-apps/plugin-dialog": "2.0.0-beta.2",
     "@tauri-apps/plugin-fs": "2.0.0-beta.2",
     "@tauri-apps/plugin-shell": "2.0.0-beta.2",
     "@tauri-apps/plugin-sql": "github:tauri-apps/tauri-plugin-sql#v2",

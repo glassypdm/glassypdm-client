@@ -1,6 +1,6 @@
 {
   "productName": "glassyPDM",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "identifier": "org.18x18az.pdm",
   "build": {
     "beforeDevCommand": "pnpm dev",
