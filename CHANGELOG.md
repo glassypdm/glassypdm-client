@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.1](https://github.com/joshtenorio/glassypdm-client/compare/v0.5.0...v0.5.1) (2024-04-10)
+
+
+### Miscellaneous
+
+* bump tauri version ([7b62a88](https://github.com/joshtenorio/glassypdm-client/commit/7b62a889b06866852ffc7cb0a177e3be1e320eaa))
+
 ## [0.5.0](https://github.com/joshtenorio/glassypdm-client/compare/v0.4.0...v0.5.0) (2024-02-20)
 
 
