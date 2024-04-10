@@ -25,7 +25,7 @@ function ProjectsIndex() {
                     <Input placeholder="Project Name" />
                     <Select>
                         <SelectTrigger>
-                            <SelectValue placeholder="Select an organization" />
+                            <SelectValue placeholder="Select a team" />
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="Sun Devil Motorsports">Sun Devil Motorsports</SelectItem>
