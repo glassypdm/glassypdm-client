@@ -8,7 +8,7 @@ fn main() {
             version: 1,
             description: "create_initial_tables",
             sql:"CREATE TABLE server (url TEXT PRIMARY KEY, clerk_publickey TEXT, local_dir TEXT, active INTEGER);
-            CREATE TABLE project (id INTEGER PRIMARY KEY, active INTEGER);
+            CREATE TABLE project (id INTEGER PRIMARY KEY, server_url TEXT, active INTEGER, current_commitid INTEGER);
             CREATE TABLE file (path TEXT PRIMARY KEY);
             ", // TODO determine file schema
             kind: MigrationKind::Up,

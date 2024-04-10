@@ -53,7 +53,7 @@ function ServerSetup() {
 
   return (
     <div className="flex flex-col place-items-center">
-        <h1 className="text-4xl my-12">daijinCAD</h1>
+        <h1 className="text-4xl my-12">glassyPDM</h1>
         <h2 className="text-2xl">Set the Server URL</h2>
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="w-3/4 my-12 space-y-4">
