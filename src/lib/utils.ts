@@ -1,7 +1,6 @@
 import { useAuth } from "@clerk/clerk-react";
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
-import { useQuery } from "@tanstack/react-query"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))

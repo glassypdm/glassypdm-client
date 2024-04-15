@@ -91,7 +91,7 @@ function ProjectsIndex() {
                                 <CardDescription>{project.team}</CardDescription>
                             </CardHeader>
                             <CardContent className="justify-self-end flex flex-row space-x-4 items-center">
-                                <p className="text-sm text-muted-foreground">Last updated 04/09/2024, 11:49:36 AM</p>
+                                {/*<p className="text-sm text-muted-foreground">Last updated MM/DD/YYYY, HH:MM:SS</p> */}
                                 <Button onClick={() => {console.log(project.id)}}>View</Button>
                             </CardContent>
                             </Card>
