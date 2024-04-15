@@ -1,13 +1,11 @@
 import { getVersion, getTauriVersion } from '@tauri-apps/api/app';
-import { Link, Outlet, createFileRoute, useRouterState } from '@tanstack/react-router'
+import { Link, Outlet, createFileRoute } from '@tanstack/react-router'
 import { useAuth } from "@clerk/clerk-react"
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Menu } from 'lucide-react';
+import { Home, Menu } from 'lucide-react';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-
 
 export const Route = createFileRoute('/_app/_workbench')({
   component: WorkbenchLayout
@@ -17,22 +15,15 @@ const GLASSYPDM_VERSION = await getVersion();
 const TAURI_VERSION = await getTauriVersion();
 
 function WorkbenchLayout() {
-    //const router = useRouterState();
-    //console.log("here", router.location.pathname) // TODO use this info to update breadcrumb
     const { signOut } = useAuth();
-    // TODO decide on breadcrumb vs typical navbar
+
+    // TODO decide what to do with navbar
     return (
         <div className='space-y-2 mt-2 mx-2'>
-          <div className='grid grid-flow-col'>
-            <Breadcrumb className='self-center mx-4'>
-            <BreadcrumbList className='text-base'>
-              <BreadcrumbItem>
-              <BreadcrumbLink asChild>
-                <Link to='/projects'>Projects</Link>
-              </BreadcrumbLink>
-              </BreadcrumbItem> {/**TODO project name here */}
-            </BreadcrumbList>
-            </Breadcrumb>
+          <div className='grid grid-flow-col items-center'>
+            <Button asChild variant={"ghost"} size={"icon"}>
+              <Link to='/projects'><Home /></Link>
+            </Button>
             <Dialog>
             <DropdownMenu>
               <DropdownMenuTrigger className='max-w-fit justify-self-end mx-4' asChild>
