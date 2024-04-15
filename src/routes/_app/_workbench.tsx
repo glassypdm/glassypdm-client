@@ -58,7 +58,9 @@ function WorkbenchLayout() {
               The glassyPDM client is released under the GNU General Public License (GPL) version 3 or later version.
               </p>
               <DialogFooter className='flex flex-row'>
-              <Button>Report Bug</Button>
+              <Button asChild>
+                <a href='https://github.com/joshtenorio/glassypdm-client/issues' target='_blank'>Report Bug</a>
+              </Button>
             </DialogFooter>
             </DialogContent>
             </Dialog>
