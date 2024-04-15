@@ -4,7 +4,7 @@ import { useAuth } from "@clerk/clerk-react"
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList, BreadcrumbSeparator } from '@/components/ui/breadcrumb';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Menu } from 'lucide-react';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
@@ -43,10 +43,7 @@ function WorkbenchLayout() {
                 <DialogTrigger asChild>
                 <DropdownMenuItem>About</DropdownMenuItem>
                 </DialogTrigger>
-                <DropdownMenuSeparator className='mx-2'/>
-                <DropdownMenuItem>Settings</DropdownMenuItem>
-                <DropdownMenuItem>Profile</DropdownMenuItem>
-                <DropdownMenuSeparator className='mx-2'/>
+                <DropdownMenuItem asChild><Link to='/settings'>Settings</Link></DropdownMenuItem>
                 <DropdownMenuItem onClick={() => signOut()}>Sign Out</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

@@ -7,7 +7,7 @@ fn main() {
         Migration {
             version: 1,
             description: "create_initial_tables",
-            sql:"CREATE TABLE server (url TEXT PRIMARY KEY, clerk_publickey TEXT, local_dir TEXT, active INTEGER);
+            sql:"CREATE TABLE server (url TEXT PRIMARY KEY, clerk_publickey TEXT, local_dir TEXT, active INTEGER, debug_url TEXT);
             CREATE TABLE project (id INTEGER PRIMARY KEY, server_url TEXT, active INTEGER, current_commitid INTEGER);
             CREATE TABLE file (path TEXT PRIMARY KEY);
             ", // TODO determine file schema

@@ -17,6 +17,7 @@ import { Route as IndexImport } from './routes/index'
 import { Route as AppSignupImport } from './routes/_app/signup'
 import { Route as AppSigninImport } from './routes/_app/signin'
 import { Route as AppWorkbenchImport } from './routes/_app/_workbench'
+import { Route as AppWorkbenchSettingsImport } from './routes/_app/_workbench/settings'
 import { Route as AppWorkbenchProjectsIndexImport } from './routes/_app/_workbench/projects.index'
 
 // Create/Update Routes
@@ -49,6 +50,11 @@ const AppSigninRoute = AppSigninImport.update({
 const AppWorkbenchRoute = AppWorkbenchImport.update({
   id: '/_workbench',
   getParentRoute: () => AppRoute,
+} as any)
+
+const AppWorkbenchSettingsRoute = AppWorkbenchSettingsImport.update({
+  path: '/settings',
+  getParentRoute: () => AppWorkbenchRoute,
 } as any)
 
 const AppWorkbenchProjectsIndexRoute = AppWorkbenchProjectsIndexImport.update({
@@ -84,6 +90,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSignupImport
       parentRoute: typeof AppImport
     }
+    '/_app/_workbench/settings': {
+      preLoaderRoute: typeof AppWorkbenchSettingsImport
+      parentRoute: typeof AppWorkbenchImport
+    }
     '/_app/_workbench/projects/': {
       preLoaderRoute: typeof AppWorkbenchProjectsIndexImport
       parentRoute: typeof AppWorkbenchImport
@@ -96,7 +106,10 @@ declare module '@tanstack/react-router' {
 export const routeTree = rootRoute.addChildren([
   IndexRoute,
   AppRoute.addChildren([
-    AppWorkbenchRoute.addChildren([AppWorkbenchProjectsIndexRoute]),
+    AppWorkbenchRoute.addChildren([
+      AppWorkbenchSettingsRoute,
+      AppWorkbenchProjectsIndexRoute,
+    ]),
     AppSigninRoute,
     AppSignupRoute,
   ]),

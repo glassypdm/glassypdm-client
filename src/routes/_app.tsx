@@ -28,7 +28,6 @@ export const Route = createFileRoute('/_app')({
 
 function AppLayout() {
   const a = Route.useLoaderData();
-  console.log(a)
 
   return (
     <div>
