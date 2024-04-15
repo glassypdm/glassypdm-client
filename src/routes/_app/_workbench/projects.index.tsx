@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUser } from "@clerk/clerk-react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import Database from "@tauri-apps/plugin-sql";
 import { useEffect, useState } from "react";
 
@@ -98,22 +98,14 @@ function ProjectsIndex() {
                             </CardHeader>
                             <CardContent className="justify-self-end flex flex-row space-x-4 items-center">
                                 {/*<p className="text-sm text-muted-foreground">Last updated MM/DD/YYYY, HH:MM:SS</p> */}
-                                <Button onClick={() => {console.log(project.id)}}>View</Button>
+                                <Button>
+                                    <Link to={"/projects/$pid"} params={{ pid: project.id as string}}>View</Link>
+                                </Button>
                             </CardContent>
                             </Card>
                     )
                     })
                 }
-                <Card className="grid grid-cols-2 items-center mb-2">
-                    <CardHeader className="justify-self-start">
-                        <CardTitle>Hardware Design Project</CardTitle>
-                        <CardDescription>Acme Inc</CardDescription>
-                    </CardHeader>
-                    <CardContent className="justify-self-end flex flex-row space-x-4 items-center">
-                        <p className="text-sm text-muted-foreground">Last updated 04/09/2024, 11:49:36 AM</p>
-                        <Button>View</Button>
-                    </CardContent>
-                </Card>
             </div>
         </div>
     )
