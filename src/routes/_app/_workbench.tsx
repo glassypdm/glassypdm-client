@@ -20,6 +20,7 @@ function WorkbenchLayout() {
     //const router = useRouterState();
     //console.log("here", router.location.pathname) // TODO use this info to update breadcrumb
     const { signOut } = useAuth();
+    // TODO decide on breadcrumb vs typical navbar
     return (
         <div className='space-y-2 mt-2 mx-2'>
           <div className='grid grid-flow-col'>
@@ -29,9 +30,7 @@ function WorkbenchLayout() {
               <BreadcrumbLink asChild>
                 <Link to='/projects'>Projects</Link>
               </BreadcrumbLink>
-              </BreadcrumbItem>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>SDM-25</BreadcrumbItem>
+              </BreadcrumbItem> {/**TODO project name here */}
             </BreadcrumbList>
             </Breadcrumb>
             <Dialog>

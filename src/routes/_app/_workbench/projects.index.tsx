@@ -28,9 +28,9 @@ export const Route = createFileRoute('/_app/_workbench/projects/')({
 
 function ProjectsIndex() {
     const [projects, setProjects] = useState([])
+    const [managedTeams, setManagedTeams] = useState([])
     const { user } = useUser();
     const owo = Route.useLoaderData();
-    console.log(owo)
 
     if (!user) {
         return null;
@@ -40,9 +40,10 @@ function ProjectsIndex() {
     useEffect(() => {
         fetch(owo.url + "/projects?user=" + user.id)
             .then((res: Response) => res.json())
-            .then((boop: any) => {
+            .then((boop: any) => { // TODO type the response
                 setProjects(boop.projects)
                 console.log(boop.projects)
+                setManagedTeams(boop.managed_teams)
             })
     }, [])
 
@@ -53,7 +54,7 @@ function ProjectsIndex() {
             <h1 className="text-2xl font-semibold">Projects</h1>
             <Dialog>
                 <DialogTrigger asChild>
-                    <Button variant={"outline"}>Create Project</Button>
+                    <Button variant={"outline"} disabled={managedTeams.length == 0}>Create Project</Button>
                 </DialogTrigger>
                 <DialogContent> {/** TODO this can/should be broken into its own component */}
                     <DialogHeader>
@@ -65,8 +66,13 @@ function ProjectsIndex() {
                             <SelectValue placeholder="Select a team" />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="Sun Devil Motorsports">Sun Devil Motorsports</SelectItem>
-                            <SelectItem value="Acme Inc">Acme Inc</SelectItem>
+                            {
+                            managedTeams.map((team: any) => {
+                                return (
+                                    <SelectItem value={team.id} key={team.id}>{team.name}</SelectItem>
+                                )
+                            })
+                            }
                         </SelectContent>
                     </Select>
                     <DialogFooter>

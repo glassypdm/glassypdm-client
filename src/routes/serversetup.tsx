@@ -44,7 +44,7 @@ function ServerSetup() {
         const db = await Database.load("sqlite:testing.db")
         const result = await db.execute(
             "INSERT INTO server (url, clerk_publickey, local_dir, active, debug_url) VALUES (?, ?, ?, ?, ?);",
-            [values.serverURL, data.clerk_publickey, "", 1, "http://localhost:5000"] // TODO don't hardcode this
+            [values.serverURL, data.clerk_publickey, "", 1, "http://localhost:5000"] // TODO don't hardcode debug url perhaps
         );
         db.close();
         
