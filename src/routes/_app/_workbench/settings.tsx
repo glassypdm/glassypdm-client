@@ -23,7 +23,7 @@ function Settings() {
                 <Button variant={"ghost"}>Account</Button>
             </div>
             <ScrollArea className="rounded-lg border bg-card p-2">
-            <div className="flex flex-col space-y-4 mx-4 max-h-[480px]">
+            <div className="flex flex-col space-y-4 mx-4 max-h-[480px] w-[560px]">
                 <Card>
                     <CardHeader>
                         <CardTitle>Directory</CardTitle>
