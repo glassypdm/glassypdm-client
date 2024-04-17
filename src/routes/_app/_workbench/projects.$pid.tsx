@@ -29,7 +29,7 @@ function Project() {
     <div className='flex flex-col items-center'>
         <NavigationMenu className='mt-2 mb-6'>
           <NavigationMenuList className='grid grid-flow-col space-x-4'>
-            <NavigationMenuItem className>
+            <NavigationMenuItem>
             <NavigationMenuLink className={cn(navigationMenuTriggerStyle(), 'text-4xl font-semibold justify-self-start')}>{loaderData.title}</NavigationMenuLink>
             </NavigationMenuItem>
             <NavigationMenuItem asChild>
@@ -43,7 +43,7 @@ function Project() {
             </NavigationMenuItem>
           </NavigationMenuList>
         </NavigationMenu>
-      <div className='grid grid-cols-3 gap-6 p-4 h-64'>
+      <div className='grid grid-cols-3 gap-8 p-4 h-64'>
         <div className='flex flex-col gap-4'>
           <Button className='grow'>Download Changes</Button>
           <Button variant={"outline"}>Open Website</Button>

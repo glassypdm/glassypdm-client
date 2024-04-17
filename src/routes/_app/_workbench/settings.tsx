@@ -6,12 +6,28 @@ import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { createFileRoute } from "@tanstack/react-router";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import ServerFolder from "@/components/settings/serverfolder";
+import Database from "@tauri-apps/plugin-sql";
 
 export const Route = createFileRoute('/_app/_workbench/settings')({
-    component: Settings
+    component: Settings,
+
+    loader: async ({ params }) => {
+        const db = await Database.load("sqlite:glassypdm.db")
+        const result = await db.select(
+            "SELECT debug_url, local_dir FROM server WHERE active = 1" // TODO url
+        );
+        const url = (result as any)[0].debug_url;
+        const dir = (result as any)[0].local_dir;
+        return {
+            url: url,
+            dir: dir
+        }
+    }
 })
 
 function Settings() {
+    const loaderData = Route.useLoaderData();
     const { theme, setTheme } = useTheme();
 
     return (
@@ -24,12 +40,7 @@ function Settings() {
             </div>
             <ScrollArea className="rounded-lg border bg-card p-2">
             <div className="flex flex-col space-y-4 mx-4 max-h-[480px] w-[560px]">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Directory</CardTitle>
-                        <CardDescription>Where your project files are stored.</CardDescription>
-                    </CardHeader>
-                </Card>
+                <ServerFolder dir={loaderData.dir as string} />
                 <Card>
                     <CardHeader>
                         <CardTitle>App Data</CardTitle>
