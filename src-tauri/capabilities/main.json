@@ -17,6 +17,8 @@
     "sql:allow-execute",
     "sql:allow-close",
     "sql:allow-select",
-    "dialog:allow-open"
+    "dialog:allow-open",
+    "fs:allow-mkdir",
+    "fs:allow-exists"
   ]
 }

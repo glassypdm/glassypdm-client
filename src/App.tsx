@@ -2,6 +2,7 @@ import "./App.css";
 import { ThemeProvider } from "./components/theme-provider";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
+import { Toaster } from "./components/ui/sonner";
 
 
 const router = createRouter({
@@ -19,6 +20,7 @@ function App() {
     <div>
       <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
         <RouterProvider router={router} />
+        <Toaster />
       </ThemeProvider>
     </div>
   );

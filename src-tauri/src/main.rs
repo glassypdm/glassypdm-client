@@ -24,7 +24,7 @@ fn main() {
         .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(
             tauri_plugin_sql::Builder::default()
-                .add_migrations("sqlite:testing.db", migrations)
+                .add_migrations("sqlite:glassypdm.db", migrations)
                 .build(),
         )
         .run(tauri::generate_context!())

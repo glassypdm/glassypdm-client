@@ -5,7 +5,7 @@ export const Route = createFileRoute('/_app/_workbench/projects/$pid')({
   component: Project,
 
   loader: async () => {
-      const db = await Database.load("sqlite:testing.db")
+      const db = await Database.load("sqlite:glassypdm.db")
       const result = await db.select(
           "SELECT debug_url FROM server WHERE active = 1" // TODO url
       );

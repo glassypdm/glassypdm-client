@@ -8,6 +8,12 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useState } from "react";
 import { Loader2 } from "lucide-react"
 import Database from "@tauri-apps/plugin-sql"
+import { Label } from "@/components/ui/label";
+import { open } from "@tauri-apps/plugin-dialog";
+import { toast } from "sonner";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { join, sep } from "@tauri-apps/api/path";
+import { mkdir, exists } from "@tauri-apps/plugin-fs"; 
 
 export const Route = createFileRoute('/serversetup')({
     component: ServerSetup,
@@ -20,6 +26,8 @@ const formSchema = z.object({
 function ServerSetup() {
     const [submitStatus, setSubmitStatus] = useState(false);
     const [submitText, setSubmitText] = useState(<p>Submit</p>);
+    const [serverFolderText, setServerFolderText] = useState(<p className="text-destructive">glassyPDM server folder location not set.</p>);
+    const [serverFolder, setServerFolder] = useState(""); // TODO the above is not necessary
     const navigate = useNavigate();
     
     const form = useForm<z.infer<typeof formSchema>>({
@@ -29,10 +37,48 @@ function ServerSetup() {
           },
     })
 
+    async function setFolder() {
+        const folder = await open({
+            multiple: false,
+            directory: true,
+        });
+
+        if(folder) {
+            setServerFolderText(<p>{folder}<span className="text-gray-400">{sep()}glassyPDM</span></p>);
+            setServerFolder(await join(folder, "glassyPDM"));
+        }
+        else if (!folder && serverFolder == ""){
+            toast("No folder selected")
+        }
+    }
+
     async function onSubmit(values: z.infer<typeof formSchema>) {
-        console.log(values)
         setSubmitStatus(true);
         setSubmitText(<Loader2 className="h-4 w-4 animate-spin" />);
+
+        if(serverFolder == "") {
+            // server folder not set
+            toast("Please select a folder.");
+            setSubmitText(<p>Submit</p>)
+            setSubmitStatus(false);
+            console.log("no  folder");
+
+            return;
+        }
+
+        // make folder, but check if it exists first
+        const folderExists: boolean = await exists(serverFolder);
+        if(folderExists) {
+            // server folder not set
+            toast("glassyPDM folder already exists; please select a different location.");
+            setSubmitText(<p>Submit</p>)
+            setSubmitStatus(false);
+            console.log("already exists");
+            return;
+        }
+        else {
+            await mkdir(serverFolder);
+        }
 
         // fetch data from server/daijin-config
         // TODO error handling; if response isnt what we expected
@@ -40,23 +86,25 @@ function ServerSetup() {
         console.log(data)
         setSubmitStatus(false);
         setSubmitText(<p>Submit</p>)
-        
-        const db = await Database.load("sqlite:testing.db")
+
+
+        const db = await Database.load("sqlite:glassypdm.db")
         const result = await db.execute(
             "INSERT INTO server (url, clerk_publickey, local_dir, active, debug_url) VALUES (?, ?, ?, ?, ?);",
-            [values.serverURL, data.clerk_publickey, "", 1, "http://localhost:5000"] // TODO don't hardcode debug url perhaps
+            [values.serverURL, data.clerk_publickey, serverFolder, 1, "http://localhost:5000"] // TODO don't hardcode debug url perhaps
         );
         db.close();
-        
+        console.log("hehehe")
         navigate({ to: "/" })
     }
 
   return (
     <div className="flex flex-col place-items-center">
         <h1 className="text-4xl my-12">glassyPDM</h1>
-        <h2 className="text-2xl">Set the Server URL</h2>
+        <h2 className="text-2xl">First Time Setup</h2>
+        <TooltipProvider>
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="w-3/4 my-12 space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col w-3/4 my-12 space-y-4">
                 <FormField
                     control={form.control}
                     name="serverURL"
@@ -70,9 +118,19 @@ function ServerSetup() {
                         </FormItem>
                     )}
                     />
-                    <Button type="submit" disabled={submitStatus}>{submitText}</Button>
+                    <Tooltip>
+                        <TooltipTrigger asChild className="flex flex-row items-center space-x-4 mb-16">
+                        <div className="">
+                            <Button onClick={setFolder} variant={"outline"} type="button">Set Server Folder Location</Button>
+                            <Label>{serverFolderText}</Label>
+                        </div>
+                        </TooltipTrigger>
+                        <TooltipContent>The folder where the glassyPDM server folder will be created. This is where files will be synced to.</TooltipContent>
+                    </Tooltip>
+                    <Button type="submit" disabled={submitStatus} className="w-20">{submitText}</Button>
             </form>
         </Form>
+        </TooltipProvider>
     </div>
   )
 }

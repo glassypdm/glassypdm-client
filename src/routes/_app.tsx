@@ -6,7 +6,7 @@ export const Route = createFileRoute('/_app')({
   component: AppLayout,
 
   loader: async () => {
-    const db = await Database.load("sqlite:testing.db")
+    const db = await Database.load("sqlite:glassypdm.db")
     const result = await db.select(
       "SELECT clerk_publickey FROM server WHERE active = 1"
     );
