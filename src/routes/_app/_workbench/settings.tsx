@@ -1,14 +1,19 @@
+import { useTheme } from "@/components/theme-provider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { createFileRoute } from "@tanstack/react-router";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 export const Route = createFileRoute('/_app/_workbench/settings')({
     component: Settings
 })
 
 function Settings() {
+    const { theme, setTheme } = useTheme();
+
     return (
         <div className="flex flex-row">
             <div className="flex flex-col mx-4">
@@ -17,7 +22,8 @@ function Settings() {
                 <Button variant={"ghost"}>Teams</Button>
                 <Button variant={"ghost"}>Account</Button>
             </div>
-            <div className="flex flex-col grow space-y-4 mx-4">
+            <ScrollArea className="rounded-lg border bg-card p-2">
+            <div className="flex flex-col space-y-4 mx-4 max-h-[480px]">
                 <Card>
                     <CardHeader>
                         <CardTitle>Directory</CardTitle>
@@ -37,6 +43,28 @@ function Settings() {
                 </Card>
                 <Card>
                     <CardHeader>
+                        <CardTitle>Appearance</CardTitle>
+                        <CardDescription>Prettify your PDM experience.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <RadioGroup defaultValue={theme}>
+                            <div className="items-center space-x-4">
+                                <RadioGroupItem value="light" id="light" onClick={() => setTheme("light")} />
+                                <Label htmlFor="light">Light Mode</Label>
+                            </div>
+                            <div className="items-center space-x-4">
+                                <RadioGroupItem value="dark" id="dark" onClick={() => setTheme("dark")} />
+                                <Label htmlFor="dark">Dark Mode</Label>
+                            </div>
+                            <div className="items-center space-x-4">
+                                <RadioGroupItem value="system" id="system" onClick={() => setTheme("system")} />
+                                <Label htmlFor="system">System</Label>
+                            </div>
+                        </RadioGroup>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader>
                         <CardTitle>Developer Settings</CardTitle>
                         <CardDescription>Trick silicon into thinking.</CardDescription>
                     </CardHeader>
@@ -51,6 +79,7 @@ function Settings() {
                     </CardFooter>
                 </Card>
             </div>
+            </ScrollArea>
         </div>
     )
 }
