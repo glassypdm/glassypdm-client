@@ -3,9 +3,11 @@ import { Link, Outlet, createFileRoute } from '@tanstack/react-router'
 import { useAuth } from "@clerk/clerk-react"
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Home, Menu } from 'lucide-react';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { NavigationMenu, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, navigationMenuTriggerStyle } from '@/components/ui/navigation-menu';
+import { cn } from '@/lib/utils';
 
 export const Route = createFileRoute('/_app/_workbench')({
   component: WorkbenchLayout
@@ -17,13 +19,33 @@ const TAURI_VERSION = await getTauriVersion();
 function WorkbenchLayout() {
     const { signOut } = useAuth();
 
-    // TODO decide what to do with navbar
     return (
         <div className='space-y-2 mt-2 mx-2'>
           <div className='grid grid-flow-col items-center'>
-            <Button asChild variant={"ghost"} size={"icon"}>
-              <Link to='/projects'><Home /></Link>
-            </Button>
+            <NavigationMenu className='mx-2'>
+              <NavigationMenuList>
+                <NavigationMenuItem>
+                  <Link to="/projects"> {/** TODO dashboard (and change text to dashboard) */}
+                    <NavigationMenuLink className={cn(navigationMenuTriggerStyle(), 'text-xl')}>glassyPDM</NavigationMenuLink>
+                  </Link>
+                </NavigationMenuItem>
+                <NavigationMenuItem>
+                  <Link to="/projects">
+                    <NavigationMenuLink className={navigationMenuTriggerStyle()}>Projects</NavigationMenuLink>
+                  </Link>
+                </NavigationMenuItem>
+                <NavigationMenuItem>
+                  <Link to="/projects">
+                    <NavigationMenuLink className={navigationMenuTriggerStyle()}>Teams</NavigationMenuLink>
+                  </Link>
+                </NavigationMenuItem>
+                <NavigationMenuItem>
+                  <Link to="/settings">
+                    <NavigationMenuLink className={navigationMenuTriggerStyle()}>Settings</NavigationMenuLink>
+                  </Link>
+                </NavigationMenuItem>
+              </NavigationMenuList>
+            </NavigationMenu>
             <Dialog>
             <DropdownMenu>
               <DropdownMenuTrigger className='max-w-fit justify-self-end mx-4' asChild>
@@ -33,7 +55,8 @@ function WorkbenchLayout() {
                 <DialogTrigger asChild>
                 <DropdownMenuItem>About</DropdownMenuItem>
                 </DialogTrigger>
-                <DropdownMenuItem asChild><Link to='/settings'>Settings</Link></DropdownMenuItem>
+                <DropdownMenuItem>Help</DropdownMenuItem>
+                <DropdownMenuSeparator className='mx-1'/>
                 <DropdownMenuItem onClick={() => signOut()}>Sign Out</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
