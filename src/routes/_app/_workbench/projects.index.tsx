@@ -15,9 +15,10 @@ export const Route = createFileRoute('/_app/_workbench/projects/')({
     loader: async () => {
         const db = await Database.load("sqlite:glassypdm.db")
         const result = await db.select(
-            "SELECT debug_url FROM server WHERE active = 1" // TODO url
+          "SELECT CASE WHEN debug_active = 1 THEN debug_url ELSE url END as url FROM server"
         );
-        const url = (result as any)[0].debug_url;
+        const url = (result as any)[0].url;
+        await db.close();
         //const projects = await fetch(url + "/projects");
         //console.log(projects)
         return {

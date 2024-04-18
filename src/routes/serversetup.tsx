@@ -90,8 +90,8 @@ function ServerSetup() {
 
         const db = await Database.load("sqlite:glassypdm.db")
         const result = await db.execute(
-            "INSERT INTO server (url, clerk_publickey, local_dir, active, debug_url) VALUES (?, ?, ?, ?, ?);",
-            [values.serverURL, data.clerk_publickey, serverFolder, 1, "http://localhost:5000"] // TODO don't hardcode debug url perhaps
+            "INSERT INTO server (url, clerk_publickey, local_dir, active, debug_url, debug_active) VALUES (?, ?, ?, ?, ?, ?);",
+            [values.serverURL, data.clerk_publickey, serverFolder, 1, "http://localhost:5000", 0] // TODO don't hardcode debug url
         );
         db.close();
         console.log("hehehe")

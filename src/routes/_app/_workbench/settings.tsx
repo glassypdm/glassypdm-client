@@ -8,20 +8,29 @@ import { createFileRoute } from "@tanstack/react-router";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import ServerFolder from "@/components/settings/serverfolder";
 import Database from "@tauri-apps/plugin-sql";
+import { useState } from "react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute('/_app/_workbench/settings')({
     component: Settings,
 
-    loader: async ({ params }) => {
+    loader: async () => {
         const db = await Database.load("sqlite:glassypdm.db")
-        const result = await db.select(
-            "SELECT debug_url, local_dir FROM server WHERE active = 1" // TODO url
+        let result = await db.select(
+          "SELECT CASE WHEN debug_active = 1 THEN debug_url ELSE url END as url FROM server"
         );
-        const url = (result as any)[0].debug_url;
+
+        const url = (result as any)[0].url;
+
+        result = await db.select(
+            "SELECT local_dir, debug_active FROM server WHERE active = 1"
+        )
         const dir = (result as any)[0].local_dir;
+        const debug = (result as any)[0].debug_active;
         return {
             url: url,
-            dir: dir
+            dir: dir,
+            debug: debug == 1 ? true : false
         }
     }
 })
@@ -29,6 +38,31 @@ export const Route = createFileRoute('/_app/_workbench/settings')({
 function Settings() {
     const loaderData = Route.useLoaderData();
     const { theme, setTheme } = useTheme();
+    const [ debug, setDebug ] = useState(loaderData.debug)
+    const [ server, setServer ] = useState(loaderData.url)
+
+    // TODO have an alert dialog so user can confirm they want to change server setting
+    // FIXME when changing to dev server, when you revisit
+    // the settings page it will still show prod server, even though dev server is used.
+    // when revisiting settings page a second time it will show properly
+    // FIXME when changing to prod server, need to hit save twice (?)
+
+    async function saveDevSettings() {
+        const db = await Database.load("sqlite:glassypdm.db")
+
+        await db.execute(
+            "UPDATE server SET debug_active = ? WHERE active = 1", [(debug ? 1 : 0)]
+        )
+
+        const result = await db.select(
+            "SELECT CASE WHEN debug_active = 1 THEN debug_url ELSE url END as url FROM server"
+        );
+        const url = (result as any)[0].url;
+        setServer(url);
+
+        await db.close()
+        toast(`Server selection set to ${url}.`)
+    }
 
     return (
         <div className="flex flex-row">
@@ -81,12 +115,13 @@ function Settings() {
                     </CardHeader>
                     <CardContent>
                         <div className="flex flex-row space-x-4 items-center">
-                            <Label>Use Debug Server</Label>
-                            <Switch />
+                        <Label>Use Development Server</Label>
+                        <Switch defaultChecked={debug} onCheckedChange={(checked) => setDebug(checked)}/>
                         </div>
+                        <p>Server used: {server}</p>
                     </CardContent>
                     <CardFooter>
-                        <Button>Save</Button>
+                        <Button onClick={saveDevSettings}>Save</Button>
                     </CardFooter>
                 </Card>
             </div>

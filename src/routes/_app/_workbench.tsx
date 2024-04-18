@@ -25,24 +25,24 @@ function WorkbenchLayout() {
             <NavigationMenu className='mx-2'>
               <NavigationMenuList>
                 <NavigationMenuItem>
-                  <Link to="/projects"> {/** TODO dashboard (and change text to dashboard) */}
-                    <NavigationMenuLink className={cn(navigationMenuTriggerStyle(), 'text-xl')}>glassyPDM</NavigationMenuLink>
-                  </Link>
+                <NavigationMenuLink className={cn(navigationMenuTriggerStyle(), "text-xl")} asChild>
+                        <Link to="/projects">glassyPDM</Link>
+                    </NavigationMenuLink>
                 </NavigationMenuItem>
                 <NavigationMenuItem>
-                  <Link to="/projects">
-                    <NavigationMenuLink className={navigationMenuTriggerStyle()}>Projects</NavigationMenuLink>
-                  </Link>
+                    <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
+                        <Link to="/projects">Projects</Link>
+                    </NavigationMenuLink>
                 </NavigationMenuItem>
                 <NavigationMenuItem>
-                  <Link to="/projects">
-                    <NavigationMenuLink className={navigationMenuTriggerStyle()}>Teams</NavigationMenuLink>
-                  </Link>
+                <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
+                        <Link to="/projects">Teams</Link>
+                    </NavigationMenuLink>
                 </NavigationMenuItem>
                 <NavigationMenuItem>
-                  <Link to="/settings">
-                    <NavigationMenuLink className={navigationMenuTriggerStyle()}>Settings</NavigationMenuLink>
-                  </Link>
+                <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
+                        <Link to="/settings">Settings</Link>
+                    </NavigationMenuLink>
                 </NavigationMenuItem>
               </NavigationMenuList>
             </NavigationMenu>
