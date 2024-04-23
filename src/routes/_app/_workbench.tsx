@@ -36,7 +36,7 @@ function WorkbenchLayout() {
                 </NavigationMenuItem>
                 <NavigationMenuItem>
                 <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
-                        <Link to="/projects">Teams</Link>
+                        <Link to="/teams">Teams</Link>
                     </NavigationMenuLink>
                 </NavigationMenuItem>
                 <NavigationMenuItem>
