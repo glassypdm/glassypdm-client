@@ -1,7 +1,10 @@
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command";
 import { Dialog } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { createFileRoute } from "@tanstack/react-router";
 import { CheckIcon, ChevronsUpDown } from "lucide-react";
@@ -31,7 +34,7 @@ function Teams() {
       groups[0]
     )
     return (
-        <div>
+        <div className="grid grid-flow-row">
             <Dialog open={showNewTeamDialog} onOpenChange={setShowNewTeamDialog}>
                 <Popover open={open} onOpenChange={setOpen}>
                     <PopoverTrigger asChild>
@@ -39,7 +42,7 @@ function Teams() {
                         variant={"outline"}
                         role="combobox"
                         aria-expanded={open}
-                        className="w-[200px] justify-between">
+                        className="w-[200px] justify-between mb-2">
                         {selectedTeam.label}
                         <ChevronsUpDown className="opacity-50"/>
                         </Button>
@@ -68,6 +71,7 @@ function Teams() {
                     </PopoverContent>
                 </Popover>
             </Dialog>
+            <p className="mx-8">Your role:</p>
         </div>
     )
 }
