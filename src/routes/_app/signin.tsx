@@ -7,6 +7,9 @@ import { createFileRoute, Link, Navigate, useNavigate } from '@tanstack/react-ro
 import { useForm } from 'react-hook-form';
 import { z } from "zod";
 import { SignedIn, SignedOut, useSignIn } from "@clerk/clerk-react";
+import { useState } from 'react';
+import { Dialog, DialogTrigger } from '@/components/ui/dialog';
+import ForgotPassword from '@/components/auth/forgot';
 
 export const Route = createFileRoute('/_app/signin')({
     component: SignIn,
@@ -19,7 +22,8 @@ const signInSchema = z.object({
 
 function SignIn() {
     const { isLoaded, signIn, setActive } = useSignIn();
-    const navigate = useNavigate(); 
+    const navigate = useNavigate();
+    const [forgotState, setForgotState] = useState(false);
 
     const signInForm = useForm<z.infer<typeof signInSchema>>({
         resolver: zodResolver(signInSchema),
@@ -91,15 +95,18 @@ function SignIn() {
                     </FormItem>
                 )}
                 />
-            <Button type="submit" className='mt-2'>Submit</Button>
+            <Button type="submit" className='my-2'>Submit</Button>
         </form>
         </Form>
-        <Button variant={'outline'} className='mt-2'>Forgot Password?</Button>
+        <Dialog>
+            <DialogTrigger asChild>
+                <Button variant={'outline'} className='mt-2'>Forgot Password?</Button>
+            </DialogTrigger>
+            <ForgotPassword />
+        </Dialog>
         <Separator className='my-4 max-w-md'/>
-        <p className=''>Or</p>
-        <Button>
-        <Link from='/about' to='/signup'>Create an Account</Link>
-        </Button>
+        <p className='mb-2'>Or</p>
+        <Button variant={"outline"}>Create an Account</Button>
         </SignedOut>
         <SignedIn>
             <Navigate to='/projects'/>
