@@ -5,6 +5,7 @@ import { Button } from "../ui/button";
 import { z } from "zod";
 import { Label } from "../ui/label";
 import { useSignIn } from "@clerk/clerk-react";
+import { isClerkAPIResponseError } from "@clerk/clerk-react/errors";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "../ui/input-otp";
 import { Loader2 } from "lucide-react";
 
@@ -26,7 +27,6 @@ function ForgotPassword() {
         setLoadingInit(true);
 
         if (!validation.success) {
-            // TODO display error
             setEmailError("Invalid email.")
             setLoadingInit(false);
             return;
@@ -37,6 +37,7 @@ function ForgotPassword() {
             return;
         }
 
+        // TODO handle when incorrect email is input
         const res = await signIn.create({
             strategy: "reset_password_email_code",
             identifier: email
@@ -48,7 +49,6 @@ function ForgotPassword() {
 
     async function resetPassword() {
         setLoadingReset(true);
-        // TODO verify password are equal
         if (proposedPass !== confirmPass) {
             setPassError("Passwords do not match.");
             setLoadingReset(false);
@@ -60,11 +60,40 @@ function ForgotPassword() {
             return;
         }
 
-        // TODO attemptfirstfactor
+        if(!isLoaded) {
+            setLoadingReset(false);
+            return;
+        }
 
-        // TODO check status
-
-        // TODO how to show success?
+        try {
+            const res = await signIn.attemptFirstFactor({
+                strategy: 'reset_password_email_code',
+                code: resetCode,
+                password: proposedPass
+            })
+            if(res.status === 'complete') {
+                await setActive({ session: signIn.createdSessionId });
+            }
+            else {
+                setPassError("An error occured; try again.")
+                setLoadingReset(false);
+                return;                    
+            }
+        } catch(err: any) {
+            console.error(JSON.stringify(err, null, 2));
+            if(isClerkAPIResponseError(err)) {
+                if(err.errors[0].code !== "form_code_incorrect")
+                    setPassError(err.errors[0].message);
+                else
+                    setPassError("Reset code is incorrect.");
+            }
+            else {
+                setPassError("An error occured; try again.")
+            }
+            setLoadingReset(false);
+            return;        
+        }
+        // TODO are we missing something?
         setPassError("");
         setLoadingReset(false);
     }
@@ -89,7 +118,6 @@ function ForgotPassword() {
         <Input placeholder="New Password" type="password" onChange={(e: any) => setProposedPass(e.target.value)} />
         <Label>Confirm Password</Label>
         <Input placeholder="Confirm Password" type="password" onChange={(e: any) => setConfirmPass(e.target.value)} />
-        <Label className="text-red-500">{passError}</Label>
         <Label className="flex flex-row space-x-16"><p>Password Reset Code</p><p className="text-muted-foreground">Check your email!</p></Label>
         <InputOTP maxLength={6} onChange={(value) => setResetCode(value)}>
             <InputOTPGroup>
@@ -101,7 +129,8 @@ function ForgotPassword() {
             <InputOTPSlot index={5} />
             </InputOTPGroup>
         </InputOTP>
-        <Button variant={"destructive"} onClick={resetPassword}>Reset Password</Button>
+        <Label className="text-red-500">{passError}</Label>
+        <Button variant={"destructive"} onClick={resetPassword} disabled={loadingReset}>{loadingReset ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />: "Reset Password"}</Button>
     </div>
     }
     </DialogContent>    
