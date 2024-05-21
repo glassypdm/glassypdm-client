@@ -1,14 +1,13 @@
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command";
+import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command";
 import { Dialog } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { createFileRoute } from "@tanstack/react-router";
 import { CheckIcon, ChevronsUpDown } from "lucide-react";
 import { useState } from "react";
+import Database from "@tauri-apps/plugin-sql";
 
 const groups = [
         {
@@ -24,7 +23,18 @@ const groups = [
 type Team = (typeof groups)[number]
 
 export const Route = createFileRoute('/_app/_workbench/teams')({
-    component: Teams
+    component: Teams,
+
+    loader: async () => {
+        const db = await Database.load("sqlite:glassypdm.db")
+        const result = await db.select(
+            "SELECT CASE WHEN debug_active = 1 THEN debug_url ELSE url END as url FROM server"
+        );
+        const url = (result as any)[0].url;
+        return {
+            url: url
+        }
+    }
 })
 
 function Teams() {
@@ -33,6 +43,9 @@ function Teams() {
     const [selectedTeam, setSelectedTeam] = useState<Team>(
       groups[0]
     )
+    const owo = Route.useLoaderData();
+    const url = owo.url;
+
     return (
         <div className="grid grid-flow-row">
             <Dialog open={showNewTeamDialog} onOpenChange={setShowNewTeamDialog}>
