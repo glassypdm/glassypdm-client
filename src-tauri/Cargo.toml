@@ -19,6 +19,9 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tauri-plugin-fs = "2.0.0-beta.2"
 tauri-plugin-dialog = "2.0.0-beta.3"
+walkdir = "2"
+fs-chunker = "0.4.0"
+sqlx = { version = "0.7", features = [ "sqlite" ] }
 
 [dependencies.tauri-plugin-sql]
 features = ["sqlite"]

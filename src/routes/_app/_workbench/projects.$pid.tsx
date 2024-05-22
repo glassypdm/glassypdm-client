@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { TabsContent } from '@radix-ui/react-tabs';
 import { createFileRoute } from '@tanstack/react-router'
 import Database from "@tauri-apps/plugin-sql";
+import { invoke } from "@tauri-apps/api/core";
 
 export const Route = createFileRoute('/_app/_workbench/projects/$pid')({
   component: Project,
@@ -19,7 +20,8 @@ export const Route = createFileRoute('/_app/_workbench/projects/$pid')({
       const data = await res.json();
       return {
           url: url,
-          title: data.title
+          title: data.title,
+          pid: params.pid
       }
   }
 })
@@ -27,6 +29,13 @@ export const Route = createFileRoute('/_app/_workbench/projects/$pid')({
 function Project() {
     const loaderData = Route.useLoaderData();
     const { pid } = Route.useParams();
+
+
+    async function syncChanges() {
+      const pid_number = parseInt(pid)
+      await invoke("sync_changes", { pid: pid_number });
+    }
+
   return (
     <div>
       <Tabs defaultValue='home' className='flex flex-col items-center'>
@@ -57,7 +66,7 @@ function Project() {
           <Button className='grow'>Download Changes</Button>
           <Button variant={"outline"}>Open in Website</Button>
         </div>
-        <Button className='flex h-full'>Sync</Button>
+        <Button className='flex h-full' onClick={syncChanges}>Sync</Button>
         <div className='flex flex-col gap-4'>
           <Button className='grow'>Upload Changes</Button>
           <Button variant={"outline"}>Open Project Folder</Button>
