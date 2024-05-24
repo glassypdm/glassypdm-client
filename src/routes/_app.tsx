@@ -7,7 +7,7 @@ export const Route = createFileRoute('/_app')({
 
   loader: async () => {
     const result = await invoke("get_server_clerk");
-    console.log(result)
+    const name: string = await invoke("get_server_name");
     if((result as any).length == 0) {
       throw redirect({
         to: "/serversetup"
@@ -16,7 +16,8 @@ export const Route = createFileRoute('/_app')({
     else {
       console.log(result)
       return {
-        publickey: result as any
+        publickey: result as any,
+        name: name
       }
     }
   }

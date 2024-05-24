@@ -1,3 +1,4 @@
-CREATE TABLE server (url TEXT PRIMARY KEY, name TEXT, clerk_publickey TEXT, local_dir TEXT, active INTEGER, debug_url TEXT, debug_active INTEGER);
-CREATE TABLE project (id INTEGER PRIMARY KEY, server_url TEXT, name TEXT, active INTEGER, current_commitid INTEGER);
-CREATE TABLE file (path TEXT PRIMARY KEY);
+CREATE TABLE server (url TEXT NOT NULL PRIMARY KEY, name TEXT, clerk_publickey TEXT, local_dir TEXT, active INTEGER, debug_url TEXT, debug_active INTEGER);
+CREATE TABLE project ( id INTEGER NOT NULL PRIMARY KEY, server_url TEXT, name TEXT, active INTEGER, current_commitid INTEGER);
+CREATE TABLE file ( filepath TEXT NOT NULL PRIMARY KEY, num_chunks INTEGER, tracked_commit INTEGER DEFAULT -1, change_type INTEGER DEFAULT 1, in_fs INTEGER DEFAULT 1);
+CREATE TABLE chunk ( filepath TEXT NOT NULL, chunk_num INTEGER NOT NULL, size INTEGER, tracked_commit INTEGER DEFAULT -1, curr_hash TEXT DEFAULT "", base_hash TEXT DEFAULT "", tracked_hash TEXT DEFAULT "", PRIMARY KEY (filepath, chunk_num));

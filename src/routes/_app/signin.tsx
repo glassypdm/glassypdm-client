@@ -10,9 +10,17 @@ import { SignedIn, SignedOut, useSignIn } from "@clerk/clerk-react";
 import { useState } from 'react';
 import { Dialog, DialogTrigger } from '@/components/ui/dialog';
 import ForgotPassword from '@/components/auth/forgot';
+import { invoke } from '@tauri-apps/api/core';
 
 export const Route = createFileRoute('/_app/signin')({
     component: SignIn,
+
+    loader: async () => {
+        const name: string = await invoke("get_server_name");
+        console.log("hehe")
+        console.log(name);
+        return {name};
+    }
 })
 
 const signInSchema = z.object({
@@ -24,6 +32,7 @@ function SignIn() {
     const { isLoaded, signIn, setActive } = useSignIn();
     const navigate = useNavigate();
     const [forgotState, setForgotState] = useState(false);
+    const data = Route.useLoaderData();
 
     const signInForm = useForm<z.infer<typeof signInSchema>>({
         resolver: zodResolver(signInSchema),
@@ -66,7 +75,8 @@ function SignIn() {
     return (
     <div className='flex flex-col place-items-center'>
         <SignedOut>
-        <h1 className='text-2xl my-4'>Sign In</h1>
+        <h1 className='text-2xl mt-4'>Sign in to glassyPDM</h1>
+        <h2 className='text-xl mt-2 mb-4'>{data.name}</h2>
         <Form {...signInForm}>
         <form onSubmit={signInForm.handleSubmit(onSigninSubmit)}>
             <FormField

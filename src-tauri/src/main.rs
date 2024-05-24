@@ -3,18 +3,39 @@
 use serde::{Deserialize, Serialize};
 use sqlx::{SqlitePool, Row, Pool, Sqlite, sqlite::SqliteConnectOptions};
 use sqlx::migrate::Migrator;
-use tauri::{App, AppHandle, Manager};
+use tauri::{Manager};
 use walkdir::WalkDir;
 use std::path::{Path, PathBuf};
-use fs_chunker::{Chunk, hash_file};
+use fs_chunker::{hash_file};
 use std::time::Instant;
 use tauri::State;
 use tokio::sync::Mutex;
 
+#[tauri::command]
+async fn get_server_name(state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<String, ()> {
+    let pool = state_mutex.lock().await;
+    println!("before query");
+    let output = sqlx::query("SELECT name FROM server WHERE active = 1").fetch_one(&*pool).await;
+    println!("after query");
+
+    match output {
+        Ok(row) => {
+        println!("ok");
+        Ok(row.get::<String, &str>("name"))
+        },
+        Err(err) => {
+            println!("asdfasdf {}", err); // TODO ???
+            Ok("glassyPDM".to_string())
+        }
+    }
+}
 
 async fn hash_dir(dir_path: PathBuf, pool: &Pool<Sqlite>) {
     println!("start");
     let now = Instant::now();
+
+    // TODO set in_fs to 0 for all files in file table
+    let _ = sqlx::query("UPDATE file SET in_fs = 0;").execute(&*pool).await;
 
     for entry in WalkDir::new(dir_path) {
         let file = entry.unwrap();
@@ -23,7 +44,12 @@ async fn hash_dir(dir_path: PathBuf, pool: &Pool<Sqlite>) {
         }
         let chunk_list: Vec<String> = hash_file(file.path(), 4 * 1024 * 1024, true); // 4 MB chunks
         //println!("{}, {} chunks", file.path().display(), chunk_list.len());
+        // TODO update chunk table
+        // TODO update file table
+        // TODO set in_fs = 1
+        // TODO determine change type
     }
+
 
     println!("end: {} ms", now.elapsed().as_millis());
 }
@@ -32,7 +58,7 @@ async fn hash_dir(dir_path: PathBuf, pool: &Pool<Sqlite>) {
 async fn sync_changes(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<(), ()> {
     let pool = state_mutex.lock().await;
     println!("pid: {}", pid);
-
+    // if no row in project table, make one and then make the folder for the project
     //let data_dir = handle.path().app_data_dir().unwrap();
     //println!("data_dir: {}", data_dir.display());
     hash_dir("C:\\FSAE\\GrabCAD\\SDM24\\DAQ".into(), &pool).await;
@@ -155,7 +181,8 @@ fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
             sync_changes, set_local_dir, set_debug, get_server_url,
-            get_server_clerk, add_server, init_settings_options])
+            get_server_clerk, add_server, init_settings_options, get_server_name
+            ])
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_shell::init())
@@ -170,9 +197,14 @@ fn main() {
                 match pool {
                     Ok(db) => {
                         let owo = app.path().resource_dir().unwrap().join("migrations");
-                        let m = Migrator::new(owo).await.unwrap(); // TODO refactor unwrap() if possible
-                        let _ = m.run(&db).await; // TODO parse error
-
+                        let m = Migrator::new(owo).await.unwrap();
+                        let res = m.run(&db).await;
+                        match res {
+                            Ok(()) => {},
+                            Err(err) => {
+                                println!("{}", err);
+                            }
+                        }
                         app.manage(Mutex::new(db.clone()));
                     },
                     Err(_) => {

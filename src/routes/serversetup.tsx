@@ -92,10 +92,10 @@ function ServerSetup() {
             url: values.serverURL,
             clerk: data.clerk_publickey,
             localDir: serverFolder,
-            name: "ASU Formula SAE"
+            name: data.name
         });
         console.log("hehehe")
-        navigate({ to: "/" })
+        navigate({ to: "/signin" })
     }
 
   return (
