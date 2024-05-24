@@ -6,9 +6,8 @@ export const Route = createFileRoute('/_app')({
   component: AppLayout,
 
   loader: async () => {
-    const result = await invoke("get_server_clerk");
-    const name: string = await invoke("get_server_name");
-    if((result as any).length == 0) {
+    const result: string = await invoke("get_server_clerk");
+    if(result.length == 0) {
       throw redirect({
         to: "/serversetup"
       })
@@ -16,8 +15,7 @@ export const Route = createFileRoute('/_app')({
     else {
       console.log(result)
       return {
-        publickey: result as any,
-        name: name
+        publickey: result as string
       }
     }
   }
@@ -25,11 +23,11 @@ export const Route = createFileRoute('/_app')({
 
 
 function AppLayout() {
-  const a = Route.useLoaderData();
+  const { publickey } = Route.useLoaderData();
 
   return (
     <div>
-      <ClerkProvider publishableKey={a.publickey}>
+      <ClerkProvider publishableKey={publickey}>
         <SignedOut>
           <SignIn />
         </SignedOut>

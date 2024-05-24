@@ -5,11 +5,19 @@ use sqlx::{SqlitePool, Row, Pool, Sqlite, sqlite::SqliteConnectOptions};
 use sqlx::migrate::Migrator;
 use tauri::{Manager};
 use walkdir::WalkDir;
+use std::os::windows::fs::MetadataExt;
 use std::path::{Path, PathBuf};
 use fs_chunker::{hash_file};
 use std::time::Instant;
 use tauri::State;
 use tokio::sync::Mutex;
+
+enum ChangeType {
+    NoChange = 0,
+    Create,
+    Update,
+    Delete
+}
 
 #[tauri::command]
 async fn get_server_name(state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<String, ()> {
@@ -34,7 +42,6 @@ async fn hash_dir(dir_path: PathBuf, pool: &Pool<Sqlite>) {
     println!("start");
     let now = Instant::now();
 
-    // TODO set in_fs to 0 for all files in file table
     let _ = sqlx::query("UPDATE file SET in_fs = 0;").execute(&*pool).await;
 
     for entry in WalkDir::new(dir_path) {
@@ -42,13 +49,41 @@ async fn hash_dir(dir_path: PathBuf, pool: &Pool<Sqlite>) {
         if !file.metadata().unwrap().is_file() {
             continue;
         }
-        let chunk_list: Vec<String> = hash_file(file.path(), 4 * 1024 * 1024, true); // 4 MB chunks
-        //println!("{}, {} chunks", file.path().display(), chunk_list.len());
-        // TODO update chunk table
-        // TODO update file table
-        // TODO set in_fs = 1
+
+        // update chunk table
+        let hash_list: Vec<String> = hash_file(file.path(), 4 * 1024 * 1024, true); // 4 MB chunks
+        for (pos, hash) in hash_list.iter().enumerate() {
+            let _ = sqlx::query(
+                "
+                INSERT INTO chunk(filepath, chunk_num, curr_hash) VALUES(?, ?, ?)
+                ON CONFLICT(filepath, chunk_num) DO UPDATE SET curr_hash = excluded.curr_hash;
+                "
+            )
+            .bind(file.path().to_str())
+            .bind(pos as i32)
+            .bind(hash)
+            .execute(&*pool).await;
+        }
+
+        // update file table and set in_fs = 1
+        let _ = sqlx::query(
+            "
+            INSERT INTO file(filepath, num_chunks, size) VALUES(?, ?, ?)
+            ON CONFLICT(filepath) DO UPDATE SET num_chunks = excluded.num_chunks, size = excluded.size, in_fs = 1;
+            "
+        )
+        .bind(file.path().to_str())
+        .bind(hash_list.len() as u32)
+        .bind(file.metadata().unwrap().file_size() as u32)
+        .execute(&*pool).await;
+
         // TODO determine change type
     }
+
+    // update change type for files with in_fs = 0
+    let _ = sqlx::query(
+        "UPDATE file SET change_type = 3 WHERE in_fs = 0;"
+    ).execute(&*pool).await;
 
 
     println!("end: {} ms", now.elapsed().as_millis());
@@ -58,6 +93,7 @@ async fn hash_dir(dir_path: PathBuf, pool: &Pool<Sqlite>) {
 async fn sync_changes(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<(), ()> {
     let pool = state_mutex.lock().await;
     println!("pid: {}", pid);
+    // TODO
     // if no row in project table, make one and then make the folder for the project
     //let data_dir = handle.path().app_data_dir().unwrap();
     //println!("data_dir: {}", data_dir.display());
