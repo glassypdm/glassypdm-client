@@ -14,7 +14,6 @@ tauri-build = { version = "2.0.0-beta", features = [] }
 [dependencies]
 tauri = { version = "2.0.0-beta.2", features = [] }
 tauri-plugin-shell = "2.0.0-beta"
-tauri-plugin-store = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v2" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tauri-plugin-fs = "2.0.0-beta.2"
@@ -23,12 +22,6 @@ walkdir = "2"
 fs-chunker = "0.4.0"
 sqlx = { version = "0.7", features = [ "runtime-tokio", "sqlite" ] }
 tokio = { version = "1", features = ["full"] }
-
-[dependencies.tauri-plugin-sql]
-features = ["sqlite"]
-git = "https://github.com/tauri-apps/plugins-workspace"
-branch = "v2"
-
 
 [features]
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!

@@ -12,11 +12,6 @@
     "menu:default",
     "tray:default",
     "shell:allow-open",
-    "store:default",
-    "sql:allow-load",
-    "sql:allow-execute",
-    "sql:allow-close",
-    "sql:allow-select",
     "dialog:allow-open",
     "fs:allow-mkdir",
     "fs:allow-exists"

@@ -7,13 +7,13 @@ import { z } from 'zod'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useState } from "react";
 import { Loader2 } from "lucide-react"
-import Database from "@tauri-apps/plugin-sql"
 import { Label } from "@/components/ui/label";
 import { open } from "@tauri-apps/plugin-dialog";
 import { toast } from "sonner";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { join, sep } from "@tauri-apps/api/path";
 import { mkdir, exists } from "@tauri-apps/plugin-fs"; 
+import { invoke } from "@tauri-apps/api/core";
 
 export const Route = createFileRoute('/serversetup')({
     component: ServerSetup,
@@ -88,12 +88,12 @@ function ServerSetup() {
         setSubmitText(<p>Submit</p>)
 
 
-        const db = await Database.load("sqlite:glassypdm.db")
-        const result = await db.execute(
-            "INSERT INTO server (url, clerk_publickey, local_dir, active, debug_url, debug_active) VALUES (?, ?, ?, ?, ?, ?);",
-            [values.serverURL, data.clerk_publickey, serverFolder, 1, "http://localhost:5000", 0] // TODO don't hardcode debug url
-        );
-        db.close();
+        await invoke("add_server", {
+            url: values.serverURL,
+            clerk: data.clerk_publickey,
+            localDir: serverFolder,
+            name: "ASU Formula SAE"
+        });
         console.log("hehehe")
         navigate({ to: "/" })
     }

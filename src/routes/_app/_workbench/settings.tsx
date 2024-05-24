@@ -7,26 +7,18 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { createFileRoute } from "@tanstack/react-router";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import ServerFolder from "@/components/settings/serverfolder";
-import Database from "@tauri-apps/plugin-sql";
 import { useState } from "react";
 import { toast } from "sonner";
+import { invoke } from "@tauri-apps/api/core";
 
 export const Route = createFileRoute('/_app/_workbench/settings')({
     component: Settings,
 
     loader: async () => {
-        const db = await Database.load("sqlite:glassypdm.db")
-        let result = await db.select(
-          "SELECT CASE WHEN debug_active = 1 THEN debug_url ELSE url END as url FROM server"
-        );
-
-        const url = (result as any)[0].url;
-
-        result = await db.select(
-            "SELECT local_dir, debug_active FROM server WHERE active = 1"
-        )
-        const dir = (result as any)[0].local_dir;
-        const debug = (result as any)[0].debug_active;
+        const url: string = await invoke("get_server_url");
+        const result = await invoke("init_settings_options"); // TODO type this?
+        const dir = (result as any).local_dir;
+        const debug = (result as any).debug_active;
         return {
             url: url,
             dir: dir,
@@ -48,19 +40,9 @@ function Settings() {
     // FIXME when changing to prod server, need to hit save twice (?)
 
     async function saveDevSettings() {
-        const db = await Database.load("sqlite:glassypdm.db")
-
-        await db.execute(
-            "UPDATE server SET debug_active = ? WHERE active = 1", [(debug ? 1 : 0)]
-        )
-
-        const result = await db.select(
-            "SELECT CASE WHEN debug_active = 1 THEN debug_url ELSE url END as url FROM server"
-        );
-        const url = (result as any)[0].url;
+        await invoke("set_debug", { debug: debug ? 1 : 0 });
+        const url: string = await invoke("get_server_url");
         setServer(url);
-
-        await db.close()
         toast(`Server selection set to ${url}.`)
     }
 

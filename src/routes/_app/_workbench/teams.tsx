@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { createFileRoute } from "@tanstack/react-router";
 import { CheckIcon, ChevronsUpDown } from "lucide-react";
 import { useState } from "react";
-import Database from "@tauri-apps/plugin-sql";
+import { invoke } from "@tauri-apps/api/core";
 
 const groups = [
         {
@@ -26,11 +26,7 @@ export const Route = createFileRoute('/_app/_workbench/teams')({
     component: Teams,
 
     loader: async () => {
-        const db = await Database.load("sqlite:glassypdm.db")
-        const result = await db.select(
-            "SELECT CASE WHEN debug_active = 1 THEN debug_url ELSE url END as url FROM server"
-        );
-        const url = (result as any)[0].url;
+        const url = await invoke("get_server_url");
         return {
             url: url
         }

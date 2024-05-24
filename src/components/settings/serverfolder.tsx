@@ -7,7 +7,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { toast } from "sonner";
 import { sep, join } from "@tauri-apps/api/path";
 import { mkdir, exists } from "@tauri-apps/plugin-fs"; 
-import Database from "@tauri-apps/plugin-sql";
+import { invoke } from "@tauri-apps/api/core";
 
 interface ServerFolderProps {
     dir: string
@@ -51,12 +51,7 @@ function ServerFolder(props: ServerFolderProps) {
 
         // update database
         // TODO handle error
-        const db = await Database.load("sqlite:glassypdm.db");
-        await db.execute(
-            "UPDATE server SET local_dir = ? WHERE active = 1",
-            [ newFolder ]
-        );
-        await db.close();
+        await invoke("set_local_dir", { dir: newFolder });
         toast("glassyPDM folder location set.");
 
     }

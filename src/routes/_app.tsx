@@ -1,15 +1,12 @@
 import { Outlet, createFileRoute, redirect } from '@tanstack/react-router'
-import Database from "@tauri-apps/plugin-sql";
 import { ClerkProvider, SignedIn, SignedOut } from "@clerk/clerk-react"
 import SignIn from './_app/signin';
+import { invoke } from '@tauri-apps/api/core';
 export const Route = createFileRoute('/_app')({
   component: AppLayout,
 
   loader: async () => {
-    const db = await Database.load("sqlite:glassypdm.db")
-    const result = await db.select(
-      "SELECT clerk_publickey FROM server WHERE active = 1"
-    );
+    const result = await invoke("get_server_clerk");
     console.log(result)
     if((result as any).length == 0) {
       throw redirect({
@@ -19,7 +16,7 @@ export const Route = createFileRoute('/_app')({
     else {
       console.log(result)
       return {
-        publickey: (result as any)[0].clerk_publickey
+        publickey: result as any
       }
     }
   }

@@ -4,18 +4,13 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { TabsContent } from '@radix-ui/react-tabs';
 import { createFileRoute } from '@tanstack/react-router'
-import Database from "@tauri-apps/plugin-sql";
 import { invoke } from "@tauri-apps/api/core";
 
 export const Route = createFileRoute('/_app/_workbench/projects/$pid')({
   component: Project,
 
   loader: async ({ params }) => {
-      const db = await Database.load("sqlite:glassypdm.db")
-      const result = await db.select(
-          "SELECT CASE WHEN debug_active = 1 THEN debug_url ELSE url END as url FROM server"
-      );
-      const url = (result as any)[0].url;
+      const url = await invoke("get_server_url");
       const res = await fetch(url + "/project?pid=" + params.pid);
       const data = await res.json();
       return {

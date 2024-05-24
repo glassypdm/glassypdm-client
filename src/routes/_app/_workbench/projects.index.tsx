@@ -6,19 +6,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUser } from "@clerk/clerk-react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import Database from "@tauri-apps/plugin-sql";
+import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useState } from "react";
 
 export const Route = createFileRoute('/_app/_workbench/projects/')({
     component: ProjectsIndex,
 
     loader: async () => {
-        const db = await Database.load("sqlite:glassypdm.db")
-        const result = await db.select(
-          "SELECT CASE WHEN debug_active = 1 THEN debug_url ELSE url END as url FROM server"
-        );
-        const url = (result as any)[0].url;
-        await db.close();
+        const url = await invoke("get_server_url");
         //const projects = await fetch(url + "/projects");
         //console.log(projects)
         return {
