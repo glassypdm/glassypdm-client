@@ -5,7 +5,8 @@ use sqlx::{SqlitePool, Row, Pool, Sqlite, sqlite::SqliteConnectOptions};
 use sqlx::migrate::Migrator;
 use tauri::{AppHandle, Manager};
 use tauri::path::BaseDirectory;
-use walkdir::WalkDir;
+use jwalk::WalkDir;
+use std::fs;
 use std::os::windows::fs::MetadataExt;
 use std::path::{Path, PathBuf};
 use fs_chunker::{hash_file};
@@ -93,8 +94,12 @@ async fn sync_changes(pid: i32, name: String, state_mutex: State<'_, Mutex<Pool<
     let pool = state_mutex.lock().await;
     println!("name: {}", name);
     // TODO create folder if it does not exist
+    let glassy_dir = get_server_dir(&pool).await.unwrap();
+    let dir = glassy_dir + "\\" + &name;
 
-    hash_dir("C:\\FSAE\\GrabCAD\\SDM24\\DAQ".into(), &pool).await;
+    let _ = fs::create_dir_all(&dir);
+    println!("dir: {}", dir);
+    //hash_dir("C:\\FSAE\\GrabCAD\\SDM23\\SDM22Backup\\SDM22".into(), &pool).await;
     println!("done");
     Ok(())
 }
@@ -153,6 +158,20 @@ async fn get_server_clerk(state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result
         Err(err) => {
             // TODO better way to handle error?
             println!("ooga booga {}", err);
+            Ok("".to_string())
+        }
+    }
+}
+
+async fn get_server_dir(pool: &Pool<Sqlite>) -> Result<String, ()> {
+    let output = sqlx::query("SELECT local_dir FROM server WHERE active = 1").fetch_one(&*pool).await;
+    match output {
+        Ok(row) => {
+            Ok(row.get::<String, &str>("local_dir"))
+        },
+        Err(err) => {
+            // TODO better way to handle error?
+            println!("dir not found {}", err);
             Ok("".to_string())
         }
     }
