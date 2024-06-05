@@ -3,7 +3,7 @@ import { Form, FormControl, FormItem, FormLabel, FormField, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator'
 import { zodResolver } from '@hookform/resolvers/zod';
-import { createFileRoute, Link, Navigate, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, Navigate, useNavigate } from '@tanstack/react-router'
 import { useForm } from 'react-hook-form';
 import { z } from "zod";
 import { SignedIn, SignedOut, useSignIn } from "@clerk/clerk-react";
@@ -41,7 +41,6 @@ function SignIn() {
             password: ""
         }
     })
-
     async function onSigninSubmit(values: z.infer<typeof signInSchema>) {
         if (!isLoaded) {
             // TODO error feedback

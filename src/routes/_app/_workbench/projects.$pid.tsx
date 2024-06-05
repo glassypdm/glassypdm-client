@@ -27,8 +27,8 @@ function Project() {
 
 
     async function syncChanges() {
-      const pid_number = parseInt(pid)
-      await invoke("sync_changes", { pid: pid_number });
+      const pid_number = parseInt(pid);
+      await invoke("sync_changes", { pid: pid_number, name: loaderData.title });
     }
 
   return (

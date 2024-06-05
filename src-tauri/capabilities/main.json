@@ -13,7 +13,7 @@
     "tray:default",
     "shell:allow-open",
     "dialog:allow-open",
-    "fs:allow-mkdir",
-    "fs:allow-exists"
+    "fs:allow-exists",
+    "fs:allow-mkdir"
   ]
 }

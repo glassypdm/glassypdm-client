@@ -1,4 +1,4 @@
-import { Outlet, createFileRoute, redirect } from '@tanstack/react-router'
+import { Navigate, Outlet, createFileRoute, redirect } from '@tanstack/react-router'
 import { ClerkProvider, SignedIn, SignedOut } from "@clerk/clerk-react"
 import SignIn from './_app/signin';
 import { invoke } from '@tauri-apps/api/core';
@@ -29,8 +29,9 @@ function AppLayout() {
     <div>
       <ClerkProvider publishableKey={publickey}>
         <SignedOut>
-          <SignIn />
-        </SignedOut>
+          <Navigate to='/signin' />
+          <Outlet />
+          </SignedOut>
         <SignedIn>
           <Outlet />
         </SignedIn>

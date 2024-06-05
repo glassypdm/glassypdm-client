@@ -3,7 +3,8 @@
 use serde::{Deserialize, Serialize};
 use sqlx::{SqlitePool, Row, Pool, Sqlite, sqlite::SqliteConnectOptions};
 use sqlx::migrate::Migrator;
-use tauri::{Manager};
+use tauri::{AppHandle, Manager};
+use tauri::path::BaseDirectory;
 use walkdir::WalkDir;
 use std::os::windows::fs::MetadataExt;
 use std::path::{Path, PathBuf};
@@ -22,13 +23,10 @@ enum ChangeType {
 #[tauri::command]
 async fn get_server_name(state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<String, ()> {
     let pool = state_mutex.lock().await;
-    println!("before query");
     let output = sqlx::query("SELECT name FROM server WHERE active = 1").fetch_one(&*pool).await;
-    println!("after query");
 
     match output {
         Ok(row) => {
-        println!("ok");
         Ok(row.get::<String, &str>("name"))
         },
         Err(err) => {
@@ -89,14 +87,13 @@ async fn hash_dir(dir_path: PathBuf, pool: &Pool<Sqlite>) {
     println!("end: {} ms", now.elapsed().as_millis());
 }
 
+// precondition: we have a server_url
 #[tauri::command]
-async fn sync_changes(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<(), ()> {
+async fn sync_changes(pid: i32, name: String, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<(), ()> {
     let pool = state_mutex.lock().await;
-    println!("pid: {}", pid);
-    // TODO
-    // if no row in project table, make one and then make the folder for the project
-    //let data_dir = handle.path().app_data_dir().unwrap();
-    //println!("data_dir: {}", data_dir.display());
+    println!("name: {}", name);
+    // TODO create folder if it does not exist
+
     hash_dir("C:\\FSAE\\GrabCAD\\SDM24\\DAQ".into(), &pool).await;
     println!("done");
     Ok(())
@@ -232,7 +229,7 @@ fn main() {
                 let pool = SqlitePool::connect_with(options).await;
                 match pool {
                     Ok(db) => {
-                        let owo = app.path().resource_dir().unwrap().join("migrations");
+                        let owo = app.path().resolve("migrations", BaseDirectory::Resource).unwrap();
                         let m = Migrator::new(owo).await.unwrap();
                         let res = m.run(&db).await;
                         match res {

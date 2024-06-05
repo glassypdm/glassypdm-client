@@ -79,42 +79,72 @@ const AppWorkbenchProjectsPidRoute = AppWorkbenchProjectsPidImport.update({
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
     '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
       preLoaderRoute: typeof IndexImport
       parentRoute: typeof rootRoute
     }
     '/_app': {
+      id: '/_app'
+      path: ''
+      fullPath: ''
       preLoaderRoute: typeof AppImport
       parentRoute: typeof rootRoute
     }
     '/serversetup': {
+      id: '/serversetup'
+      path: '/serversetup'
+      fullPath: '/serversetup'
       preLoaderRoute: typeof ServersetupImport
       parentRoute: typeof rootRoute
     }
     '/_app/_workbench': {
+      id: '/_app/_workbench'
+      path: ''
+      fullPath: ''
       preLoaderRoute: typeof AppWorkbenchImport
       parentRoute: typeof AppImport
     }
     '/_app/signin': {
+      id: '/_app/signin'
+      path: '/signin'
+      fullPath: '/signin'
       preLoaderRoute: typeof AppSigninImport
       parentRoute: typeof AppImport
     }
     '/_app/signup': {
+      id: '/_app/signup'
+      path: '/signup'
+      fullPath: '/signup'
       preLoaderRoute: typeof AppSignupImport
       parentRoute: typeof AppImport
     }
     '/_app/_workbench/settings': {
+      id: '/_app/_workbench/settings'
+      path: '/settings'
+      fullPath: '/settings'
       preLoaderRoute: typeof AppWorkbenchSettingsImport
       parentRoute: typeof AppWorkbenchImport
     }
     '/_app/_workbench/teams': {
+      id: '/_app/_workbench/teams'
+      path: '/teams'
+      fullPath: '/teams'
       preLoaderRoute: typeof AppWorkbenchTeamsImport
       parentRoute: typeof AppWorkbenchImport
     }
     '/_app/_workbench/projects/$pid': {
+      id: '/_app/_workbench/projects/$pid'
+      path: '/projects/$pid'
+      fullPath: '/projects/$pid'
       preLoaderRoute: typeof AppWorkbenchProjectsPidImport
       parentRoute: typeof AppWorkbenchImport
     }
     '/_app/_workbench/projects/': {
+      id: '/_app/_workbench/projects/'
+      path: '/projects'
+      fullPath: '/projects'
       preLoaderRoute: typeof AppWorkbenchProjectsIndexImport
       parentRoute: typeof AppWorkbenchImport
     }
@@ -123,19 +153,82 @@ declare module '@tanstack/react-router' {
 
 // Create and export the route tree
 
-export const routeTree = rootRoute.addChildren([
+export const routeTree = rootRoute.addChildren({
   IndexRoute,
-  AppRoute.addChildren([
-    AppWorkbenchRoute.addChildren([
+  AppRoute: AppRoute.addChildren({
+    AppWorkbenchRoute: AppWorkbenchRoute.addChildren({
       AppWorkbenchSettingsRoute,
       AppWorkbenchTeamsRoute,
       AppWorkbenchProjectsPidRoute,
       AppWorkbenchProjectsIndexRoute,
-    ]),
+    }),
     AppSigninRoute,
     AppSignupRoute,
-  ]),
+  }),
   ServersetupRoute,
-])
+})
 
 /* prettier-ignore-end */
+
+/* ROUTE_MANIFEST_START
+{
+  "routes": {
+    "__root__": {
+      "filePath": "__root.tsx",
+      "children": [
+        "/",
+        "/_app",
+        "/serversetup"
+      ]
+    },
+    "/": {
+      "filePath": "index.tsx"
+    },
+    "/_app": {
+      "filePath": "_app.tsx",
+      "children": [
+        "/_app/_workbench",
+        "/_app/signin",
+        "/_app/signup"
+      ]
+    },
+    "/serversetup": {
+      "filePath": "serversetup.tsx"
+    },
+    "/_app/_workbench": {
+      "filePath": "_app/_workbench.tsx",
+      "parent": "/_app",
+      "children": [
+        "/_app/_workbench/settings",
+        "/_app/_workbench/teams",
+        "/_app/_workbench/projects/$pid",
+        "/_app/_workbench/projects/"
+      ]
+    },
+    "/_app/signin": {
+      "filePath": "_app/signin.tsx",
+      "parent": "/_app"
+    },
+    "/_app/signup": {
+      "filePath": "_app/signup.tsx",
+      "parent": "/_app"
+    },
+    "/_app/_workbench/settings": {
+      "filePath": "_app/_workbench/settings.tsx",
+      "parent": "/_app/_workbench"
+    },
+    "/_app/_workbench/teams": {
+      "filePath": "_app/_workbench/teams.tsx",
+      "parent": "/_app/_workbench"
+    },
+    "/_app/_workbench/projects/$pid": {
+      "filePath": "_app/_workbench/projects.$pid.tsx",
+      "parent": "/_app/_workbench"
+    },
+    "/_app/_workbench/projects/": {
+      "filePath": "_app/_workbench/projects.index.tsx",
+      "parent": "/_app/_workbench"
+    }
+  }
+}
+ROUTE_MANIFEST_END */
