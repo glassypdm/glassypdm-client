@@ -20,16 +20,18 @@ use tokio::sync::Mutex;
 use crate::config::*;
 
 async fn hash_dir(pid: i32, dir_path: PathBuf, pool: &Pool<Sqlite>) {
-    println!("start");
+    println!("start: {:?}", dir_path.to_str());
     let now = Instant::now();
 
     let _ = sqlx::query("UPDATE file SET in_fs = 0;").execute(&*pool).await;
 
     for entry in WalkDir::new(dir_path) {
-        let file = entry.unwrap();
+        let file = entry.expect("Is project directory empty?");
+
         if !file.metadata().unwrap().is_file() {
             continue;
         }
+        println!("i am here");
 
         // update chunk table
         let hash_list: Vec<String> = hash_file(file.path(), 4 * 1024 * 1024, true); // 4 MB chunks
@@ -43,7 +45,7 @@ async fn hash_dir(pid: i32, dir_path: PathBuf, pool: &Pool<Sqlite>) {
             .bind(file.path().to_str())
             .bind(pos as i32)
             .bind(hash)
-            .execute(&*pool).await;
+            .execute(&*pool).await.unwrap();
         }
 
         // update file table and set in_fs = 1
@@ -65,7 +67,7 @@ async fn hash_dir(pid: i32, dir_path: PathBuf, pool: &Pool<Sqlite>) {
         .bind(pid)
         .bind(hash_list.len() as u32)
         .bind(file.metadata().unwrap().file_size() as u32)
-        .execute(&*pool).await;
+        .execute(&*pool).await.unwrap();
     }
 
     // update change type for files with in_fs = 0 (deleted)
@@ -87,7 +89,7 @@ async fn sync_changes(pid: i32, name: String, state_mutex: State<'_, Mutex<Pool<
     // create folder if it does not exist
     let _ = fs::create_dir_all(&project_dir);
     println!("dir: {}", project_dir);
-    hash_dir(pid, "dir".into(), &pool).await;
+    hash_dir(pid, project_dir.into(), &pool).await;
     println!("hashing done");
 
     // TODO get updated version of project

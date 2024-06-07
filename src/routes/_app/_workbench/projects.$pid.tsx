@@ -3,7 +3,7 @@ import { NavigationMenu, NavigationMenuItem, NavigationMenuLink, NavigationMenuL
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { TabsContent } from '@radix-ui/react-tabs';
-import { createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import { invoke } from "@tauri-apps/api/core";
 
 export const Route = createFileRoute('/_app/_workbench/projects/$pid')({
@@ -58,12 +58,16 @@ function Project() {
         <TabsContent value="home">
         <div className='grid grid-cols-3 gap-8 p-4 h-64'>
         <div className='flex flex-col gap-4'>
-          <Button className='grow'>Download Changes</Button>
+          <Button className='grow' asChild>
+            <Link to='/download'>Download Changes</Link>
+          </Button>
           <Button variant={"outline"}>Open in Website</Button>
         </div>
         <Button className='flex h-full' onClick={syncChanges}>Sync</Button>
         <div className='flex flex-col gap-4'>
-          <Button className='grow'>Upload Changes</Button>
+          <Button className='grow' asChild>
+            <Link to='/upload' search={{ pid: pid }}>Upload Changes</Link>
+          </Button>
           <Button variant={"outline"}>Open Project Folder</Button>
         </div>
       </div>

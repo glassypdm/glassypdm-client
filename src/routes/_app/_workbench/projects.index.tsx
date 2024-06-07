@@ -26,7 +26,7 @@ function ProjectsIndex() {
     const [projects, setProjects] = useState([])
     const [managedTeams, setManagedTeams] = useState([])
     const { user } = useUser();
-    const owo = Route.useLoaderData();
+    const loaderData = Route.useLoaderData();
 
     if (!user) {
         return null;
@@ -34,7 +34,7 @@ function ProjectsIndex() {
 
     // FIXME dont use useEffect for fetching, lmao
     useEffect(() => {
-        fetch(owo.url + "/projects?user=" + user.id)
+        fetch(loaderData.url + "/projects?user=" + user.id)
             .then((res: Response) => res.json())
             .then((boop: any) => { // TODO type the response
                 setProjects(boop.projects)
@@ -94,7 +94,7 @@ function ProjectsIndex() {
                             </CardHeader>
                             <CardContent className="justify-self-end flex flex-row space-x-4 items-center">
                                 {/*<p className="text-sm text-muted-foreground">Last updated MM/DD/YYYY, HH:MM:SS</p> */}
-                                <Button>
+                                <Button asChild>
                                     <Link to={"/projects/$pid"} params={{ pid: project.id as string}}>View</Link>
                                 </Button>
                             </CardContent>

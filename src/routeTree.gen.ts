@@ -14,8 +14,10 @@ import { Route as rootRoute } from './routes/__root'
 import { Route as ServersetupImport } from './routes/serversetup'
 import { Route as AppImport } from './routes/_app'
 import { Route as IndexImport } from './routes/index'
+import { Route as AppUploadImport } from './routes/_app/upload'
 import { Route as AppSignupImport } from './routes/_app/signup'
 import { Route as AppSigninImport } from './routes/_app/signin'
+import { Route as AppDownloadImport } from './routes/_app/download'
 import { Route as AppWorkbenchImport } from './routes/_app/_workbench'
 import { Route as AppWorkbenchTeamsImport } from './routes/_app/_workbench/teams'
 import { Route as AppWorkbenchSettingsImport } from './routes/_app/_workbench/settings'
@@ -39,6 +41,11 @@ const IndexRoute = IndexImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
+const AppUploadRoute = AppUploadImport.update({
+  path: '/upload',
+  getParentRoute: () => AppRoute,
+} as any)
+
 const AppSignupRoute = AppSignupImport.update({
   path: '/signup',
   getParentRoute: () => AppRoute,
@@ -46,6 +53,11 @@ const AppSignupRoute = AppSignupImport.update({
 
 const AppSigninRoute = AppSigninImport.update({
   path: '/signin',
+  getParentRoute: () => AppRoute,
+} as any)
+
+const AppDownloadRoute = AppDownloadImport.update({
+  path: '/download',
   getParentRoute: () => AppRoute,
 } as any)
 
@@ -106,6 +118,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppWorkbenchImport
       parentRoute: typeof AppImport
     }
+    '/_app/download': {
+      id: '/_app/download'
+      path: '/download'
+      fullPath: '/download'
+      preLoaderRoute: typeof AppDownloadImport
+      parentRoute: typeof AppImport
+    }
     '/_app/signin': {
       id: '/_app/signin'
       path: '/signin'
@@ -118,6 +137,13 @@ declare module '@tanstack/react-router' {
       path: '/signup'
       fullPath: '/signup'
       preLoaderRoute: typeof AppSignupImport
+      parentRoute: typeof AppImport
+    }
+    '/_app/upload': {
+      id: '/_app/upload'
+      path: '/upload'
+      fullPath: '/upload'
+      preLoaderRoute: typeof AppUploadImport
       parentRoute: typeof AppImport
     }
     '/_app/_workbench/settings': {
@@ -162,8 +188,10 @@ export const routeTree = rootRoute.addChildren({
       AppWorkbenchProjectsPidRoute,
       AppWorkbenchProjectsIndexRoute,
     }),
+    AppDownloadRoute,
     AppSigninRoute,
     AppSignupRoute,
+    AppUploadRoute,
   }),
   ServersetupRoute,
 })
@@ -188,8 +216,10 @@ export const routeTree = rootRoute.addChildren({
       "filePath": "_app.tsx",
       "children": [
         "/_app/_workbench",
+        "/_app/download",
         "/_app/signin",
-        "/_app/signup"
+        "/_app/signup",
+        "/_app/upload"
       ]
     },
     "/serversetup": {
@@ -205,12 +235,20 @@ export const routeTree = rootRoute.addChildren({
         "/_app/_workbench/projects/"
       ]
     },
+    "/_app/download": {
+      "filePath": "_app/download.tsx",
+      "parent": "/_app"
+    },
     "/_app/signin": {
       "filePath": "_app/signin.tsx",
       "parent": "/_app"
     },
     "/_app/signup": {
       "filePath": "_app/signup.tsx",
+      "parent": "/_app"
+    },
+    "/_app/upload": {
+      "filePath": "_app/upload.tsx",
       "parent": "/_app"
     },
     "/_app/_workbench/settings": {

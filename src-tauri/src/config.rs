@@ -109,12 +109,14 @@ pub async fn init_settings_options(state_mutex: State<'_, Mutex<Pool<Sqlite>>>) 
     match output {
         Ok(row) => {
             println!("{} {}", row.get::<String, &str>("local_dir"), row.get::<i32, &str>("debug_active"));
-            Ok(SettingsOptions {
+            let result = SettingsOptions {
                 local_dir: row.get::<String, &str>("local_dir").to_string(),
                 debug_active: row.get::<i32, &str>("debug_active")
-            })
+            };
+            println!("hehehe");
+            Ok(result)
         },
-        Err(err) => {
+        Err(_err) => {
             // TODO do something with error, and handle this case better lol
             Ok(SettingsOptions {
                 local_dir: "".to_string(),
