@@ -15,14 +15,10 @@ export const Route = createFileRoute('/_app/_workbench/settings')({
     component: Settings,
 
     loader: async () => {
-        console.log("getting server url")
         const url: string = await invoke("get_server_url");
-        console.log("getting server ur1l")
         const result = await invoke("init_settings_options"); // TODO type this?
-        console.log("getting server ur2l")
         const dir = (result as any).local_dir;
         const debug = (result as any).debug_active;
-        console.log("getting server url3")
         return {
             url: url,
             dir: dir,

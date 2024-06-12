@@ -31,7 +31,7 @@ pub async fn get_server_url(state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Resu
         },
         Err(err) => {
             println!("asdfasdf {}", err); // TODO ???
-            todo!()
+            Ok("".to_string())
         }
     }
 }
