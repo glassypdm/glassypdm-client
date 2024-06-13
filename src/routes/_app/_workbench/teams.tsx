@@ -1,26 +1,15 @@
 import { Button } from "@/components/ui/button";
-import { Command, CommandEmpty, CommandGroup, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command";
-import { Dialog } from "@/components/ui/dialog";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Separator } from "@/components/ui/separator";
-import { cn } from "@/lib/utils";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { createFileRoute } from "@tanstack/react-router";
-import { CheckIcon, ChevronsUpDown } from "lucide-react";
 import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
-
-const groups = [
-        {
-          label: "Acme Inc.",
-          value: "acme-inc",
-        },
-        {
-          label: "Monsters Inc.",
-          value: "monsters",
-        }
-  ]
-  
-type Team = (typeof groups)[number]
+import { ScrollArea } from "@/components/ui/scroll-area";
+import Dashboard from "@/components/team/dashboard";
+import { Input } from "@/components/ui/input";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { z } from 'zod';
+import { useAuth } from "@clerk/clerk-react";
+import { NavigationMenu, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, navigationMenuTriggerStyle } from "@/components/ui/navigation-menu";
 
 export const Route = createFileRoute('/_app/_workbench/teams')({
     component: Teams,
@@ -33,54 +22,147 @@ export const Route = createFileRoute('/_app/_workbench/teams')({
     }
 })
 
+const fakeData = {
+    openServer: true,
+    teams: [
+        {
+            id: 0,
+            name: "Sun Devil Motorsports",
+            members: [
+                {
+                    name: "mason murphy",
+                    role: "owner"
+                },
+                {
+                    name: "mason murphy",
+                    role: "manager"
+                },
+                {
+                    name: "mason murphy",
+                    role: "member"
+                },
+            ]
+        }
+    ]
+}
+
+interface Team {
+    id: number,
+    name: string
+}
+
 function Teams() {
-    const [open, setOpen] = useState(false)
-    const [showNewTeamDialog, setShowNewTeamDialog] = useState(false)
-    const [selectedTeam, setSelectedTeam] = useState<Team>(
-      groups[0]
-    )
-    const owo = Route.useLoaderData();
-    const url = owo.url;
+    const { url } = Route.useLoaderData();
+    const [formMessage, setFormMessage] = useState("");
+    const [proposedTeamName, setProposedTeamName] = useState("");
+    const [created, setCreated] = useState(false);
+    const { getToken } = useAuth();
+    const { isPending, isError, data, error } = useQuery({
+        queryKey: ['teams'],
+        queryFn: async () => {
+            const endpoint = (url as string) + "/team"
+            const response = await fetch(endpoint, {
+                headers: {
+                    Authorization: `Bearer ${await getToken()}`
+                },
+                method: "GET",
+                mode: "cors"
+            });
+            return response.json();
+        }
+    })
+    const queryClient = useQueryClient();
+
+    const mutation = useMutation({
+        mutationFn: async () => {
+            const endpoint = (url as string) + "/team"
+            return await fetch(endpoint, {
+                method: "POST",
+                mode: "cors",
+                body: JSON.stringify({
+                        "name": proposedTeamName
+                }),
+                headers: { Authorization: `Bearer ${await getToken()}` }
+            })
+        },
+        onError: (error) => {
+            setFormMessage(error.message)
+        },
+        onSuccess: async (res) => {
+            const data = await res.json()
+            if(data.status === "success") {
+                setFormMessage("Team created successfully.");
+                setCreated(true);
+            }
+
+            queryClient.invalidateQueries({
+                queryKey: ['teams']
+            })
+        }
+    })
+
+    function createTeam() {
+        setFormMessage("");
+
+        // allow for alphanumeric and whitespace
+        const input = z.string().regex(new RegExp('^[a-zA-Z0-9 ]+$'));
+        if(input.safeParse(proposedTeamName).success) {
+            const data = mutation.mutate();
+        }
+        else {
+            setFormMessage("Team name invalid.")
+        }
+    }
+
+    if(isPending) {
+        // TODO proper skeleton
+        return (
+            <div>
+                Loading...
+            </div>
+        )
+    }
+    else if(isError) {
+        return (
+            <div>an error occured while fetching data :c</div>
+        )
+    }
 
     return (
-        <div className="grid grid-flow-row">
-            <Dialog open={showNewTeamDialog} onOpenChange={setShowNewTeamDialog}>
-                <Popover open={open} onOpenChange={setOpen}>
-                    <PopoverTrigger asChild>
-                        <Button
-                        variant={"outline"}
-                        role="combobox"
-                        aria-expanded={open}
-                        className="w-[200px] justify-between mb-2">
-                        {selectedTeam.label}
-                        <ChevronsUpDown className="opacity-50"/>
-                        </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[200px] p-0">
-                        <Command>
-                            <CommandList>
-                                <CommandGroup heading="Teams">
-                                <CommandEmpty>No team found.</CommandEmpty>
-                                {
-                                    groups.map((team) => (
-                                        <CommandItem key={team.value} onSelect={() => {
-                                            setSelectedTeam(team)
-                                            setOpen(false)
-                                        }}
-                                        className="text-sm">
-                                            {team.label}
-                                            <CheckIcon className={cn("ml-auto h-4 w-4", selectedTeam.value == team.value ? "opacity-100" : "opacity-0")} />
-                                        </CommandItem>
-                                    ))
-                                }
-                                </CommandGroup>
-                            </CommandList>
-                            <CommandSeparator />
-                        </Command>
-                    </PopoverContent>
-                </Popover>
-            </Dialog>
-            <p className="mx-8">Your role:</p>
+        <div className="flex flex-row space-x-4">
+            <div className="w-1/4">
+                <h1 className="text-2xl font-semibold text-center">Teams</h1>
+                    <NavigationMenu className="min-w-full p-2">
+                    <ScrollArea className="h-48">
+                        <NavigationMenuList className="flex flex-col items-center space-y-2 py-2">
+                            {
+                                data && !isPending && !isError ?
+                                data.teams.map((team: Team) => 
+                                    <NavigationMenuItem className="min-w-full text-center" asChild>
+                                        <NavigationMenuLink className={navigationMenuTriggerStyle()}>{team.name}</NavigationMenuLink>
+                                    </NavigationMenuItem>
+                                ) : <div>error</div>
+                            }
+                        </NavigationMenuList>
+                    </ScrollArea>
+                    </NavigationMenu>
+                    <Dialog onOpenChange={() => {setFormMessage(""); setCreated(false)}}>
+                    <DialogTrigger asChild>
+                        <Button variant={"outline"} className="w-full" disabled={!data.open}>Create Team</Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Create a new Team</DialogTitle>
+                        </DialogHeader>
+                        <Input placeholder="Team Name" onChange={(e) => setProposedTeamName(e.target.value)}/>
+                        <div className="">{formMessage}</div>
+                        <DialogFooter>
+                            <Button onClick={createTeam} disabled={mutation.isPending || created}>Create</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            </div>
+            <Dashboard />
         </div>
     )
 }

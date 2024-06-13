@@ -47,15 +47,12 @@ function Settings() {
     }
 
     return (
-        <div className="flex flex-row">
-            <div className="flex flex-col mx-4">
+        <div className="flex flex-row space-x-4">
+            <div className="flex flex-col">
                 <h1 className="text-2xl font-semibold mb-4">Settings</h1>
-                <Button variant={"ghost"}>Client</Button>
-                <Button variant={"ghost"}>Teams</Button>
-                <Button variant={"ghost"}>Account</Button>
             </div>
             <ScrollArea className="rounded-lg border bg-card p-2">
-            <div className="flex flex-col space-y-4 mx-4 max-h-[480px] w-[560px]">
+            <div className="flex flex-col space-y-4 px-2 max-h-[480px] w-[560px]">
                 <ServerFolder dir={loaderData.dir as string} />
                 <Card>
                     <CardHeader>
