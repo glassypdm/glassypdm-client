@@ -49,7 +49,7 @@ function Settings() {
     return (
         <div className="flex flex-row space-x-4">
             <div className="flex flex-col">
-                <h1 className="text-2xl font-semibold mb-4">Settings</h1>
+                <h1 className="text-2xl font-semibold p-4">Settings</h1>
             </div>
             <ScrollArea className="rounded-lg border bg-card p-2">
             <div className="flex flex-col space-y-4 px-2 max-h-[480px] w-[560px]">

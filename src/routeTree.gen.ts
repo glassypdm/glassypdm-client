@@ -22,6 +22,7 @@ import { Route as AppWorkbenchImport } from './routes/_app/_workbench'
 import { Route as AppWorkbenchTeamsImport } from './routes/_app/_workbench/teams'
 import { Route as AppWorkbenchSettingsImport } from './routes/_app/_workbench/settings'
 import { Route as AppWorkbenchProjectsIndexImport } from './routes/_app/_workbench/projects.index'
+import { Route as AppWorkbenchTeamsTeamidImport } from './routes/_app/_workbench/teams.$teamid'
 import { Route as AppWorkbenchProjectsPidImport } from './routes/_app/_workbench/projects.$pid'
 
 // Create/Update Routes
@@ -79,6 +80,11 @@ const AppWorkbenchSettingsRoute = AppWorkbenchSettingsImport.update({
 const AppWorkbenchProjectsIndexRoute = AppWorkbenchProjectsIndexImport.update({
   path: '/projects/',
   getParentRoute: () => AppWorkbenchRoute,
+} as any)
+
+const AppWorkbenchTeamsTeamidRoute = AppWorkbenchTeamsTeamidImport.update({
+  path: '/$teamid',
+  getParentRoute: () => AppWorkbenchTeamsRoute,
 } as any)
 
 const AppWorkbenchProjectsPidRoute = AppWorkbenchProjectsPidImport.update({
@@ -167,6 +173,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppWorkbenchProjectsPidImport
       parentRoute: typeof AppWorkbenchImport
     }
+    '/_app/_workbench/teams/$teamid': {
+      id: '/_app/_workbench/teams/$teamid'
+      path: '/$teamid'
+      fullPath: '/teams/$teamid'
+      preLoaderRoute: typeof AppWorkbenchTeamsTeamidImport
+      parentRoute: typeof AppWorkbenchTeamsImport
+    }
     '/_app/_workbench/projects/': {
       id: '/_app/_workbench/projects/'
       path: '/projects'
@@ -184,7 +197,9 @@ export const routeTree = rootRoute.addChildren({
   AppRoute: AppRoute.addChildren({
     AppWorkbenchRoute: AppWorkbenchRoute.addChildren({
       AppWorkbenchSettingsRoute,
-      AppWorkbenchTeamsRoute,
+      AppWorkbenchTeamsRoute: AppWorkbenchTeamsRoute.addChildren({
+        AppWorkbenchTeamsTeamidRoute,
+      }),
       AppWorkbenchProjectsPidRoute,
       AppWorkbenchProjectsIndexRoute,
     }),
@@ -257,11 +272,18 @@ export const routeTree = rootRoute.addChildren({
     },
     "/_app/_workbench/teams": {
       "filePath": "_app/_workbench/teams.tsx",
-      "parent": "/_app/_workbench"
+      "parent": "/_app/_workbench",
+      "children": [
+        "/_app/_workbench/teams/$teamid"
+      ]
     },
     "/_app/_workbench/projects/$pid": {
       "filePath": "_app/_workbench/projects.$pid.tsx",
       "parent": "/_app/_workbench"
+    },
+    "/_app/_workbench/teams/$teamid": {
+      "filePath": "_app/_workbench/teams.$teamid.tsx",
+      "parent": "/_app/_workbench/teams"
     },
     "/_app/_workbench/projects/": {
       "filePath": "_app/_workbench/projects.index.tsx",

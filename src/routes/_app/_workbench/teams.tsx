@@ -1,15 +1,15 @@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, Outlet, createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import Dashboard from "@/components/team/dashboard";
 import { Input } from "@/components/ui/input";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from 'zod';
 import { useAuth } from "@clerk/clerk-react";
 import { NavigationMenu, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, navigationMenuTriggerStyle } from "@/components/ui/navigation-menu";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute('/_app/_workbench/teams')({
     component: Teams,
@@ -21,30 +21,6 @@ export const Route = createFileRoute('/_app/_workbench/teams')({
         }
     }
 })
-
-const fakeData = {
-    openServer: true,
-    teams: [
-        {
-            id: 0,
-            name: "Sun Devil Motorsports",
-            members: [
-                {
-                    name: "mason murphy",
-                    role: "owner"
-                },
-                {
-                    name: "mason murphy",
-                    role: "manager"
-                },
-                {
-                    name: "mason murphy",
-                    role: "member"
-                },
-            ]
-        }
-    ]
-}
 
 interface Team {
     id: number,
@@ -130,18 +106,20 @@ function Teams() {
 
     return (
         <div className="flex flex-row space-x-4">
-            <div className="w-1/4">
+            <div className="w-fit">
                 <h1 className="text-2xl font-semibold text-center">Teams</h1>
-                    <NavigationMenu className="min-w-full p-2">
+                    <NavigationMenu className="max-w-1/4 p-2">
                     <ScrollArea className="h-48">
-                        <NavigationMenuList className="flex flex-col items-center space-y-2 py-2">
+                        <NavigationMenuList className="grid grid-flow-row items-center space-y-2 py-2">
                             {
-                                data && !isPending && !isError ?
+                                data.teams && !isPending && !isError ?
                                 data.teams.map((team: Team) => 
-                                    <NavigationMenuItem className="min-w-full text-center" asChild>
-                                        <NavigationMenuLink className={navigationMenuTriggerStyle()}>{team.name}</NavigationMenuLink>
+                                    <NavigationMenuItem className="w-48 text-center text-wrap">
+                                        <NavigationMenuLink className={cn(navigationMenuTriggerStyle(), "min-w-full")} asChild>
+                                            <Link to="/teams/$teamid" params={{ teamid: String(team.id) }}>{team.name}</Link>
+                                        </NavigationMenuLink>
                                     </NavigationMenuItem>
-                                ) : <div>error</div>
+                                ) : <div>No teams found</div>
                             }
                         </NavigationMenuList>
                     </ScrollArea>
@@ -162,7 +140,7 @@ function Teams() {
                     </DialogContent>
                 </Dialog>
             </div>
-            <Dashboard />
+            <Outlet />
         </div>
     )
 }
