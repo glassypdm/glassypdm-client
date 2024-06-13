@@ -114,7 +114,7 @@ function Teams() {
                             {
                                 data.teams && !isPending && !isError ?
                                 data.teams.map((team: Team) => 
-                                    <NavigationMenuItem className="w-48 text-center text-wrap">
+                                    <NavigationMenuItem className="w-48 text-center text-wrap" key={team.id}>
                                         <NavigationMenuLink className={cn(navigationMenuTriggerStyle(), "min-w-full")} asChild>
                                             <Link to="/teams/$teamid" params={{ teamid: String(team.id) }}>{team.name}</Link>
                                         </NavigationMenuLink>
