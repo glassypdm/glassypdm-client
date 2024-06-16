@@ -28,7 +28,7 @@ function UploadPage() {
       <div>
         <div className='flex flex-row justify-items-center items-center'>
           <Button className='flex-none'asChild>
-            <Link to={'/projects/$pid'} params={{ pid: pid as string}} search={{ title: title as string}}>Close</Link>
+            <Link to={'/projects/$pid'} params={{ pid: pid as string}}>Close</Link>
           </Button>
           <p className='flex-auto text-center'>description</p>
           <Button disabled={true}>Upload Selected</Button>

@@ -24,6 +24,9 @@ import { Route as AppWorkbenchSettingsImport } from './routes/_app/_workbench/se
 import { Route as AppWorkbenchProjectsIndexImport } from './routes/_app/_workbench/projects.index'
 import { Route as AppWorkbenchTeamsTeamidImport } from './routes/_app/_workbench/teams.$teamid'
 import { Route as AppWorkbenchProjectsPidImport } from './routes/_app/_workbench/projects.$pid'
+import { Route as AppWorkbenchProjectsPidSyncImport } from './routes/_app/_workbench/projects.$pid.sync'
+import { Route as AppWorkbenchProjectsPidHistoryImport } from './routes/_app/_workbench/projects.$pid.history'
+import { Route as AppWorkbenchProjectsPidFilesImport } from './routes/_app/_workbench/projects.$pid.files'
 
 // Create/Update Routes
 
@@ -91,6 +94,24 @@ const AppWorkbenchProjectsPidRoute = AppWorkbenchProjectsPidImport.update({
   path: '/projects/$pid',
   getParentRoute: () => AppWorkbenchRoute,
 } as any)
+
+const AppWorkbenchProjectsPidSyncRoute =
+  AppWorkbenchProjectsPidSyncImport.update({
+    path: '/sync',
+    getParentRoute: () => AppWorkbenchProjectsPidRoute,
+  } as any)
+
+const AppWorkbenchProjectsPidHistoryRoute =
+  AppWorkbenchProjectsPidHistoryImport.update({
+    path: '/history',
+    getParentRoute: () => AppWorkbenchProjectsPidRoute,
+  } as any)
+
+const AppWorkbenchProjectsPidFilesRoute =
+  AppWorkbenchProjectsPidFilesImport.update({
+    path: '/files',
+    getParentRoute: () => AppWorkbenchProjectsPidRoute,
+  } as any)
 
 // Populate the FileRoutesByPath interface
 
@@ -187,6 +208,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppWorkbenchProjectsIndexImport
       parentRoute: typeof AppWorkbenchImport
     }
+    '/_app/_workbench/projects/$pid/files': {
+      id: '/_app/_workbench/projects/$pid/files'
+      path: '/files'
+      fullPath: '/projects/$pid/files'
+      preLoaderRoute: typeof AppWorkbenchProjectsPidFilesImport
+      parentRoute: typeof AppWorkbenchProjectsPidImport
+    }
+    '/_app/_workbench/projects/$pid/history': {
+      id: '/_app/_workbench/projects/$pid/history'
+      path: '/history'
+      fullPath: '/projects/$pid/history'
+      preLoaderRoute: typeof AppWorkbenchProjectsPidHistoryImport
+      parentRoute: typeof AppWorkbenchProjectsPidImport
+    }
+    '/_app/_workbench/projects/$pid/sync': {
+      id: '/_app/_workbench/projects/$pid/sync'
+      path: '/sync'
+      fullPath: '/projects/$pid/sync'
+      preLoaderRoute: typeof AppWorkbenchProjectsPidSyncImport
+      parentRoute: typeof AppWorkbenchProjectsPidImport
+    }
   }
 }
 
@@ -200,7 +242,11 @@ export const routeTree = rootRoute.addChildren({
       AppWorkbenchTeamsRoute: AppWorkbenchTeamsRoute.addChildren({
         AppWorkbenchTeamsTeamidRoute,
       }),
-      AppWorkbenchProjectsPidRoute,
+      AppWorkbenchProjectsPidRoute: AppWorkbenchProjectsPidRoute.addChildren({
+        AppWorkbenchProjectsPidFilesRoute,
+        AppWorkbenchProjectsPidHistoryRoute,
+        AppWorkbenchProjectsPidSyncRoute,
+      }),
       AppWorkbenchProjectsIndexRoute,
     }),
     AppDownloadRoute,
@@ -279,7 +325,12 @@ export const routeTree = rootRoute.addChildren({
     },
     "/_app/_workbench/projects/$pid": {
       "filePath": "_app/_workbench/projects.$pid.tsx",
-      "parent": "/_app/_workbench"
+      "parent": "/_app/_workbench",
+      "children": [
+        "/_app/_workbench/projects/$pid/files",
+        "/_app/_workbench/projects/$pid/history",
+        "/_app/_workbench/projects/$pid/sync"
+      ]
     },
     "/_app/_workbench/teams/$teamid": {
       "filePath": "_app/_workbench/teams.$teamid.tsx",
@@ -288,6 +339,18 @@ export const routeTree = rootRoute.addChildren({
     "/_app/_workbench/projects/": {
       "filePath": "_app/_workbench/projects.index.tsx",
       "parent": "/_app/_workbench"
+    },
+    "/_app/_workbench/projects/$pid/files": {
+      "filePath": "_app/_workbench/projects.$pid.files.tsx",
+      "parent": "/_app/_workbench/projects/$pid"
+    },
+    "/_app/_workbench/projects/$pid/history": {
+      "filePath": "_app/_workbench/projects.$pid.history.tsx",
+      "parent": "/_app/_workbench/projects/$pid"
+    },
+    "/_app/_workbench/projects/$pid/sync": {
+      "filePath": "_app/_workbench/projects.$pid.sync.tsx",
+      "parent": "/_app/_workbench/projects/$pid"
     }
   }
 }

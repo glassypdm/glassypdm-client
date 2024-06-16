@@ -189,7 +189,7 @@ function ProjectsIndex() {
                             <CardContent className="justify-self-end flex flex-row space-x-4 items-center">
                                 {/*<p className="text-sm text-muted-foreground">Last updated MM/DD/YYYY, HH:MM:SS</p> */}
                                 <Button asChild>
-                                    <Link to={"/projects/$pid"} params={{ pid: project.id as string}} search={{ title: project.name }}>View</Link>
+                                    <Link to={"/projects/$pid/sync"} params={{ pid: project.id as string}}>Open</Link>
                                 </Button>
                             </CardContent>
                             </Card>
