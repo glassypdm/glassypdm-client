@@ -6,29 +6,36 @@ import { TabsContent } from '@radix-ui/react-tabs';
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { invoke } from "@tauri-apps/api/core";
 
+type ProjectSearch = {
+  title: string
+}
+
 export const Route = createFileRoute('/_app/_workbench/projects/$pid')({
   component: Project,
 
+  validateSearch: (search: Record<string, unknown>): ProjectSearch => {
+    return {
+      title: String(search.title ?? "Untitled Project")
+    }
+  },
+
   loader: async ({ params }) => {
       const url = await invoke("get_server_url");
-      const res = await fetch(url + "/project?pid=" + params.pid);
-      const data = await res.json();
       return {
-          url: url,
-          title: data.title,
-          pid: params.pid
+          url: url
       }
   }
 })
 
 function Project() {
-    const loaderData = Route.useLoaderData();
+    const { url } = Route.useLoaderData();
     const { pid } = Route.useParams();
+    const { title } = Route.useSearch();
 
 
     async function syncChanges() {
       const pid_number = parseInt(pid);
-      await invoke("sync_changes", { pid: pid_number, name: loaderData.title });
+      await invoke("sync_changes", { pid: pid_number, name: title });
     }
 
   return (
@@ -39,7 +46,7 @@ function Project() {
           <NavigationMenuList className='grid grid-flow-col space-x-4'>
             <TabsTrigger value="home">
             <NavigationMenuItem>
-            <NavigationMenuLink className={cn(navigationMenuTriggerStyle(), 'text-4xl font-semibold justify-self-start')}>{loaderData.title}</NavigationMenuLink>
+            <NavigationMenuLink className={cn(navigationMenuTriggerStyle(), 'text-4xl font-semibold justify-self-start')}>{title}</NavigationMenuLink>
             </NavigationMenuItem>
             </TabsTrigger>
             <TabsTrigger value="updates">
@@ -66,7 +73,7 @@ function Project() {
         <Button className='flex h-full' onClick={syncChanges}>Sync</Button>
         <div className='flex flex-col gap-4'>
           <Button className='grow' asChild>
-            <Link to='/upload' search={{ pid: pid }}>Upload Changes</Link>
+            <Link to='/upload' search={{ pid: pid, title: title }}>Upload Changes</Link>
           </Button>
           <Button variant={"outline"}>Open Project Folder</Button>
         </div>
