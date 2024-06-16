@@ -72,7 +72,7 @@ function Teams() {
             }
 
             queryClient.invalidateQueries({
-                queryKey: ['teams']
+                queryKey: ['teams', 'projects']
             })
         }
     })
