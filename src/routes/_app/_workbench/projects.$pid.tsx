@@ -1,5 +1,7 @@
 import { NavigationMenu, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, navigationMenuTriggerStyle } from '@/components/ui/navigation-menu';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@clerk/clerk-react';
+import { useQuery } from '@tanstack/react-query';
 import { Link, Outlet, createFileRoute } from '@tanstack/react-router'
 import { invoke } from "@tauri-apps/api/core";
 
@@ -17,6 +19,29 @@ export const Route = createFileRoute('/_app/_workbench/projects/$pid')({
 function Project() {
     const { url } = Route.useLoaderData();
     const { pid } = Route.useParams();
+    const { getToken } = useAuth();
+    const { isPending, isError, data, error } = useQuery({
+      queryKey: ['project' + pid],
+      queryFn: async () => {
+        const endpoint = url + '/project/info?pid=' + pid;
+        const resp = await fetch(endpoint, {
+          headers: { Authorization: `Bearer ${await getToken()}`},
+          method: "GET",
+          mode: "cors"
+        });
+        return resp.json()
+      }
+    })
+
+    if(isPending) {
+      return <div>Loading project...</div>
+    }
+    else if(isError) {
+      return <div>
+        <div>An error occured:</div>
+        <div>{error.name}: {error.message}</div>
+      </div>
+    }
 
   return (
     <div className='grid row-auto content-center justify-items-center'>
@@ -24,7 +49,7 @@ function Project() {
           <NavigationMenuList className='space-x-4'>
             <NavigationMenuItem>
             <NavigationMenuLink className={cn(navigationMenuTriggerStyle(), 'text-4xl font-semibold')}>
-                <Link to='/projects/$pid/sync' params={{ pid: pid }}>{"SDM-24"}</Link>
+                <Link to='/projects/$pid/sync' params={{ pid: pid }}>{data.title}</Link>
             </NavigationMenuLink>
             </NavigationMenuItem>
             <NavigationMenuItem>
