@@ -40,9 +40,6 @@ function WorkbenchLayout() {
                     </NavigationMenuLink>
                 </NavigationMenuItem>
                 <NavigationMenuItem>
-                <NavigationMenuLink className={navigationMenuTriggerStyle()} asChild>
-                        <Link to="/settings">Settings</Link>
-                    </NavigationMenuLink>
                 </NavigationMenuItem>
               </NavigationMenuList>
             </NavigationMenu>
@@ -56,6 +53,9 @@ function WorkbenchLayout() {
                 <DropdownMenuItem>About</DropdownMenuItem>
                 </DialogTrigger>
                 <DropdownMenuItem>Help</DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to='/settings'>Settings</Link>
+                </DropdownMenuItem>
                 <DropdownMenuSeparator className='mx-1'/>
                 <DropdownMenuItem onClick={() => signOut()}>Sign Out</DropdownMenuItem>
               </DropdownMenuContent>
