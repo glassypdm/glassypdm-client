@@ -6,18 +6,76 @@ mod sync;
 mod types;
 mod util;
 
+use merkle_hash::{bytes_to_hex, Algorithm, MerkleTree, anyhow::Error};
 use sqlx::{SqlitePool, Row, Pool, Sqlite, sqlite::SqliteConnectOptions};
 use sqlx::migrate::Migrator;
 use tauri::{AppHandle, Manager, State};
 use tauri::path::BaseDirectory;
 use util::get_project_dir;
 use std::path::{Path, PathBuf};
+use std::fs;
 use tokio::sync::Mutex;
 use crate::config::*;
 use sync::update_project_info;
 
 async fn hash_dir(pid: i32, dir_path: PathBuf, pool: &Pool<Sqlite>) {
-    println!("start: {:?}", dir_path.to_str());
+    println!("start: {}", dir_path.display());
+
+    let _ = sqlx::query("UPDATE file SET in_fs = 0 WHERE pid = $1").bind(pid).execute(&*pool).await;
+
+    let tree = MerkleTree::builder(dir_path.display().to_string())
+    .algorithm(Algorithm::Blake3)
+    .hash_names(true)
+    .build().unwrap();
+    
+    for file in tree {
+        // uwu
+        let rel_path = file.path.relative.into_string();
+        let metadata = std::fs::metadata(file.path.absolute.clone()).unwrap();
+        let hash = bytes_to_hex(file.hash);
+        let filesize = metadata.len();
+        // ignore folders
+        if metadata.is_dir() {
+            continue;
+        }
+
+        // ignore temp solidworks files
+        if rel_path.contains("~$") {
+            println!("solidworks temporary file detected {}", rel_path);
+            continue;
+        } // root directory is empty
+        else if rel_path == "" {
+            continue;
+        }
+
+        // write to sqlite
+        let hehe = sqlx::query("INSERT INTO file(filepath, pid, curr_hash, size) VALUES($1, $2, $3, $4)
+        ON CONFLICT(filepath, pid) DO UPDATE SET curr_hash = excluded.curr_hash, size = excluded.size, in_fs = 1")
+        .bind(rel_path)
+        .bind(pid)
+        .bind(hash)
+        .bind(filesize as i64)
+        .execute(&*pool).await;
+        match hehe {
+            Ok(owo) => {},
+            Err(err) =>{
+                println!("error! {}", err);
+            }
+        }
+    }
+
+    // TODO verify the below logic
+    let _ = sqlx::query(
+        "UPDATE file SET change_type = 2 WHERE in_fs = 1 AND base_hash != curr_hash AND pid = $1 AND base_hash != ''"
+    ).bind(pid).execute(pool).await;
+
+    let _ = sqlx::query(
+        "UPDATE file SET change_type = 3 WHERE in_fs = 0 AND pid = $1 AND base_hash != ''"
+    ).bind(pid).execute(pool).await;
+
+    let _ = sqlx::query(
+        "DELETE FROM file WHERE in_fs = 0 AND pid = $1 AND base_hash = ''"
+    ).bind(pid).execute(pool).await;
 
 }
 
@@ -25,15 +83,12 @@ async fn hash_dir(pid: i32, dir_path: PathBuf, pool: &Pool<Sqlite>) {
 #[tauri::command]
 async fn sync_changes(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<(), ()> {
     let pool = state_mutex.lock().await;
-    println!("{}", get_project_dir(pid, &pool).await.unwrap());
+    let project_dir = get_project_dir(pid, &pool).await.unwrap();
 
     // create folder if it does not exist
-    /* 
     let _ = fs::create_dir_all(&project_dir);
-    println!("dir: {}", project_dir);
     hash_dir(pid, project_dir.into(), &pool).await;
     println!("hashing done");
-    */
 
     // TODO get updated version of project
     // client should send server a filepath and the base commit

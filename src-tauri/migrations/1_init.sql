@@ -19,12 +19,14 @@ CREATE TABLE project (
     PRIMARY KEY(pid, url)
 );
 CREATE TABLE file (
-    filepath TEXT NOT NULL PRIMARY KEY,
+    filepath TEXT NOT NULL, -- relative path
     pid INTEGER NOT NULL,
-    hash TEXT NOT NULL,
+    base_hash TEXT NOT NULL DEFAULT "",
+    curr_hash TEXT NOT NULL,
     size INTEGER NOT NULL,
     base_commitid INTEGER DEFAULT -1,
     tracked_commitid INTEGER DEFAULT -1,
     change_type INTEGER DEFAULT 1,
-    in_fs INTEGER DEFAULT 1
+    in_fs INTEGER DEFAULT 1,
+    PRIMARY KEY (filepath, pid)
 );
