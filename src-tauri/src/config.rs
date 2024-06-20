@@ -122,3 +122,16 @@ pub async fn init_settings_options(state_mutex: State<'_, Mutex<Pool<Sqlite>>>) 
         }
     }
 }
+
+#[tauri::command]
+pub async fn set_local_dir(dir: String, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<(), ()> {
+    let pool = state_mutex.lock().await;
+    
+    let _ = sqlx::query(
+        "UPDATE server SET local_dir = ? WHERE active = 1"
+    )
+        .bind(dir)
+        .execute(&*pool).await;
+
+    Ok(())
+}
