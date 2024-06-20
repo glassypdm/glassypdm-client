@@ -16,7 +16,7 @@ use std::path::{Path, PathBuf};
 use std::fs;
 use tokio::sync::Mutex;
 use crate::config::*;
-use sync::update_project_info;
+use sync::{update_project_info, get_uploads};
 
 async fn hash_dir(pid: i32, dir_path: PathBuf, pool: &Pool<Sqlite>) {
     println!("start: {}", dir_path.display());
@@ -115,7 +115,8 @@ fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
             sync_changes, set_local_dir, set_debug, get_server_url,
-            get_server_clerk, add_server, init_settings_options, get_server_name, update_project_info
+            get_server_clerk, add_server, init_settings_options, get_server_name, update_project_info,
+            get_uploads
             ])
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
