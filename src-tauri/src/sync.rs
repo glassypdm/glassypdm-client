@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Sqlite, Row};
 use tauri::{State};
 use tokio::sync::Mutex;
@@ -22,21 +23,22 @@ pub async fn update_project_info(pid: i32, title: String, init_commit: i32, stat
     Ok(())
 }
 
+#[derive(sqlx::FromRow, Serialize, Deserialize)]
+pub struct FileChange {
+    filepath: String,
+    size: u32,
+    change_type: u32
+}
+
 #[tauri::command]
-pub async fn get_uploads(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<u32, ()> {
+pub async fn get_uploads(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<Vec<FileChange>, ()> {
     let pool = state_mutex.lock().await;
     let server = get_current_server(&pool).await.unwrap();
 
-    let output = sqlx::query("SELECT COUNT(filepath) as count FROM file WHERE pid = $1 AND change_type != 0")
-    .bind(pid).fetch_one(&*pool).await;
+    let output: Vec<FileChange> = sqlx::query_as("SELECT filepath, size, change_type FROM file WHERE pid = $1 AND change_type != 0")
+    .bind(pid).fetch_all(&*pool)
+    .await.unwrap();
 
-    match output {
-        Ok(row) => {
-            Ok(row.get::<u32, &str>("count"))
-        },
-        Err(err) => {
-            println!("error: {}", err);
-            Ok(0)
-        }
-    }
+    // TODO don't unwrap
+    Ok(output)
 }
