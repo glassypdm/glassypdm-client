@@ -4,7 +4,7 @@ import { useAuth } from "@clerk/clerk-react"
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Home, Menu } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { NavigationMenu, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, navigationMenuTriggerStyle } from '@/components/ui/navigation-menu';
 import { cn } from '@/lib/utils';
@@ -49,7 +49,7 @@ function WorkbenchLayout() {
             <Dialog>
             <DropdownMenu>
               <DropdownMenuTrigger className='max-w-fit justify-self-end mx-4' asChild>
-                <Button variant='outline'><Menu className='mr-2 h-4 w-4' />Open</Button>
+                <Button variant='outline'><Menu className='h-4 w-4' />{/*Open*/}</Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className='mx-4'>
                 <DialogTrigger asChild>

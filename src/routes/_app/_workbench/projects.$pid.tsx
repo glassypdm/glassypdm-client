@@ -29,7 +29,10 @@ function Project() {
           method: "GET",
           mode: "cors"
         });
-        return resp.json()
+        const data = await resp.json()
+        invoke("update_project_info", { pid: parseInt(pid), title: data.title, initCommit: data.initCommit })
+
+        return data
       }
     })
 
@@ -62,6 +65,14 @@ function Project() {
                 <Link to='/projects/$pid/files' params={{ pid: pid }}>Files</Link>
               </NavigationMenuLink>
             </NavigationMenuItem>
+            {
+              data.canManage ? 
+              <NavigationMenuItem>
+              <NavigationMenuLink className={cn(navigationMenuTriggerStyle(), 'text-md')} asChild>
+                <Link to='/projects/$pid/settings' params={{ pid: pid }}>Settings</Link>
+              </NavigationMenuLink>
+            </NavigationMenuItem> : <></>
+            }
           </NavigationMenuList>
         </NavigationMenu>
         <Outlet />

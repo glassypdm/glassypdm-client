@@ -18,11 +18,9 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tauri-plugin-fs = "2.0.0-beta.2"
 tauri-plugin-dialog = "2.0.0-beta.3"
-walkdir = "2"
-jwalk = "0.8.1"
-fs-chunker = "0.4.0"
 sqlx = { version = "0.7", features = [ "runtime-tokio", "sqlite" ] }
 tokio = { version = "1", features = ["full"] }
+merkle_hash = "3.5"
 
 [features]
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!

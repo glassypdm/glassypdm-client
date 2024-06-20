@@ -25,6 +25,7 @@ import { Route as AppWorkbenchProjectsIndexImport } from './routes/_app/_workben
 import { Route as AppWorkbenchTeamsTeamidImport } from './routes/_app/_workbench/teams.$teamid'
 import { Route as AppWorkbenchProjectsPidImport } from './routes/_app/_workbench/projects.$pid'
 import { Route as AppWorkbenchProjectsPidSyncImport } from './routes/_app/_workbench/projects.$pid.sync'
+import { Route as AppWorkbenchProjectsPidSettingsImport } from './routes/_app/_workbench/projects.$pid.settings'
 import { Route as AppWorkbenchProjectsPidHistoryImport } from './routes/_app/_workbench/projects.$pid.history'
 import { Route as AppWorkbenchProjectsPidFilesImport } from './routes/_app/_workbench/projects.$pid.files'
 
@@ -98,6 +99,12 @@ const AppWorkbenchProjectsPidRoute = AppWorkbenchProjectsPidImport.update({
 const AppWorkbenchProjectsPidSyncRoute =
   AppWorkbenchProjectsPidSyncImport.update({
     path: '/sync',
+    getParentRoute: () => AppWorkbenchProjectsPidRoute,
+  } as any)
+
+const AppWorkbenchProjectsPidSettingsRoute =
+  AppWorkbenchProjectsPidSettingsImport.update({
+    path: '/settings',
     getParentRoute: () => AppWorkbenchProjectsPidRoute,
   } as any)
 
@@ -222,6 +229,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppWorkbenchProjectsPidHistoryImport
       parentRoute: typeof AppWorkbenchProjectsPidImport
     }
+    '/_app/_workbench/projects/$pid/settings': {
+      id: '/_app/_workbench/projects/$pid/settings'
+      path: '/settings'
+      fullPath: '/projects/$pid/settings'
+      preLoaderRoute: typeof AppWorkbenchProjectsPidSettingsImport
+      parentRoute: typeof AppWorkbenchProjectsPidImport
+    }
     '/_app/_workbench/projects/$pid/sync': {
       id: '/_app/_workbench/projects/$pid/sync'
       path: '/sync'
@@ -245,6 +259,7 @@ export const routeTree = rootRoute.addChildren({
       AppWorkbenchProjectsPidRoute: AppWorkbenchProjectsPidRoute.addChildren({
         AppWorkbenchProjectsPidFilesRoute,
         AppWorkbenchProjectsPidHistoryRoute,
+        AppWorkbenchProjectsPidSettingsRoute,
         AppWorkbenchProjectsPidSyncRoute,
       }),
       AppWorkbenchProjectsIndexRoute,
@@ -329,6 +344,7 @@ export const routeTree = rootRoute.addChildren({
       "children": [
         "/_app/_workbench/projects/$pid/files",
         "/_app/_workbench/projects/$pid/history",
+        "/_app/_workbench/projects/$pid/settings",
         "/_app/_workbench/projects/$pid/sync"
       ]
     },
@@ -346,6 +362,10 @@ export const routeTree = rootRoute.addChildren({
     },
     "/_app/_workbench/projects/$pid/history": {
       "filePath": "_app/_workbench/projects.$pid.history.tsx",
+      "parent": "/_app/_workbench/projects/$pid"
+    },
+    "/_app/_workbench/projects/$pid/settings": {
+      "filePath": "_app/_workbench/projects.$pid.settings.tsx",
       "parent": "/_app/_workbench/projects/$pid"
     },
     "/_app/_workbench/projects/$pid/sync": {

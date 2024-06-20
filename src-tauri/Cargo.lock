@@ -686,19 +686,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "crossbeam"
-version = "0.8.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1137cd7e7fc0fb5d3c5a8678be38ec56e819125d8d7907411fe24ccb943faca8"
-dependencies = [
- "crossbeam-channel",
- "crossbeam-deque",
- "crossbeam-epoch",
- "crossbeam-queue",
- "crossbeam-utils",
-]
-
-[[package]]
 name = "crossbeam-channel"
 version = "0.5.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1210,16 +1197,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "fs-chunker"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4ebd272618a2e6972c3387fee5645c365d45b14c5026f75bfd6bde39436fc6f4"
-dependencies = [
- "blake3",
- "sha256",
-]
-
-[[package]]
 name = "futf"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1521,8 +1498,7 @@ dependencies = [
 name = "glassy_pdm_client"
 version = "0.6.0"
 dependencies = [
- "fs-chunker",
- "jwalk",
+ "merkle_hash",
  "serde",
  "serde_json",
  "sqlx",
@@ -1532,7 +1508,6 @@ dependencies = [
  "tauri-plugin-fs",
  "tauri-plugin-shell",
  "tokio",
- "walkdir",
 ]
 
 [[package]]
@@ -2024,16 +1999,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "jwalk"
-version = "0.8.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2735847566356cd2179a2a38264839308f7079fa96e6bd5a42d740460e003c56"
-dependencies = [
- "crossbeam",
- "rayon",
-]
-
-[[package]]
 name = "keyboard-types"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2253,6 +2218,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "488016bfae457b036d996092f6cb448677611ce4449e970ceaf42695203f218a"
 dependencies = [
  "autocfg",
+]
+
+[[package]]
+name = "merkle_hash"
+version = "3.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0fad8dc52477aa6f1751748a5ee1c6d50db7092e8dab1d687840dfa23e2ae4e5"
+dependencies = [
+ "anyhow",
+ "blake3",
+ "camino",
+ "rayon",
 ]
 
 [[package]]
@@ -3621,19 +3598,6 @@ dependencies = [
  "cfg-if",
  "cpufeatures",
  "digest",
-]
-
-[[package]]
-name = "sha256"
-version = "1.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "18278f6a914fa3070aa316493f7d2ddfb9ac86ebc06fa3b83bffda487e9065b0"
-dependencies = [
- "async-trait",
- "bytes",
- "hex",
- "sha2",
- "tokio",
 ]
 
 [[package]]

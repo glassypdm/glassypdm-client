@@ -100,7 +100,6 @@ pub async fn add_server(url: String, clerk: String, local_dir: String, name: Str
 #[tauri::command]
 pub async fn init_settings_options(state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<SettingsOptions, ()> {
     let pool = state_mutex.lock().await;
-    println!("init seafsdf");
 
     let output = sqlx::query(
         "SELECT local_dir, debug_active FROM server WHERE active = 1"
@@ -108,12 +107,10 @@ pub async fn init_settings_options(state_mutex: State<'_, Mutex<Pool<Sqlite>>>) 
 
     match output {
         Ok(row) => {
-            println!("{} {}", row.get::<String, &str>("local_dir"), row.get::<i32, &str>("debug_active"));
             let result = SettingsOptions {
                 local_dir: row.get::<String, &str>("local_dir").to_string(),
                 debug_active: row.get::<i32, &str>("debug_active")
             };
-            println!("hehehe");
             Ok(result)
         },
         Err(_err) => {
