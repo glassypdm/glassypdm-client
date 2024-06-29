@@ -14,7 +14,7 @@ async fn hash_dir(pid: i32, dir_path: PathBuf, pool: &Pool<Sqlite>) {
 
     let tree = MerkleTree::builder(dir_path.display().to_string())
     .algorithm(Algorithm::Blake3)
-    .hash_names(true)
+    .hash_names(false)
     .build().unwrap();
     
     for file in tree {
@@ -27,6 +27,7 @@ async fn hash_dir(pid: i32, dir_path: PathBuf, pool: &Pool<Sqlite>) {
         if metadata.is_dir() {
             continue;
         }
+        //println!("hash {}", hash);
 
         // ignore temp solidworks files
         if rel_path.contains("~$") {
