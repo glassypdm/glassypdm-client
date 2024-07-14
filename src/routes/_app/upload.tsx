@@ -18,24 +18,23 @@ export const Route = createFileRoute('/_app/upload')({
       pid
     }),
     loader: async ({ deps: { pid } }) => {
-      const uploads: File[] = await invoke("get_uploads", { pid: parseInt(pid) });
+      let pid_i32 = parseInt(pid)
+      const uploads: File[] = await invoke("get_uploads", { pid: pid_i32 });
 
       // initialize selection list
       let selectionList: RowSelectionState = {};
       for(let i = 0; i < uploads.length; i++) {
         selectionList[i.toString()] = true;
       }
-      // TODO
-      //const projectName = await invoke("")
-      console.log(uploads)
-      return { uploads, selectionList }
+      const projectName: string = await invoke("get_project_name", { pid: pid_i32 })
+      return { uploads, selectionList, projectName }
     },
   component: () => <UploadPage />
 
 })
 
 function UploadPage() {
-  const { uploads, selectionList } = Route.useLoaderData();
+  const { uploads, selectionList, projectName } = Route.useLoaderData();
   const { getToken } = useAuth();
   const { pid } = Route.useSearch();
   const [action, setAction] = useState("Upload");
@@ -46,19 +45,29 @@ function UploadPage() {
   async function handleAction() {
     // get special JWT for rust/store operations
     //const uwu = await getToken({ template: "store-operations", leewayInSeconds: 30 })
-    console.log(selection)
+    let selectedFiles: File[] = []
+    for(let i = 0; i < Object.keys(selection).length; i++) {
+      const key: number = parseInt(Object.keys(selection)[i]);
+      selectedFiles.push({
+        filepath: uploads[key].filepath,
+        size: uploads[key].size,
+        change_type: uploads[key].change_type
+      })
+    }
+    console.log(selectedFiles)
     if(action == "Upload") {
 
     }
     else {
-
+      // if change_type is create, we can delete these
+      // otherwise download by filepath/pid/base_commitid
     }
   }
 
 
   return (
     <div className='flex flex-col p-4'>
-      <h1 className='text-3xl pb-8'>Upload Changes</h1>
+      <h1 className='text-3xl pb-8'>Upload Changes to {projectName}</h1>
         <div className='flex flex-row justify-items-center items-center'>
           <Button className='flex-none'asChild>
             <Link to={'/projects/$pid/sync'} params={{ pid: pid as string}}>Close</Link>

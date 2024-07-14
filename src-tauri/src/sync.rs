@@ -1,6 +1,6 @@
 use std::{fs, process::Command};
 use serde::{Deserialize, Serialize};
-use sqlx::{Pool, Sqlite};
+use sqlx::{Pool, Sqlite, Row};
 use tauri::State;
 use merkle_hash::{bytes_to_hex, Algorithm, MerkleTree};
 use crate::util::{get_project_dir, get_current_server};
@@ -139,4 +139,25 @@ pub async fn get_uploads(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) 
 
     // TODO don't unwrap
     Ok(output)
+}
+
+#[tauri::command]
+pub async fn get_project_name(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<String, ()> {
+    let pool = state_mutex.lock().await;
+    let server = get_current_server(&pool).await.unwrap();
+    let output = sqlx::query("SELECT title FROM project WHERE pid = $1 AND url = $2")
+        .bind(pid)
+        .bind(server)
+        .fetch_one(&*pool)
+        .await;
+
+    match output {
+        Ok(row) => {
+            Ok(row.get::<String, &str>("title"))
+        },
+        Err(err) => {
+            println!("Error retrieving project name: {}", err);
+            Ok("".to_string())
+        }
+    }
 }
