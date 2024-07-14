@@ -31,7 +31,6 @@ function Project() {
         });
         const data = await resp.json()
         invoke("update_project_info", { pid: parseInt(pid), teamName: data.teamName, title: data.title, initCommit: data.initCommit })
-        console.log(data);
         return data
       }
     })
@@ -51,12 +50,12 @@ function Project() {
         <NavigationMenu className='mt-2 mb-6'>
           <NavigationMenuList className='space-x-4'>
             <NavigationMenuItem>
-            <NavigationMenuLink className={cn(navigationMenuTriggerStyle(), 'text-4xl font-semibold')}>
+            <NavigationMenuLink className={cn(navigationMenuTriggerStyle(), 'text-4xl font-semibold')} asChild>
                 <Link to='/projects/$pid/sync' params={{ pid: pid }}>{data.title}</Link>
             </NavigationMenuLink>
             </NavigationMenuItem>
             <NavigationMenuItem>
-              <NavigationMenuLink className={cn(navigationMenuTriggerStyle(), 'text-md')}>
+              <NavigationMenuLink className={cn(navigationMenuTriggerStyle(), 'text-md')} asChild>
                 <Link to='/projects/$pid/history' params={{ pid: pid }}>Project History</Link>
               </NavigationMenuLink>
             </NavigationMenuItem>

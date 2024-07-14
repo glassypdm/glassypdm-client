@@ -133,9 +133,9 @@ function TeamDashboard() {
       {dashboard}
       <Separator />
       <div className='text-xl pb-2'>Membership</div>
-        <TableCaption>{data.members.length} member{data.members.length == 1 ? "" : "s"}</TableCaption>
-        <Table>
         <ScrollArea className='h-36'>
+        <Table>
+        <TableCaption>{data.members.length} member{data.members.length == 1 ? "" : "s"}</TableCaption>
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>
@@ -150,8 +150,8 @@ function TeamDashboard() {
             </TableRow>
             )}
           </TableBody>
-          </ScrollArea>
       </Table>
-    </div>
+      </ScrollArea>
+      </div>
   )
 }

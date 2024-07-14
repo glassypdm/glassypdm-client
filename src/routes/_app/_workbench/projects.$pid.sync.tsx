@@ -1,8 +1,8 @@
+import { File } from '@/components/file/FileColumn';
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@clerk/clerk-react';
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { invoke } from '@tauri-apps/api/core';
-import { open } from '@tauri-apps/plugin-fs';
 import { useState } from 'react';
 
 export const Route = createFileRoute('/_app/_workbench/projects/$pid/sync')({
@@ -10,8 +10,7 @@ export const Route = createFileRoute('/_app/_workbench/projects/$pid/sync')({
   loader: async ({ params }) => {
     const pid = parseInt(params.pid);
     // TODO do sync actions here
-    const uploadOutput: any = await invoke("get_uploads", { pid: pid });
-    console.log(uploadOutput)
+    const uploadOutput: File[] = await invoke("get_uploads", { pid: pid });
     const url: string = await invoke("get_server_url");
 
     return (
@@ -37,7 +36,7 @@ function SyncPage() {
     const pid_number = parseInt(pid);
     await invoke("sync_changes", { pid: pid_number });
 
-    // TODO update download/upload/conflict lists
+    // TODO update download/conflict lists
     // TODO type this so its not any
     const uploadOutput: any = await invoke("get_uploads", { pid: pid_number });
     console.log(uploadOutput)
@@ -46,8 +45,7 @@ function SyncPage() {
   }
 
   async function navigateUpload() {
-    // get special JWT for rust/store operations
-    const uwu = await getToken({ template: "store-operations", leewayInSeconds: 30 })
+
     navigate({
       to: '/upload',
       search: { pid: pid }
