@@ -1,4 +1,4 @@
-use std::fs;
+use std::{fs, process::Command};
 use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Sqlite};
 use tauri::State;
@@ -47,7 +47,7 @@ async fn hash_dir(pid: i32, dir_path: PathBuf, pool: &Pool<Sqlite>) {
         .bind(filesize as i64)
         .execute(&*pool).await;
         match hehe {
-            Ok(owo) => {},
+            Ok(_owo) => {},
             Err(err) =>{
                 println!("error! {}", err);
             }
@@ -70,6 +70,21 @@ async fn hash_dir(pid: i32, dir_path: PathBuf, pool: &Pool<Sqlite>) {
 
 }
 
+// :clown:
+#[tauri::command]
+pub async fn open_project_dir(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<(), ()> {
+    let pool = state_mutex.lock().await;
+    let project_dir = get_project_dir(pid, &pool).await.unwrap();
+    let _ = fs::create_dir_all(&project_dir);
+
+    // TODO windows only
+    Command::new("explorer")
+        .arg(project_dir)
+        .spawn()
+        .unwrap();
+
+    return Ok(())
+}
 // precondition: we have a server_url
 #[tauri::command]
 pub async fn sync_changes(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<(), ()> {
@@ -89,15 +104,16 @@ pub async fn sync_changes(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>)
 }
 
 #[tauri::command]
-pub async fn update_project_info(pid: i32, title: String, init_commit: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<(), ()> {
+pub async fn update_project_info(pid: i32, title: String, team_name: String, init_commit: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<(), ()> {
     let pool = state_mutex.lock().await;
     let server = get_current_server(&pool).await.unwrap();
 
-    let _output = sqlx::query("INSERT INTO project(pid, url, title, base_commitid, remote_title) VALUES (?, ?, ?, ?, ?)
+    let _output = sqlx::query("INSERT INTO project(pid, url, title, team_name, base_commitid, remote_title) VALUES (?, ?, ?, ?, ?, ?)
         ON CONFLICT(pid, url) DO UPDATE SET remote_title = excluded.title")
         .bind(pid)
         .bind(server)
         .bind(title.clone())
+        .bind(team_name)
         .bind(init_commit)
         .bind(title.clone())
         .execute(&*pool)

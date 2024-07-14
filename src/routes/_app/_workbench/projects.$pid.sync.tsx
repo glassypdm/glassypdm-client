@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button'
 import { useAuth } from '@clerk/clerk-react';
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { invoke } from '@tauri-apps/api/core';
+import { open } from '@tauri-apps/plugin-fs';
 import { useState } from 'react';
 
 export const Route = createFileRoute('/_app/_workbench/projects/$pid/sync')({
@@ -37,7 +38,7 @@ function SyncPage() {
     await invoke("sync_changes", { pid: pid_number });
 
     // TODO update download/upload/conflict lists
-    // TODO type
+    // TODO type this so its not any
     const uploadOutput: any = await invoke("get_uploads", { pid: pid_number });
     console.log(uploadOutput)
     SetUploadSize(uploadOutput.length)
@@ -47,18 +48,14 @@ function SyncPage() {
   async function navigateUpload() {
     // get special JWT for rust/store operations
     const uwu = await getToken({ template: "store-operations", leewayInSeconds: 30 })
-    console.log(uwu)
-    await fetch(url + '/store/request', {
-      headers: { Authorization: `Bearer ${uwu}`},
-      method: "POST"
-    });
-    /*
     navigate({
       to: '/upload',
       search: { pid: pid }
     })
-      */
-    
+  }
+
+  async function openFolder() {
+    await invoke("open_project_dir", { pid: parseInt(pid) })
   }
 
   return (
@@ -74,7 +71,7 @@ function SyncPage() {
       <Button className='grow text-wrap' onClick={navigateUpload}  disabled={false}>
         {uploadSize == 0 ? "Up to date" : uploadSize + " files ready to upload"}
       </Button>
-      <Button variant={"outline"}>Open Project Folder</Button>
+      <Button variant={"outline"} onClick={openFolder}>Open Project Folder</Button>
     </div>
   </div>
   )

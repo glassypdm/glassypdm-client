@@ -7,7 +7,7 @@ Create a ticket [here](https://github.com/joshtenorio/glassypdm-client/issues).
 - pnpm
 - Windows computer setup for Tauri development. [link](https://tauri.app/v1/guides/getting-started/prerequisites)
 - Clerk account setup. [link](https://clerk.com/)
-- An instance of the glassyPDM [server](https://github.com/joshtenorio/glassypdm-server) and [webapp (WIP)](https://github.com/joshtenorio/glassypdm-web) running somewhere.
+- An instance of the glassyPDM [server](https://github.com/joshtenorio/glassypdm-server) and [webapp](https://github.com/joshtenorio/glassypdm-web) running somewhere.
 ### CLI
 ```bash
 # build activities

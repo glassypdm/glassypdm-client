@@ -11,6 +11,7 @@ CREATE TABLE server (
 CREATE TABLE project (
     pid INTEGER NOT NULL,
     url TEXT NOT NULL,
+    team_name TEXT NOT NULL,
     title TEXT NOT NULL,
     remote_title TEXT NOT NULL,
     base_commitid INTEGER,
