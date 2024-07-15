@@ -79,6 +79,7 @@ function UploadPage() {
       // upload files w/ store/upload or whatever path
       await invoke("upload_files", { pid: parseInt(pid), filepaths: selectedFiles, token: uwu });
 
+      setStatus("Logging project update...")
       // create commit
       const endpoint = url + "/commit";
       console.log(endpoint)

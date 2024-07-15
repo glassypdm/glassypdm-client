@@ -56,6 +56,10 @@ async fn hash_dir(pid: i32, dir_path: PathBuf, pool: &Pool<Sqlite>) {
 
     // TODO verify the below logic
     let _ = sqlx::query(
+        "UPDATE file SET change_type = 0 WHERE in_fs = 1 AND change_type = 3 AND pid = $1"
+    ).bind(pid).execute(pool).await;
+
+    let _ = sqlx::query(
         "UPDATE file SET change_type = 2 WHERE in_fs = 1 AND base_hash != curr_hash AND pid = $1 AND base_hash != ''"
     ).bind(pid).execute(pool).await;
 
