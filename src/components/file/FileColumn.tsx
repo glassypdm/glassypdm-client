@@ -5,6 +5,7 @@ export interface File {
     change_type: number
     filepath: string
     size: number
+    curr_hash: string
 }
 
 export const columns: ColumnDef<File>[] = [

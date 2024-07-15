@@ -9,7 +9,6 @@ export const Route = createFileRoute('/_app/_workbench/projects/$pid/sync')({
   component: () => <SyncPage />,
   loader: async ({ params }) => {
     const pid = parseInt(params.pid);
-    // TODO do sync actions here
     const uploadOutput: File[] = await invoke("get_uploads", { pid: pid });
     const url: string = await invoke("get_server_url");
 
@@ -19,7 +18,9 @@ export const Route = createFileRoute('/_app/_workbench/projects/$pid/sync')({
       url: url
       }
     )
-  }
+  },
+  gcTime: 0, // do not cache this route's data after its unloaded per docs
+  shouldReload: false, // only reload the route when dependencies change or user navigates to it (per docs)
 })
 
 function SyncPage() {
@@ -66,7 +67,7 @@ function SyncPage() {
     </div>
     <Button className='flex h-full' onClick={syncChanges} disabled={syncInProgress}>Sync</Button>
     <div className='flex flex-col gap-4'>
-      <Button className='grow text-wrap' onClick={navigateUpload}  disabled={false}>
+      <Button className='grow text-wrap' onClick={navigateUpload}  disabled={uploadSize == 0 ? true : false}>
         {uploadSize == 0 ? "Up to date" : uploadSize + " files ready to upload"}
       </Button>
       <Button variant={"outline"} onClick={openFolder}>Open Project Folder</Button>

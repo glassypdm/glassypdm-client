@@ -9,6 +9,7 @@ import { RowSelectionState } from '@tanstack/react-table';
 import { invoke } from '@tauri-apps/api/core';
 import { useState } from 'react';
 import { listen } from "@tauri-apps/api/event";
+import { Textarea } from '@/components/ui/textarea';
 
 export const Route = createFileRoute('/_app/upload')({
   validateSearch: (search) =>
@@ -20,6 +21,7 @@ export const Route = createFileRoute('/_app/upload')({
     }),
     loader: async ({ deps: { pid } }) => {
       let pid_i32 = parseInt(pid)
+      const url: string = await invoke("get_server_url");
       const uploads: File[] = await invoke("get_uploads", { pid: pid_i32 });
 
       // initialize selection list
@@ -28,42 +30,73 @@ export const Route = createFileRoute('/_app/upload')({
         selectionList[i.toString()] = true;
       }
       const projectName: string = await invoke("get_project_name", { pid: pid_i32 })
-      return { uploads, selectionList, projectName }
+      return { uploads, selectionList, projectName, url }
     },
-  component: () => <UploadPage />
+  component: () => <UploadPage />,
+  gcTime: 0, // do not cache this route's data after its unloaded per docs
+  shouldReload: false, // only reload the route when dependencies change or user navigates to it (per docs)
 
 })
 
 function UploadPage() {
-  const { uploads, selectionList, projectName } = Route.useLoaderData();
+  const { uploads, selectionList, projectName, url } = Route.useLoaderData();
   const { getToken } = useAuth();
   const { pid } = Route.useSearch();
   const [action, setAction] = useState("Upload");
   const [status, setStatus] = useState("");
   const [progress, setProgress] = useState(0);
+  const [disabled, setDisabled] = useState(false);
   const [selection, setSelection] = useState(selectionList)
+  const [commitMessage, setCommitMessage] = useState("")
   
   async function handleAction() {
+    setDisabled(true);
     // get special JWT for rust/store operations
     const uwu = await getToken({ template: "store-operations", leewayInSeconds: 30 })
     let selectedFiles: string[] = []
+    let uploadList: any[] = []
     for(let i = 0; i < Object.keys(selection).length; i++) {
       const key: number = parseInt(Object.keys(selection)[i]);
       selectedFiles.push(uploads[key].filepath)
+
+      uploadList.push({
+        path: uploads[key].filepath,
+        hash: uploads[key].curr_hash,
+        changetype: uploads[key].change_type
+      });
     }
     console.log(selectedFiles)
 
     const selectedLength = selectedFiles.length;
     setStatus(`0 of ${selectedLength} files uploaded...`);
+    console.log(commitMessage)
     if(action == "Upload") {
-      const unlisten = await listen('uploadedFile', (payload: any) => {
-        console.log(payload);
+      const unlisten = await listen('uploadedFile', (event: any) => {
+        setProgress(100 * event.payload / selectedLength)
+        setStatus(`${event.payload} of ${selectedLength} files uploaded...`);
       })
 
       // upload files w/ store/upload or whatever path
       await invoke("upload_files", { pid: parseInt(pid), filepaths: selectedFiles, token: uwu });
-      
+
       // create commit
+      const endpoint = url + "/commit";
+      console.log(endpoint)
+      const response = await fetch(endpoint, {
+        method: "POST",
+        mode: "cors",
+        headers: { Authorization: `Bearer ${await getToken()}` },
+        body: JSON.stringify({
+          "projectId": parseInt(pid),
+          "message": commitMessage,
+          files: uploadList 
+        })
+      })
+      const data = await response.json();
+      console.log(data)
+
+      // update db
+      await invoke("update_uploaded", { pid: parseInt(pid), commit: data.commitid, files: uploadList })
 
       unlisten();
     }
@@ -74,7 +107,9 @@ function UploadPage() {
     }
 
     
-    setStatus(`${action} complete!`)
+    setStatus(`${action} complete!`);
+    setDisabled(false);
+
   }
 
 
@@ -82,18 +117,22 @@ function UploadPage() {
     <div className='flex flex-col p-4'>
       <h1 className='text-3xl pb-8'>Upload Changes to {projectName}</h1>
         <div className='flex flex-row justify-items-center items-center'>
-          <Button className='flex-none'asChild>
-            <Link to={'/projects/$pid/sync'} params={{ pid: pid as string}}>Close</Link>
-          </Button>
+        <Link
+              to={'/projects/$pid/sync'}
+              params={{ pid: pid }}
+              disabled={disabled}>
+          <Button className='flex-none disabled:pointer-events-none disabled:opacity-50' disabled={disabled}>
+Close
+          </Button></Link>
           <p className='flex-auto text-center'>{status}</p>
           <div className='flex'>
           <Button
-            disabled={Object.keys(selection).length == 0}
+            disabled={Object.keys(selection).length == 0 || disabled || progress == 100}
             onClick={handleAction}
             variant={action == "Reset" ? "destructive" : "default"}
             >{progress == 100 ? action + " Complete" : action + " Selected"}</Button>
           <Select onValueChange={(e) => setAction(e)}>
-          <SelectTrigger className="w-[40px]"></SelectTrigger>
+          <SelectTrigger className="w-[40px]" disabled={disabled || progress == 100}></SelectTrigger>
           <SelectContent>
             <SelectItem value="Upload">Upload</SelectItem>
             <SelectItem value="Reset">Reset</SelectItem>
@@ -101,7 +140,11 @@ function UploadPage() {
         </Select>
           </div>
         </div>
-      <div className='py-4'>
+      <div className='py-4 space-y-2'>
+        <Textarea
+          placeholder='Write your project update message here.'
+          disabled={disabled || progress == 100}
+          onChange={(e) => setCommitMessage(e.target.value)}/>
         <Progress value={progress}/>
       </div>
       <FileTable columns={columns} data={uploads} selection={selection} setSelection={setSelection}/>

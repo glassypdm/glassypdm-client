@@ -1,16 +1,15 @@
 use serde::{Deserialize, Serialize};
-use sqlx::{SqlitePool, sqlite::SqliteConnectOptions};
+use tauri::State;
+use tokio::sync::Mutex;
 use sqlx::{Pool, Sqlite, Row};
-use tauri::{AppHandle, Manager, State};
+use tauri::{AppHandle, Manager};
 use crate::types::{ChangeType, UpdatedFile};
 use crate::util::{get_current_server, get_file_as_byte_vec, get_file_info, get_project_dir};
-use std::path::PathBuf;
-use tokio::sync::Mutex;
 use reqwest::{Client, Response};
 use reqwest::multipart::*;
 
 #[tauri::command]
-pub async fn upload_files(pid: i32, filepaths: Vec<String>, token: String, app_handle: AppHandle) -> Result<(), ()> {
+pub async fn upload_files(pid: i32, filepaths: Vec<String>, token: String, app_handle: AppHandle) -> Result<bool, ()> {
     let state_mutex = app_handle.state::<Mutex<Pool<Sqlite>>>();
     let pool = state_mutex.lock().await;
     let project_dir = get_project_dir(pid, &pool).await.unwrap();
@@ -28,6 +27,9 @@ pub async fn upload_files(pid: i32, filepaths: Vec<String>, token: String, app_h
         // if change type is delete we can skip
         let file: UpdatedFile = get_file_info(pid, filepath.clone(), &pool).await.unwrap();
         if file.change == ChangeType::Delete || file.size == 0 {
+
+            uploaded += 1;
+            let _ = app_handle.emit("uploadedFile", uploaded);  
             continue;
         }
 
@@ -52,5 +54,62 @@ pub async fn upload_files(pid: i32, filepaths: Vec<String>, token: String, app_h
         let _ = app_handle.emit("uploadedFile", uploaded);        
     }
 
-  Ok(())
+  Ok(true)
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct Hehez {
+    pub path: String,
+    pub hash: String,
+    pub changetype: i32
+}
+
+#[tauri::command]
+pub async fn update_uploaded(pid: i32, commit: i32, files: Vec<Hehez>, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<bool, ()> {
+    let pool = state_mutex.lock().await;
+
+    println!("updating db...");
+    for file in files {
+        if file.changetype == 3 { // delete
+            let owo = sqlx::query(
+                "DELETE FROM file
+                WHERE pid = $1 AND filepath = $2"
+                )
+                .bind(pid)
+                .bind(file.path)
+                .execute(&*pool).await;
+            match owo {
+                Ok(_) => {
+                },
+                Err(err) => {
+                    println!("db err: {}", err);
+                }
+            }
+        }
+        else if file.changetype == 1 || file.changetype == 2 {
+            let uwu = sqlx::query(
+                "UPDATE file SET
+                change_type = 0,
+                base_hash = curr_hash,
+                base_commitid = $1,
+                tracked_commitid = $1
+                WHERE pid = $2 AND filepath = $3"
+                )
+                .bind(commit)
+                .bind(pid)
+                .bind(file.path)
+                .execute(&*pool).await;
+            
+            match uwu {
+                Ok(_) => {
+                },
+                Err(err) => {
+                    println!("db err: {}", err);
+                }
+            }
+        }
+
+    }
+
+    Ok(true)
 }

@@ -129,14 +129,15 @@ pub async fn update_project_info(pid: i32, title: String, team_name: String, ini
 pub struct FileChange {
     filepath: String,
     size: u32,
-    change_type: u32
+    change_type: u32,
+    curr_hash: String
 }
 
 #[tauri::command]
 pub async fn get_uploads(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<Vec<FileChange>, ()> {
     let pool = state_mutex.lock().await;
 
-    let output: Vec<FileChange> = sqlx::query_as("SELECT filepath, size, change_type FROM file WHERE pid = $1 AND change_type != 0")
+    let output: Vec<FileChange> = sqlx::query_as("SELECT filepath, size, change_type, curr_hash FROM file WHERE pid = $1 AND change_type != 0")
     .bind(pid).fetch_all(&*pool)
     .await.unwrap();
 

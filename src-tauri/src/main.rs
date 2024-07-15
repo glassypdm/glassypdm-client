@@ -14,14 +14,14 @@ use tauri::path::BaseDirectory;
 use tokio::sync::Mutex;
 use crate::config::*;
 use sync::{update_project_info, get_uploads, sync_changes, open_project_dir, get_project_name};
-use upload::upload_files;
+use upload::{upload_files, update_uploaded};
 
 fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
             sync_changes, set_local_dir, set_debug, get_server_url,
             get_server_clerk, add_server, init_settings_options, get_server_name, update_project_info,
-            get_uploads, open_project_dir, get_project_name, upload_files
+            get_uploads, open_project_dir, get_project_name, upload_files, update_uploaded
             ])
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
