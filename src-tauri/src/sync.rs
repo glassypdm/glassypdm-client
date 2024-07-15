@@ -100,6 +100,9 @@ pub async fn sync_changes(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>)
     // client should send server a filepath and the base commit
     // if there is a new version, server responds with chunk list and tracked commit
     // otherwise, response is up to date and tracked commit should be set equal to base commit
+    // could probably re implement the same sync logic as v0.5
+
+    // TODO update last_synced in project table
     Ok(())
 }
 

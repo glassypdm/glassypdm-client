@@ -8,6 +8,7 @@ import { Link, createFileRoute } from '@tanstack/react-router'
 import { RowSelectionState } from '@tanstack/react-table';
 import { invoke } from '@tauri-apps/api/core';
 import { useState } from 'react';
+import { listen } from "@tauri-apps/api/event";
 
 export const Route = createFileRoute('/_app/upload')({
   validateSearch: (search) =>
@@ -44,24 +45,36 @@ function UploadPage() {
   
   async function handleAction() {
     // get special JWT for rust/store operations
-    //const uwu = await getToken({ template: "store-operations", leewayInSeconds: 30 })
-    let selectedFiles: File[] = []
+    const uwu = await getToken({ template: "store-operations", leewayInSeconds: 30 })
+    let selectedFiles: string[] = []
     for(let i = 0; i < Object.keys(selection).length; i++) {
       const key: number = parseInt(Object.keys(selection)[i]);
-      selectedFiles.push({
-        filepath: uploads[key].filepath,
-        size: uploads[key].size,
-        change_type: uploads[key].change_type
-      })
+      selectedFiles.push(uploads[key].filepath)
     }
     console.log(selectedFiles)
-    if(action == "Upload") {
 
+    const selectedLength = selectedFiles.length;
+    setStatus(`0 of ${selectedLength} files uploaded...`);
+    if(action == "Upload") {
+      const unlisten = await listen('uploadedFile', (payload: any) => {
+        console.log(payload);
+      })
+
+      // upload files w/ store/upload or whatever path
+      await invoke("upload_files", { pid: parseInt(pid), filepaths: selectedFiles, token: uwu });
+      
+      // create commit
+
+      unlisten();
     }
-    else {
+    else if(action == "Reset") {
+      // TODO implement branch
       // if change_type is create, we can delete these
       // otherwise download by filepath/pid/base_commitid
     }
+
+    
+    setStatus(`${action} complete!`)
   }
 
 

@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 
+#[derive(Serialize, Deserialize, PartialEq)]
 pub enum ChangeType {
     NoChange = 0,
     Create,
@@ -12,4 +13,13 @@ pub enum ChangeType {
 pub struct SettingsOptions {
     pub local_dir: String,
     pub debug_active: i32
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct UpdatedFile {
+    // relative
+    pub path: String,
+    pub hash: String,
+    pub size: i32,
+    pub change: ChangeType
 }
