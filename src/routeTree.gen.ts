@@ -21,6 +21,7 @@ import { Route as AppDownloadImport } from './routes/_app/download'
 import { Route as AppWorkbenchImport } from './routes/_app/_workbench'
 import { Route as AppWorkbenchTeamsImport } from './routes/_app/_workbench/teams'
 import { Route as AppWorkbenchSettingsImport } from './routes/_app/_workbench/settings'
+import { Route as AppWorkbenchDashboardImport } from './routes/_app/_workbench/dashboard'
 import { Route as AppWorkbenchProjectsIndexImport } from './routes/_app/_workbench/projects.index'
 import { Route as AppWorkbenchTeamsTeamidImport } from './routes/_app/_workbench/teams.$teamid'
 import { Route as AppWorkbenchProjectsPidImport } from './routes/_app/_workbench/projects.$pid'
@@ -78,6 +79,11 @@ const AppWorkbenchTeamsRoute = AppWorkbenchTeamsImport.update({
 
 const AppWorkbenchSettingsRoute = AppWorkbenchSettingsImport.update({
   path: '/settings',
+  getParentRoute: () => AppWorkbenchRoute,
+} as any)
+
+const AppWorkbenchDashboardRoute = AppWorkbenchDashboardImport.update({
+  path: '/dashboard',
   getParentRoute: () => AppWorkbenchRoute,
 } as any)
 
@@ -180,6 +186,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppUploadImport
       parentRoute: typeof AppImport
     }
+    '/_app/_workbench/dashboard': {
+      id: '/_app/_workbench/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AppWorkbenchDashboardImport
+      parentRoute: typeof AppWorkbenchImport
+    }
     '/_app/_workbench/settings': {
       id: '/_app/_workbench/settings'
       path: '/settings'
@@ -252,6 +265,7 @@ export const routeTree = rootRoute.addChildren({
   IndexRoute,
   AppRoute: AppRoute.addChildren({
     AppWorkbenchRoute: AppWorkbenchRoute.addChildren({
+      AppWorkbenchDashboardRoute,
       AppWorkbenchSettingsRoute,
       AppWorkbenchTeamsRoute: AppWorkbenchTeamsRoute.addChildren({
         AppWorkbenchTeamsTeamidRoute,
@@ -305,6 +319,7 @@ export const routeTree = rootRoute.addChildren({
       "filePath": "_app/_workbench.tsx",
       "parent": "/_app",
       "children": [
+        "/_app/_workbench/dashboard",
         "/_app/_workbench/settings",
         "/_app/_workbench/teams",
         "/_app/_workbench/projects/$pid",
@@ -326,6 +341,10 @@ export const routeTree = rootRoute.addChildren({
     "/_app/upload": {
       "filePath": "_app/upload.tsx",
       "parent": "/_app"
+    },
+    "/_app/_workbench/dashboard": {
+      "filePath": "_app/_workbench/dashboard.tsx",
+      "parent": "/_app/_workbench"
     },
     "/_app/_workbench/settings": {
       "filePath": "_app/_workbench/settings.tsx",

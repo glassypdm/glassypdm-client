@@ -26,7 +26,7 @@ function WorkbenchLayout() {
               <NavigationMenuList>
                 <NavigationMenuItem>
                 <NavigationMenuLink className={cn(navigationMenuTriggerStyle(), "text-xl")} asChild>
-                        <Link to="/projects">glassyPDM</Link>
+                        <Link to="/dashboard">glassyPDM</Link>
                     </NavigationMenuLink>
                 </NavigationMenuItem>
                 <NavigationMenuItem>
