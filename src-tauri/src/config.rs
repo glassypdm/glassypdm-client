@@ -1,6 +1,6 @@
 use tauri::State;
 use tokio::sync::Mutex;
-use sqlx::{SqlitePool, Row, Pool, Sqlite, sqlite::SqliteConnectOptions};
+use sqlx::{Row, Pool, Sqlite};
 use crate::types::SettingsOptions;
 
 #[tauri::command]

@@ -169,3 +169,53 @@ pub async fn get_project_name(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite
         }
     }
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct LocalProject {
+    pid: i32,
+    title: String,
+    team_name: String
+}
+
+#[tauri::command]
+pub async fn get_local_projects(state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<Vec<LocalProject>, ()> {
+    let pool = state_mutex.lock().await;
+    let server = get_current_server(&pool).await.unwrap();
+
+    let pid_query = sqlx::query("SELECT DISTINCT pid FROM file")
+        .fetch_all(&*pool).await;
+    let mut output: Vec<LocalProject> = vec![];
+    match pid_query {
+        Ok(rows) => {
+            for row in rows {
+                let pid = row.get::<i32, &str>("pid");
+                let query = sqlx::query("SELECT title, team_name FROM project WHERE url = $1 AND pid = $2")
+                    .bind(server.clone())
+                    .bind(pid)
+                    .fetch_one(&*pool).await;
+
+                match query {
+                    Ok(row) => {
+                        output.push( LocalProject {
+                            pid: pid,
+                            title: row.get::<String, &str>("title").to_string(),
+                            team_name: row.get::<String, &str>("team_name").to_string()
+                        })
+                    },
+                    Err(err) => {
+                        println!("error: {}", err);
+                    }
+                }
+            }
+        },
+        Err(err) => {
+            println!("error: {}", err);
+        }
+    }
+
+
+    
+
+
+    Ok(output)
+}

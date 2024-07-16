@@ -1,6 +1,6 @@
 use std::io::Read;
 use std::fs::{File, self};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use sqlx::{Pool, Sqlite, Row};
 

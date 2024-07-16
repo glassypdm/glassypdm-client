@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use tauri::State;
 use tokio::sync::Mutex;
-use sqlx::{Pool, Sqlite, Row};
+use sqlx::{Pool, Sqlite};
 use tauri::{AppHandle, Manager};
 use crate::types::{ChangeType, UpdatedFile};
 use crate::util::{get_current_server, get_file_as_byte_vec, get_file_info, get_project_dir};
