@@ -13,38 +13,38 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: google-github-actions/release-please-action@v3
+        id: version
         with:
           release-type: simple
           package-name: glassyPDM
           changelog-types: '[
-          {
-            "type": "feat",
-            "section": "Features",
-            "hidden": false
-          },
-          {
-            "type": "fix",
-            "section": "Bug Fixes",
-            "hidden": false
-          },
-          {
-            "type": "perf",
-            "section": "Miscellaneous",
-            "hidden": false
-          },
-          {
-            "type": "refactor",
-            "section": "Miscellaneous",
-            "hidden": false
-          },
-          {
-            "type": "style",
-            "section": "Miscellaneous",
-            "hidden": false
-          },
-          {
-            "type": "misc",
-            "section": "Miscellaneous",
-            "hidden": false
-          }
-          ]'
+            {
+              "type": "feat",
+              "section": "Features",
+              "hidden": false
+            },
+            {
+              "type": "fix",
+              "section": "Bug Fixes",
+              "hidden": false
+            },
+            {
+              "type": "perf",
+              "section": "Miscellaneous",
+              "hidden": false
+            },
+            {
+              "type": "refactor",
+              "section": "Miscellaneous",
+              "hidden": false
+            },
+            {
+              "type": "style",
+              "section": "Miscellaneous",
+              "hidden": false
+            },
+            {
+              "type": "misc",
+              "section": "Miscellaneous",
+              "hidden": false
+            }]'
