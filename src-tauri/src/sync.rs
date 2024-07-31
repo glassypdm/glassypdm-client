@@ -172,7 +172,14 @@ pub async fn get_uploads(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) 
 pub async fn get_downloads(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<Vec<FileChange>, ()> {
     let pool = state_mutex.lock().await;
 
-    let output: Vec<FileChange> = sqlx::query_as("SELECT filepath, size, change_type, curr_hash FROM file WHERE pid = $1 AND base_hash != tracked_hash")
+    let output: Vec<FileChange> = sqlx::query_as(
+        "SELECT filepath, size, tracked_changetype as change_type, curr_hash FROM file WHERE pid = $1 AND
+        (
+            (base_hash != tracked_hash AND base_hash != '' AND tracked_changetype = 3) OR
+            (base_hash != tracked_hash AND tracked_changetype != 3)
+        )
+        "
+    )
     .bind(pid).fetch_all(&*pool)
     .await.unwrap();
 
@@ -181,15 +188,21 @@ pub async fn get_downloads(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>
 }
 
 #[tauri::command]
-pub async fn get_conflicts(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<Vec<FileChange>, ()> {
+pub async fn get_conflicts(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<Vec<String>, ()> {
     let pool = state_mutex.lock().await;
 
-    let output: Vec<FileChange> = sqlx::query_as("SELECT filepath, size, change_type, curr_hash FROM file WHERE pid = $1 AND tracked_hash != curr_hash")
+    // TODO fix/test
+    /*
+    let output: Vec<String> = sqlx::query_as(
+        "SELECT filepath FROM file WHERE pid = $1 AND
+        tracked_hash != curr_hash AND curr_hash != '' AND tracked_hash != base_hash"
+    )
     .bind(pid).fetch_all(&*pool)
     .await.unwrap();
+*/
 
     // TODO don't unwrap
-    Ok(output)
+    Ok(vec![])
 }
 
 #[tauri::command]

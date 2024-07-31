@@ -71,6 +71,11 @@ function SyncPage() {
     // TODO type this so its not any
     const uploadOutput: any = await invoke("get_uploads", { pid: pid_number });
     console.log(uploadOutput)
+
+    const downloadOutput: any = await invoke("get_downloads", { pid: pid_number })
+    console.log(downloadOutput)
+    const conflictOutput: any = await invoke("get_conflicts", { pid: pid_number })
+    console.log(conflictOutput)
     SetUploadSize(uploadOutput.length)
     setSyncInProgress(false)
   }
