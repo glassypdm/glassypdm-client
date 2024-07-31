@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Sqlite, Row};
 use tauri::State;
 use merkle_hash::{bytes_to_hex, Algorithm, MerkleTree};
-use crate::util::{get_project_dir, get_current_server};
+use crate::{types::RemoteFile, util::{get_current_server, get_project_dir}};
 use std::path::PathBuf;
 use tokio::sync::Mutex;
 
@@ -91,23 +91,42 @@ pub async fn open_project_dir(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite
 }
 // precondition: we have a server_url
 #[tauri::command]
-pub async fn sync_changes(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<(), ()> {
+pub async fn sync_changes(pid: i32, remote: Vec<RemoteFile>, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<bool, ()> {
     let pool = state_mutex.lock().await;
     let project_dir = get_project_dir(pid, &pool).await.unwrap();
 
     // create folder if it does not exist
     let _ = fs::create_dir_all(&project_dir);
+
+    // hash local files
     hash_dir(pid, project_dir.into(), &pool).await;
     println!("hashing done");
 
-    // TODO get updated version of project
-    // client should send server a filepath and the base commit
-    // if there is a new version, server responds with chunk list and tracked commit
-    // otherwise, response is up to date and tracked commit should be set equal to base commit
-    // could probably re implement the same sync logic as v0.5
+    // update table with remote files
+    for file in remote {
+        // write to sqlite
+        let hehe = sqlx::query("INSERT INTO file(filepath, pid, tracked_commitid, tracked_hash, tracked_changetype, in_fs, change_type) VALUES($1, $2, $3, $4, $5, $6, $7)
+        ON CONFLICT(filepath, pid) DO UPDATE SET tracked_commitid = excluded.tracked_commitid, tracked_hash = excluded.tracked_hash, tracked_changetype = excluded.tracked_changetype, in_fs = 1")
+        .bind(file.path)
+        .bind(pid)
+        .bind(file.commitid)
+        .bind(file.hash)
+        .bind(file.changetype)
+        .bind(0)
+        .bind(0)
+        .execute(&*pool).await;
+        match hehe {
+            Ok(_owo) => {},
+            Err(err) =>{
+                println!("error! {}", err);
+            }
+        }
+    }
 
+    
+    
     // TODO update last_synced in project table
-    Ok(())
+    Ok(true)
 }
 
 #[tauri::command]
@@ -142,6 +161,30 @@ pub async fn get_uploads(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) 
     let pool = state_mutex.lock().await;
 
     let output: Vec<FileChange> = sqlx::query_as("SELECT filepath, size, change_type, curr_hash FROM file WHERE pid = $1 AND change_type != 0")
+    .bind(pid).fetch_all(&*pool)
+    .await.unwrap();
+
+    // TODO don't unwrap
+    Ok(output)
+}
+
+#[tauri::command]
+pub async fn get_downloads(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<Vec<FileChange>, ()> {
+    let pool = state_mutex.lock().await;
+
+    let output: Vec<FileChange> = sqlx::query_as("SELECT filepath, size, change_type, curr_hash FROM file WHERE pid = $1 AND base_hash != tracked_hash")
+    .bind(pid).fetch_all(&*pool)
+    .await.unwrap();
+
+    // TODO don't unwrap
+    Ok(output)
+}
+
+#[tauri::command]
+pub async fn get_conflicts(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<Vec<FileChange>, ()> {
+    let pool = state_mutex.lock().await;
+
+    let output: Vec<FileChange> = sqlx::query_as("SELECT filepath, size, change_type, curr_hash FROM file WHERE pid = $1 AND tracked_hash != curr_hash")
     .bind(pid).fetch_all(&*pool)
     .await.unwrap();
 

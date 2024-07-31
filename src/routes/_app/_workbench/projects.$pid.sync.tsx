@@ -23,6 +23,19 @@ export const Route = createFileRoute('/_app/_workbench/projects/$pid/sync')({
   shouldReload: false, // only reload the route when dependencies change or user navigates to it (per docs)
 })
 
+interface RemoteFile {
+  frid: number,
+  path: string,
+  commitid: number,
+  hash: string,
+  changetype: number
+}
+
+interface ProjectStateOutput {
+  status: string,
+  project: RemoteFile[]
+}
+
 function SyncPage() {
   const navigate = useNavigate();
   const { getToken } = useAuth();
@@ -35,7 +48,24 @@ function SyncPage() {
   async function syncChanges() {
     setSyncInProgress(true)
     const pid_number = parseInt(pid);
-    await invoke("sync_changes", { pid: pid_number });
+
+    // TODO put in a try/catch ?
+    const data = await fetch(url + "/project/status/by-id/" + pid, {
+      headers: { Authorization: `Bearer ${await getToken()}`},
+      method: "GET",
+      mode: "cors"
+    });
+    const remote: ProjectStateOutput = await data.json();
+    if(remote.status != "success") {
+      // TODO handle error
+      console.log("sync error")
+      setSyncInProgress(false)
+      return;
+    }
+    console.log(remote.project)
+
+
+    await invoke("sync_changes", { pid: pid_number, remote: remote.project });
 
     // TODO update download/conflict lists
     // TODO type this so its not any

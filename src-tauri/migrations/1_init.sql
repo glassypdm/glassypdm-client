@@ -23,10 +23,12 @@ CREATE TABLE file (
     filepath TEXT NOT NULL, -- relative path
     pid INTEGER NOT NULL,
     base_hash TEXT NOT NULL DEFAULT "",
-    curr_hash TEXT NOT NULL,
-    size INTEGER NOT NULL,
+    curr_hash TEXT NOT NULL DEFAULT "",
+    tracked_hash TEXT NOT NULL DEFAULT "", 
+    size INTEGER NOT NULL DEFAULT 0,
     base_commitid INTEGER DEFAULT -1,
     tracked_commitid INTEGER DEFAULT -1,
+    tracked_changetype INTEGER DEFAULT 1,
     change_type INTEGER DEFAULT 1,
     in_fs INTEGER DEFAULT 1,
     PRIMARY KEY (filepath, pid)
