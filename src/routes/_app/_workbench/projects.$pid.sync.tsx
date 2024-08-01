@@ -10,11 +10,13 @@ export const Route = createFileRoute('/_app/_workbench/projects/$pid/sync')({
   loader: async ({ params }) => {
     const pid = parseInt(params.pid);
     const uploadOutput: File[] = await invoke("get_uploads", { pid: pid });
+    const downloadOutput: any[] = await invoke("get_downloads", { pid: pid });
     const url: string = await invoke("get_server_url");
 
     return (
       {
       upload: uploadOutput.length,
+      download: downloadOutput.length,
       url: url
       }
     )
@@ -28,7 +30,8 @@ interface RemoteFile {
   path: string,
   commitid: number,
   hash: string,
-  changetype: number
+  changetype: number,
+  size: number
 }
 
 interface ProjectStateOutput {
@@ -39,10 +42,10 @@ interface ProjectStateOutput {
 function SyncPage() {
   const navigate = useNavigate();
   const { getToken } = useAuth();
-  const { upload, url } = Route.useLoaderData();
+  const { upload, download, url } = Route.useLoaderData();
   const { pid } = Route.useParams();
-  const [uploadSize, SetUploadSize] = useState(upload)
-  const [downloadSize, setDownloadSize] = useState(0)
+  const [uploadSize, setUploadSize] = useState(upload)
+  const [downloadSize, setDownloadSize] = useState(download)
   const [syncInProgress, setSyncInProgress] = useState(false)
 
   async function syncChanges() {
@@ -76,14 +79,21 @@ function SyncPage() {
     console.log(downloadOutput)
     const conflictOutput: any = await invoke("get_conflicts", { pid: pid_number })
     console.log(conflictOutput)
-    SetUploadSize(uploadOutput.length)
+    setDownloadSize(downloadOutput.length)
+    setUploadSize(uploadOutput.length)
     setSyncInProgress(false)
   }
 
   async function navigateUpload() {
-
     navigate({
       to: '/upload',
+      search: { pid: pid }
+    })
+  }
+
+  async function navigateDownload() {
+    navigate({
+      to: '/download',
       search: { pid: pid }
     })
   }
@@ -95,7 +105,7 @@ function SyncPage() {
   return (
     <div className='grid grid-cols-3 gap-8 p-4 h-64 w-[600px]'>
     <div className='flex flex-col gap-4'>
-      <Button className='grow text-wrap' disabled={downloadSize == 0 ? true : false}>
+      <Button className='grow text-wrap' onClick={navigateDownload} disabled={downloadSize == 0 ? true : false}>
         {downloadSize == 0 ? "Up to date" : downloadSize + " files ready to download"}
       </Button>
       <Button variant={"outline"}>Open in Website</Button>

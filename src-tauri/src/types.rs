@@ -30,5 +30,6 @@ pub struct RemoteFile {
     pub path: String,
     pub commitid: i32,
     pub hash: String,
-    pub changetype: i32 // TODO changetype
+    pub changetype: i32, // TODO changetype
+    pub size: i32
 }

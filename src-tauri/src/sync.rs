@@ -105,15 +105,22 @@ pub async fn sync_changes(pid: i32, remote: Vec<RemoteFile>, state_mutex: State<
     // update table with remote files
     for file in remote {
         // write to sqlite
-        let hehe = sqlx::query("INSERT INTO file(filepath, pid, tracked_commitid, tracked_hash, tracked_changetype, in_fs, change_type) VALUES($1, $2, $3, $4, $5, $6, $7)
-        ON CONFLICT(filepath, pid) DO UPDATE SET tracked_commitid = excluded.tracked_commitid, tracked_hash = excluded.tracked_hash, tracked_changetype = excluded.tracked_changetype, in_fs = 1")
+        let hehe = sqlx::query("INSERT INTO file(filepath, pid, tracked_commitid, tracked_hash, tracked_changetype, in_fs, change_type, tracked_size)
+            VALUES($1, $2, $3, $4, $5, $6, $7, $8)
+            ON CONFLICT(filepath, pid) DO UPDATE SET
+            tracked_commitid = excluded.tracked_commitid,
+            tracked_hash = excluded.tracked_hash,
+            tracked_changetype = CASE WHEN base_hash != '' THEN excluded.tracked_changetype ELSE 1 END,
+            tracked_size = excluded.tracked_size,
+            in_fs = 1")
         .bind(file.path)
         .bind(pid)
         .bind(file.commitid)
         .bind(file.hash)
-        .bind(file.changetype)
+        .bind(if file.changetype == 3 { 3 } else { 1 })
         .bind(0)
         .bind(0)
+        .bind(file.size)
         .execute(&*pool).await;
         match hehe {
             Ok(_owo) => {},
@@ -122,8 +129,6 @@ pub async fn sync_changes(pid: i32, remote: Vec<RemoteFile>, state_mutex: State<
             }
         }
     }
-
-    
     
     // TODO update last_synced in project table
     Ok(true)
@@ -153,14 +158,15 @@ pub struct FileChange {
     filepath: String,
     size: u32,
     change_type: u32,
-    curr_hash: String
+    hash: String,
+    commitid: u32
 }
 
 #[tauri::command]
 pub async fn get_uploads(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<Vec<FileChange>, ()> {
     let pool = state_mutex.lock().await;
 
-    let output: Vec<FileChange> = sqlx::query_as("SELECT filepath, size, change_type, curr_hash FROM file WHERE pid = $1 AND change_type != 0")
+    let output: Vec<FileChange> = sqlx::query_as("SELECT filepath, size, change_type, curr_hash as hash, base_commitid as commitid FROM file WHERE pid = $1 AND change_type != 0")
     .bind(pid).fetch_all(&*pool)
     .await.unwrap();
 
@@ -172,8 +178,9 @@ pub async fn get_uploads(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) 
 pub async fn get_downloads(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<Vec<FileChange>, ()> {
     let pool = state_mutex.lock().await;
 
+    // FIXME changetype needs to be relative to whats locally downloaded as base
     let output: Vec<FileChange> = sqlx::query_as(
-        "SELECT filepath, size, tracked_changetype as change_type, curr_hash FROM file WHERE pid = $1 AND
+        "SELECT filepath, tracked_size as size, tracked_changetype as change_type, tracked_hash as hash, tracked_commitid as commitid FROM file WHERE pid = $1 AND
         (
             (base_hash != tracked_hash AND base_hash != '' AND tracked_changetype = 3) OR
             (base_hash != tracked_hash AND tracked_changetype != 3)

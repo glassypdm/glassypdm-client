@@ -29,6 +29,7 @@ CREATE TABLE file (
     base_commitid INTEGER DEFAULT -1,
     tracked_commitid INTEGER DEFAULT -1,
     tracked_changetype INTEGER DEFAULT 1,
+    tracked_size INTEGER DEFAULT 0,
     change_type INTEGER DEFAULT 1,
     in_fs INTEGER DEFAULT 1,
     PRIMARY KEY (filepath, pid)

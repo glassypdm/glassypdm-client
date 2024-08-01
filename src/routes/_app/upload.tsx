@@ -61,7 +61,7 @@ function UploadPage() {
 
       uploadList.push({
         path: uploads[key].filepath,
-        hash: uploads[key].curr_hash,
+        hash: uploads[key].hash,
         changetype: uploads[key].change_type
       });
     }
@@ -112,7 +112,6 @@ function UploadPage() {
     setDisabled(false);
 
   }
-
 
   return (
     <div className='flex flex-col p-4'>
