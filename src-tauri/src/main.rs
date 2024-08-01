@@ -2,6 +2,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod config;
+mod download;
 mod sync;
 mod types;
 mod util;
@@ -15,6 +16,7 @@ use tokio::sync::Mutex;
 use crate::config::*;
 use sync::{update_project_info, get_uploads, sync_changes, open_project_dir, get_project_name, get_local_projects, get_downloads, get_conflicts};
 use upload::{upload_files, update_uploaded};
+use download::delete_file;
 
 fn main() {
     tauri::Builder::default()
@@ -22,7 +24,7 @@ fn main() {
             sync_changes, set_local_dir, set_debug, get_server_url,
             get_server_clerk, add_server, init_settings_options, get_server_name, update_project_info,
             get_uploads, open_project_dir, get_project_name, upload_files, update_uploaded, get_local_projects,
-            get_downloads, get_conflicts
+            get_downloads, get_conflicts, delete_file
             ])
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())

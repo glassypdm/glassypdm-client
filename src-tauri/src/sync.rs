@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Sqlite, Row};
 use tauri::State;
 use merkle_hash::{bytes_to_hex, Algorithm, MerkleTree};
-use crate::{types::RemoteFile, util::{get_current_server, get_project_dir}};
+use crate::{types::RemoteFile, util::{get_active_server, get_current_server, get_project_dir}};
 use std::path::PathBuf;
 use tokio::sync::Mutex;
 
@@ -111,8 +111,7 @@ pub async fn sync_changes(pid: i32, remote: Vec<RemoteFile>, state_mutex: State<
             tracked_commitid = excluded.tracked_commitid,
             tracked_hash = excluded.tracked_hash,
             tracked_changetype = CASE WHEN base_hash != '' THEN excluded.tracked_changetype ELSE 1 END,
-            tracked_size = excluded.tracked_size,
-            in_fs = 1")
+            tracked_size = excluded.tracked_size")
         .bind(file.path)
         .bind(pid)
         .bind(file.commitid)
@@ -137,7 +136,7 @@ pub async fn sync_changes(pid: i32, remote: Vec<RemoteFile>, state_mutex: State<
 #[tauri::command]
 pub async fn update_project_info(pid: i32, title: String, team_name: String, init_commit: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<(), ()> {
     let pool = state_mutex.lock().await;
-    let server = get_current_server(&pool).await.unwrap();
+    let server = get_active_server(&pool).await.unwrap();
 
     let _output = sqlx::query("INSERT INTO project(pid, url, title, team_name, base_commitid, remote_title) VALUES (?, ?, ?, ?, ?, ?)
         ON CONFLICT(pid, url) DO UPDATE SET remote_title = excluded.title")
@@ -215,7 +214,7 @@ pub async fn get_conflicts(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>
 #[tauri::command]
 pub async fn get_project_name(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<String, ()> {
     let pool = state_mutex.lock().await;
-    let server = get_current_server(&pool).await.unwrap();
+    let server = get_active_server(&pool).await.unwrap();
     let output = sqlx::query("SELECT title FROM project WHERE pid = $1 AND url = $2")
         .bind(pid)
         .bind(server)
@@ -243,7 +242,7 @@ pub struct LocalProject {
 #[tauri::command]
 pub async fn get_local_projects(state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<Vec<LocalProject>, ()> {
     let pool = state_mutex.lock().await;
-    let server = get_current_server(&pool).await.unwrap();
+    let server = get_active_server(&pool).await.unwrap();
 
     let pid_query = sqlx::query("SELECT DISTINCT pid FROM file")
         .fetch_all(&*pool).await;

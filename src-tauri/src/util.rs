@@ -35,7 +35,7 @@ pub async fn get_active_server(pool: &Pool<Sqlite>) -> Result<String, ()> {
 }
 
 pub async fn get_project_dir(pid: i32, pool: &Pool<Sqlite>) -> Result<String, ()> {
-    let server = get_current_server(pool).await.unwrap();
+    let server = get_active_server(pool).await.unwrap();
     let db_call = sqlx::query("SELECT server.local_dir, project.title, project.team_name FROM server, project WHERE server.active = 1 AND project.url = ? AND project.pid = ?")
         .bind(server)
         .bind(pid)
