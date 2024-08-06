@@ -1,9 +1,10 @@
 use std::io::Read;
 use std::fs::{File, self};
 use std::path::Path;
-
+use std::result::Result::Ok;
 use sqlx::{Pool, Sqlite, Row};
 
+use crate::get_server_dir;
 use crate::types::{ChangeType, UpdatedFile};
 
 pub async fn get_current_server(pool: &Pool<Sqlite>) -> Result<String, ()> {
@@ -101,4 +102,19 @@ pub fn get_file_as_byte_vec(abs_filepath: &String) -> Vec<u8> {
     f.read(&mut buffer).expect("buffer overflow");
 
     buffer
+}
+
+pub async fn get_cache_dir(pool: &Pool<Sqlite>) -> Result<String, ()> {
+    let server_dir = get_server_dir(pool).await;
+    match server_dir {
+        Ok(dir) => {
+            // TODO change \\ to os agnostic
+            let output = dir + "\\" + ".glassycache";
+            Ok(output)
+        },
+        Err(_err) => {
+            println!("error getting cache dir");
+            Ok("".to_string())
+        }
+    }
 }
