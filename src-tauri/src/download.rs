@@ -4,8 +4,8 @@ use std::path::Path;
 use futures::{stream, StreamExt};
 use reqwest::Client;
 use sqlx::{Pool, Sqlite, Row};
-use tauri::State;
-use crate::types::{DownloadInformation, DownloadRequest, ReqwestError};
+use tauri::{AppHandle, Manager, State};
+use crate::types::{DownloadInformation, DownloadRequest, DownloadRequestMessage, ReqwestError};
 use crate::util::get_cache_dir;
 use crate::{types::RemoteFile, util::{get_current_server, get_project_dir}};
 use std::path::PathBuf;
@@ -62,7 +62,7 @@ pub async fn download_s3_file(pid: i32, s3_url: String, rel_path: String, state_
 }
 
 #[tauri::command]
-pub async fn download_files(pid: i32, files: Vec<DownloadRequest>, token: String, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<bool, ReqwestError> {
+pub async fn download_files(pid: i32, files: Vec<DownloadRequestMessage>, token: String, state_mutex: State<'_, Mutex<Pool<Sqlite>>>, app_handle: AppHandle) -> Result<bool, ReqwestError> {
     let pool = state_mutex.lock().await;
     let glassy_client: Client = reqwest::Client::new();
     let aws_client: Client = reqwest::Client::new();
@@ -74,30 +74,33 @@ pub async fn download_files(pid: i32, files: Vec<DownloadRequest>, token: String
         println!("download files: project or cache dir is invalid");
         return Ok(false);
     }
-    let mut to_download: Vec<&DownloadRequest> = Vec::new();
-    let mut to_download_req: Vec<&DownloadRequest> = Vec::new();
-    let mut to_delete: Vec<&DownloadRequest> = Vec::new();
-    for file in &files {
+    let mut to_download: Vec<DownloadRequestMessage> = Vec::new();
+    let mut to_delete: Vec<DownloadRequestMessage> = Vec::new();
+    for file in files.clone() {
         if file.download {
-            to_download.push(file);
-            to_download_req.push(file);
+            to_download.push(file.clone());
         }
         else {
             to_delete.push(file)
         }
     }
-    // FIXME fix this
-    // maybe try out rayon?
-    /*
     // request S3 presigned urls
-    let bodies = stream::iter(to_download_req)
-    .map(|file: &DownloadRequest| {
+    let endpoint = server_url + "/store/download";
+    let bodies = stream::iter(to_download.clone())
+    .map(|file: DownloadRequestMessage| {
         let g_client = &glassy_client;
-        let auth = &token;
+        let auth = token.clone();
+        let cpy_endpoint = endpoint.clone();
+        let body: DownloadRequest = DownloadRequest {
+            project_id: pid.into(),
+            path: file.rel_path,
+            commit_id: file.commit_id
+        };
         //let project_id = &project_id_cpy;
         async move {
             let response = g_client
-                .post("url") // TODO add body
+                .post(cpy_endpoint)
+                .json(&body)
                 .bearer_auth(auth)
                 .send()
                 .await.unwrap();
@@ -119,9 +122,10 @@ pub async fn download_files(pid: i32, files: Vec<DownloadRequest>, token: String
             },
         }
 
-        // TODO emit download status event
+        // emit download status event
+        let payload = 4;
+        let _ = app_handle.emit("downloadedFile", payload);
     }).await;
-*/
 
     // delete files
     for file in to_delete {
@@ -130,9 +134,11 @@ pub async fn download_files(pid: i32, files: Vec<DownloadRequest>, token: String
         }
     }
     // TODO once all the files are downloaded, copy them over to their proper paths
+    let mut oops = 0;
     for file in to_download {
         // find the hash in the cache and copy to rel path
     }
+    println!("download files: {} files not found in cache", oops);
 
     // TODO update database (iterate over files parameter)
     for file in files {
@@ -142,15 +148,18 @@ pub async fn download_files(pid: i32, files: Vec<DownloadRequest>, token: String
 }
 
 async fn download_with_client(cache_dir: &String, download: DownloadInformation, client: &Client) -> Result<bool, ReqwestError> {
+    // TODO validate the options, look at status
+
     let resp = client
-        .get(download.url.clone())
+        .get(download.url.unwrap().clone())
         .send()
         .await?
         .bytes()
         .await?;
 
     // temp path: cache + hash(.glassy?)
-    let path = cache_dir.to_owned() + "\\" + &download.hash;
+    let path = cache_dir.to_owned() + "\\" + &download.hash.unwrap();
+    println!("downloading to {}", path);
 
     // create cache folder if it doesnt exist
     let p: &Path = std::path::Path::new(&path);

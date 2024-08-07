@@ -51,16 +51,23 @@ impl serde::Serialize for ReqwestError {
 #[derive(Clone, Serialize, Deserialize)]
 pub struct DownloadInformation {
   pub status: String,
-  pub hash: String,
-  pub rel_path: String,
-  pub commit_id: i64, // not snake_case because server returns camelCase
-  pub url: String
+  pub hash: Option<String>,
+  pub rel_path: Option<String>,
+  pub commit_id: Option<i64>,
+  pub url: Option<String>
 }
 
 #[derive(Serialize, Deserialize, Clone)]
-pub struct DownloadRequest {
+pub struct DownloadRequestMessage {
     pub commit_id: i64,
     pub rel_path: String,
     pub hash: String,
     pub download: bool
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct DownloadRequest {
+    pub project_id: i64,
+    pub path: String,
+    pub commit_id: i64
 }
