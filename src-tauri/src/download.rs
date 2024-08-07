@@ -5,6 +5,7 @@ use futures::{stream, StreamExt};
 use reqwest::Client;
 use sqlx::{Pool, Sqlite, Row};
 use tauri::{AppHandle, Manager, State};
+use tokio::fs::try_exists;
 use crate::types::{DownloadInformation, DownloadRequest, DownloadRequestMessage, ReqwestError};
 use crate::util::get_cache_dir;
 use crate::{types::RemoteFile, util::{get_current_server, get_project_dir}};
@@ -138,6 +139,27 @@ pub async fn download_files(pid: i32, files: Vec<DownloadRequestMessage>, token:
     let mut oops = 0;
     for file in to_download {
         // find the hash in the cache and copy to rel path
+        let cache_str = cache_dir.clone() + "\\" + file.hash.as_str();
+        let proj_str = project_dir.clone() + "\\" + file.rel_path.as_str();
+        match Path::new(&cache_str).try_exists() {
+            Ok(res) => {
+                if res {
+                    let prefix = Path::new(&proj_str).parent().unwrap();
+                    fs::create_dir_all(prefix).unwrap();
+                    let _ = fs::copy(cache_str, proj_str);
+                }
+                else {
+                    println!("file {} not found in cache", cache_str);
+                    continue;
+                    // TODO we should emit something
+                }
+            },
+            Err(err) => {
+                println!("error copying file: {}", err);
+                    // TODO we should emit something
+                continue;
+            }
+        }
     }
     println!("download files: {} files not found in cache", oops);
 
