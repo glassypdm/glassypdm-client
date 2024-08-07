@@ -5,10 +5,9 @@ use futures::{stream, StreamExt};
 use reqwest::Client;
 use sqlx::{Pool, Sqlite, Row};
 use tauri::{AppHandle, Manager, State};
-use tokio::fs::try_exists;
 use crate::types::{DownloadInformation, DownloadRequest, DownloadRequestMessage, ReqwestError};
 use crate::util::get_cache_dir;
-use crate::{types::RemoteFile, util::{get_current_server, get_project_dir}};
+use crate::util::{get_current_server, get_project_dir};
 use std::path::PathBuf;
 use tokio::sync::Mutex;
 
@@ -17,7 +16,20 @@ const CONCURRENT_REQUESTS: usize = 4;
 #[tauri::command]
 pub async fn delete_file_cmd(pid: i32, rel_path: String, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<bool, ()> {
     let pool = state_mutex.lock().await;
-    let output = delete_file(pid, rel_path, &pool).await.unwrap();
+    let output = delete_file(pid, rel_path.clone(), &pool).await.unwrap();
+
+    if output {
+        let _ = sqlx::query(
+            "
+            DELETE FROM file
+            WHERE pid = $1 AND filepath = $2
+            "
+        )
+        .bind(pid)
+        .bind(rel_path)
+        .execute(&*pool);
+    }
+
     Ok(output)
 }
 
@@ -135,7 +147,6 @@ pub async fn download_files(pid: i32, files: Vec<DownloadRequestMessage>, token:
             // TODO handle error
         }
     }
-    // TODO once all the files are downloaded, copy them over to their proper paths
     let mut oops = 0;
     for file in to_download {
         // find the hash in the cache and copy to rel path
@@ -150,22 +161,51 @@ pub async fn download_files(pid: i32, files: Vec<DownloadRequestMessage>, token:
                 }
                 else {
                     println!("file {} not found in cache", cache_str);
+                    oops += 1;
                     continue;
                     // TODO we should emit something
                 }
             },
             Err(err) => {
                 println!("error copying file: {}", err);
-                    // TODO we should emit something
+                oops += 1;
+                // TODO we should emit something
                 continue;
             }
         }
     }
     println!("download files: {} files not found in cache", oops);
 
-    // TODO update database (iterate over files parameter)
+    // update database (iterate over files parameter)
     for file in files {
-        
+        if file.download {
+            // TODO instead of using the tracked values
+            // should we compute them instead?
+            let _ = sqlx::query(
+                "
+                UPDATE file SET
+                base_hash = tracked_hash,
+                curr_hash = tracked_hash,
+                base_commitid = tracked_commitid,
+                size = tracked_size,
+                in_fs = 1,
+                change_type = 0
+                WHERE pid = $1 AND filepath = $2
+                "
+            )
+            .bind(pid.clone())
+            .bind(file.rel_path)
+            .execute(&*pool).await;
+        }
+        else { // file.download == delete
+            let _ = sqlx::query(
+                "DELETE FROM file
+                WHERE pid = $1 AND filepath = $2"
+            )
+            .bind(pid.clone())
+            .bind(file.rel_path)
+            .execute(&*pool).await;
+        }
     }
     Ok(true)
 }
