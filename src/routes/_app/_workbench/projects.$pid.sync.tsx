@@ -10,7 +10,7 @@ export const Route = createFileRoute('/_app/_workbench/projects/$pid/sync')({
   loader: async ({ params }) => {
     const pid = parseInt(params.pid);
     const uploadOutput: File[] = await invoke("get_uploads", { pid: pid });
-    const downloadOutput: any[] = await invoke("get_downloads", { pid: pid });
+    const downloadOutput: File[] = await invoke("get_downloads", { pid: pid });
     const url: string = await invoke("get_server_url");
 
     return (

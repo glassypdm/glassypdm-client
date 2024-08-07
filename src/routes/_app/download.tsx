@@ -40,11 +40,37 @@ function DownloadPage() {
   const { downloads, selectionList, projectName, url } = Route.useLoaderData();
   const { getToken } = useAuth();
   const { pid } = Route.useSearch();
-  const [action, setAction] = useState("Upload");
   const [status, setStatus] = useState("");
   const [progress, setProgress] = useState(0);
   const [disabled, setDisabled] = useState(false);
-  const [selection, setSelection] = useState(selectionList)
+  const [selection, setSelection] = useState(selectionList);
+
+  async function handleDownload() {
+    setDisabled(true);
+    console.log("hehe")
+    console.log(selection)
+    const uwu = await getToken({ template: "store-operations", leewayInSeconds: 30 })
+
+    // time function
+    const startTime = performance.now();
+
+    // get paths for download
+    let selectedDownload: any[] = [];
+    for (let i = 0; i < Object.keys(selection).length; i++) {
+      let key: string = Object.keys(selection)[i];
+      const idx = parseInt(key);
+      selectedDownload.push({
+        commit_id: downloads[idx].commitid,
+        rel_path: downloads[idx].filepath,
+        hash: downloads[idx].hash,
+        download: downloads[idx].change_type == 3 ? false : true
+      });
+    }
+
+    console.log(selectedDownload)
+
+    setDisabled(false);
+  }
 
   return (
     <div className='flex flex-col p-4'>
@@ -60,16 +86,9 @@ Close
           <p className='flex-auto text-center'>{status}</p>
           <div className='flex'>
           <Button
+            onClick={handleDownload}
             disabled={Object.keys(selection).length == 0 || disabled || progress == 100}
-            variant={action == "Reset" ? "destructive" : "default"}
-            >{progress == 100 ? action + " Complete" : action + " Selected"}</Button>
-          <Select onValueChange={(e) => setAction(e)}>
-          <SelectTrigger className="w-[40px]" disabled={disabled || progress == 100}></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="Upload">Upload</SelectItem>
-            <SelectItem value="Reset">Reset</SelectItem>
-          </SelectContent>
-        </Select>
+            >{progress == 100 ? "Download Complete" : "Download Selected"}</Button>
           </div>
         </div>
       <div className='py-4 space-y-2'>

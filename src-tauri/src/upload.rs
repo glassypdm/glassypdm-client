@@ -91,6 +91,7 @@ pub async fn update_uploaded(pid: i32, commit: i32, files: Vec<Hehez>, state_mut
                 "UPDATE file SET
                 change_type = 0,
                 base_hash = curr_hash,
+                tracked_hash = curr_hash,
                 base_commitid = $1,
                 tracked_commitid = $1
                 WHERE pid = $2 AND filepath = $3"

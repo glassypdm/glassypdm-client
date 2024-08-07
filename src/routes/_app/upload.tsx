@@ -95,6 +95,7 @@ function UploadPage() {
       })
       const data = await response.json();
       console.log(data)
+      // TODO handle when we don't get a successful response
 
       // update db
       await invoke("update_uploaded", { pid: parseInt(pid), commit: data.commitid, files: uploadList })

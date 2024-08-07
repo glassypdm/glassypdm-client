@@ -6,6 +6,7 @@ export interface File {
     filepath: string
     size: number
     hash: string
+    commitid: number
 }
 
 export const columns: ColumnDef<File>[] = [

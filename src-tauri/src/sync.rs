@@ -158,14 +158,14 @@ pub struct FileChange {
     size: u32,
     change_type: u32,
     hash: String,
-    commitid: u32
+    commit_id: i32
 }
 
 #[tauri::command]
 pub async fn get_uploads(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<Vec<FileChange>, ()> {
     let pool = state_mutex.lock().await;
 
-    let output: Vec<FileChange> = sqlx::query_as("SELECT filepath, size, change_type, curr_hash as hash, base_commitid as commitid FROM file WHERE pid = $1 AND change_type != 0")
+    let output: Vec<FileChange> = sqlx::query_as("SELECT filepath, size, change_type, curr_hash as hash, base_commitid as commit_id FROM file WHERE pid = $1 AND change_type != 0")
     .bind(pid).fetch_all(&*pool)
     .await.unwrap();
 
@@ -179,7 +179,7 @@ pub async fn get_downloads(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>
 
     // FIXME changetype needs to be relative to whats locally downloaded as base
     let output: Vec<FileChange> = sqlx::query_as(
-        "SELECT filepath, tracked_size as size, tracked_changetype as change_type, tracked_hash as hash, tracked_commitid as commitid FROM file WHERE pid = $1 AND
+        "SELECT filepath, tracked_size as size, tracked_changetype as change_type, tracked_hash as hash, tracked_commitid as commit_id FROM file WHERE pid = $1 AND
         (
             (base_hash != tracked_hash AND base_hash != '' AND tracked_changetype = 3) OR
             (base_hash != tracked_hash AND tracked_changetype != 3)
