@@ -57,7 +57,7 @@ pub struct DownloadInformation {
   pub url: String
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct DownloadRequest {
     pub commit_id: i64,
     pub rel_path: String,

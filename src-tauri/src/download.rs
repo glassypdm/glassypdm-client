@@ -14,18 +14,17 @@ use tokio::sync::Mutex;
 const CONCURRENT_REQUESTS: usize = 4;
 
 #[tauri::command]
-pub async fn delete_file(pid: i32, rel_path: String, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<bool, ()> {
+pub async fn delete_file_cmd(pid: i32, rel_path: String, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<bool, ()> {
     let pool = state_mutex.lock().await;
-    let output = delete_file_pool(pid, rel_path, &pool).await.unwrap();
+    let output = delete_file(pid, rel_path, &pool).await.unwrap();
     Ok(output)
 }
 
-async fn delete_file_pool(pid: i32, rel_path: String, pool: &Pool<Sqlite>) -> Result<bool, ()> {
+async fn delete_file(pid: i32, rel_path: String, pool: &Pool<Sqlite>) -> Result<bool, ()> {
     let project_dir = get_project_dir(pid, &pool).await.unwrap();
     if project_dir == "" {
         return Ok(false);
     }
-
     let path = project_dir + &rel_path;
     let _ = fs::remove_file(path);
     Ok(true)
@@ -87,7 +86,9 @@ pub async fn download_files(pid: i32, files: Vec<DownloadRequest>, token: String
             to_delete.push(file)
         }
     }
-
+    // FIXME fix this
+    // maybe try out rayon?
+    /*
     // request S3 presigned urls
     let bodies = stream::iter(to_download_req)
     .map(|file: &DownloadRequest| {
@@ -120,10 +121,11 @@ pub async fn download_files(pid: i32, files: Vec<DownloadRequest>, token: String
 
         // TODO emit download status event
     }).await;
+*/
 
     // delete files
     for file in to_delete {
-        if !delete_file_pool(pid, file.rel_path.clone(), &pool).await.unwrap() {
+        if !delete_file(pid, file.rel_path.clone(), &pool).await.unwrap() {
             // TODO handle error
         }
     }
