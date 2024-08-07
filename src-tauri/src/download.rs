@@ -115,6 +115,7 @@ pub async fn download_files(pid: i32, files: Vec<DownloadRequestMessage>, token:
     .for_each(|b| async {
         match b {
             Ok(b) => {
+                println!("{}", b.status);
                 let _ = download_with_client(&cache_dir, b, &aws_client).await;
             }
             Err(e) => {

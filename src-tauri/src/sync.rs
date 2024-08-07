@@ -177,7 +177,6 @@ pub async fn get_uploads(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) 
 pub async fn get_downloads(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<Vec<FileChange>, ()> {
     let pool = state_mutex.lock().await;
 
-    // FIXME changetype needs to be relative to whats locally downloaded as base
     let output: Vec<FileChange> = sqlx::query_as(
         "SELECT filepath, tracked_size as size, tracked_changetype as change_type, tracked_hash as hash, tracked_commitid as commit_id FROM file WHERE pid = $1 AND
         (

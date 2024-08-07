@@ -60,14 +60,15 @@ function DownloadPage() {
       let key: string = Object.keys(selection)[i];
       const idx = parseInt(key);
       selectedDownload.push({
-        commit_id: downloads[idx].commitid,
+        commit_id: downloads[idx].commit_id,
         rel_path: downloads[idx].filepath,
         hash: downloads[idx].hash,
         download: downloads[idx].change_type == 3 ? false : true
       });
     }
-
     console.log(selectedDownload)
+    let ret = await invoke("download_files", { pid: parseInt(pid), files: selectedDownload, token: uwu })
+
 
     setDisabled(false);
   }
