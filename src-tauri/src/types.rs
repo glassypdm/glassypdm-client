@@ -65,7 +65,7 @@ pub struct DownloadRequestMessage {
     pub download: bool
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct DownloadRequest {
     pub project_id: i64,
     pub path: String,

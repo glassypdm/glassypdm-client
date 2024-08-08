@@ -68,13 +68,19 @@ function UploadPage() {
     console.log(selectedFiles)
 
     const selectedLength = selectedFiles.length;
+    let actionedFiles = 0;
     setStatus(`0 of ${selectedLength} files uploaded...`);
-    console.log(commitMessage)
+    const unlisten = await listen('fileAction', (event: any) => {
+      console.log(event)
+      setProgress(100 * ++actionedFiles / selectedLength)
+      let verb = "uploaded";
+      if(action == "Reset") {
+        verb = "reset"
+      }
+      setStatus(`${actionedFiles} of ${selectedLength} files ${verb}...`);
+    });
     if(action == "Upload") {
-      const unlisten = await listen('uploadedFile', (event: any) => {
-        setProgress(100 * event.payload / selectedLength)
-        setStatus(`${event.payload} of ${selectedLength} files uploaded...`);
-      })
+
 
       // upload files w/ store/upload or whatever path
       await invoke("upload_files", { pid: parseInt(pid), filepaths: selectedFiles, token: uwu });
@@ -100,14 +106,13 @@ function UploadPage() {
       // update db
       await invoke("update_uploaded", { pid: parseInt(pid), commit: data.commitid, files: uploadList })
 
-      unlisten();
     }
     else if(action == "Reset") {
-      // TODO implement branch
-      // if change_type is create, we can delete these
-      // otherwise download by filepath/pid/base_commitid
+      // TODO 
+      await invoke("reset_files", { pid: parseInt(pid), filepaths: selectedFiles, token: uwu });
     }
 
+    unlisten();
     
     setStatus(`${action} complete!`);
     setDisabled(false);

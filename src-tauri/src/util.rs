@@ -118,3 +118,24 @@ pub async fn get_cache_dir(pool: &Pool<Sqlite>) -> Result<String, ()> {
         }
     }
 }
+
+pub async fn get_basehash(pid: i32, path: String, pool: &Pool<Sqlite>) -> Result<String, ()> {
+    let result = sqlx::query(
+    "SELECT base_hash FROM file WHERE
+        pid = $1 AND filepath = $2 LIMIT 1
+        "
+    )
+    .bind(pid)
+    .bind(path)
+    .fetch_one(pool).await;
+
+    match result {
+        Ok(row) => {
+            Ok(row.get::<String, &str>("base_hash"))
+        },
+        Err(err) => {
+            println!("error getting base_hash: {}", err);
+            Err(())
+        }
+    }
+}

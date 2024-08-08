@@ -33,12 +33,13 @@ pub async fn delete_file_cmd(pid: i32, rel_path: String, state_mutex: State<'_, 
     Ok(output)
 }
 
-async fn delete_file(pid: i32, rel_path: String, pool: &Pool<Sqlite>) -> Result<bool, ()> {
+pub async fn delete_file(pid: i32, rel_path: String, pool: &Pool<Sqlite>) -> Result<bool, ()> {
     let project_dir = get_project_dir(pid, &pool).await.unwrap();
     if project_dir == "" {
         return Ok(false);
     }
-    let path = project_dir + &rel_path;
+    let path = project_dir + "\\" + &rel_path;
+    println!("{}", path);
     let _ = fs::remove_file(path);
     Ok(true)
 }
@@ -210,7 +211,7 @@ pub async fn download_files(pid: i32, files: Vec<DownloadRequestMessage>, token:
     Ok(true)
 }
 
-async fn download_with_client(cache_dir: &String, download: DownloadInformation, client: &Client) -> Result<bool, ReqwestError> {
+pub async fn download_with_client(cache_dir: &String, download: DownloadInformation, client: &Client) -> Result<bool, ReqwestError> {
     // TODO validate the options, look at status
 
     let resp = client
