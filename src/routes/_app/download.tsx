@@ -2,11 +2,11 @@ import { columns, File } from '@/components/file/FileColumn'
 import { FileTable } from '@/components/file/FileTable'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
-import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select'
 import { useAuth } from '@clerk/clerk-react'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { RowSelectionState } from '@tanstack/react-table'
 import { invoke } from '@tauri-apps/api/core'
+import { listen } from '@tauri-apps/api/event'
 import { useState } from 'react'
 
 export const Route = createFileRoute('/_app/download')({
@@ -66,10 +66,20 @@ function DownloadPage() {
         download: downloads[idx].change_type == 3 ? false : true
       });
     }
+
+    const selectedLength = selectedDownload.length;
+    let hehe = 0;
+    const unlisten = await listen('downloadedFile', (event: any) => {
+      console.log(event)
+      setProgress(100 * ++hehe / selectedLength)
+      setStatus(`${hehe} of ${selectedLength} files downloaded...`);
+    });
+
     console.log(selectedDownload)
-    let ret = await invoke("download_files", { pid: parseInt(pid), files: selectedDownload, token: uwu })
+    let ret = await invoke("download_files", { pid: parseInt(pid), files: selectedDownload, token: uwu });
 
-
+    unlisten();
+    setStatus(`Download complete!`);
     setDisabled(false);
   }
 

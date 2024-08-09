@@ -147,6 +147,8 @@ pub async fn download_files(pid: i32, files: Vec<DownloadRequestMessage>, token:
         if !delete_file(pid, file.rel_path.clone(), &pool).await.unwrap() {
             // TODO handle error
         }
+        let payload = 4;
+        let _ = app_handle.emit("downloadedFile", payload);
     }
     let mut oops = 0;
     for file in to_download {

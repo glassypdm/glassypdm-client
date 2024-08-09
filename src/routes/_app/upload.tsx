@@ -108,7 +108,6 @@ function UploadPage() {
 
     }
     else if(action == "Reset") {
-      // TODO 
       await invoke("reset_files", { pid: parseInt(pid), filepaths: selectedFiles, token: uwu });
     }
 
