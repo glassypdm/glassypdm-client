@@ -5,7 +5,7 @@ use futures::{stream, StreamExt};
 use tokio::sync::Mutex;
 use std::path::Path;
 use sqlx::{Pool, Sqlite, Row};
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Manager, Emitter};
 use crate::download::{delete_file, download_with_client};
 use crate::types::{ChangeType, DownloadInformation, DownloadRequest, UpdatedFile};
 use crate::util::{get_basehash, get_cache_dir, get_current_server, get_file_as_byte_vec, get_file_info, get_project_dir};

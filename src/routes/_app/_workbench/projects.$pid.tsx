@@ -30,6 +30,7 @@ function Project() {
           mode: "cors"
         });
         const data = await resp.json()
+        console.log(data)
         invoke("update_project_info", { pid: parseInt(pid), teamName: data.teamName, title: data.title, initCommit: data.initCommit })
         return data
       }

@@ -9,6 +9,7 @@ use crate::types::{DownloadInformation, DownloadRequest, DownloadRequestMessage,
 use crate::util::get_cache_dir;
 use crate::util::{get_current_server, get_project_dir};
 use std::path::PathBuf;
+use tauri::Emitter;
 use tokio::sync::Mutex;
 
 const CONCURRENT_REQUESTS: usize = 4;
