@@ -14,13 +14,15 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { join, sep } from "@tauri-apps/api/path";
 import { mkdir, exists } from "@tauri-apps/plugin-fs"; 
 import { invoke } from "@tauri-apps/api/core";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export const Route = createFileRoute('/serversetup')({
     component: ServerSetup,
 })
 
 const formSchema = z.object({
-    serverURL: z.string().url({ message: "Invalid url." }).startsWith("http", { message: "Invalid url." })
+    serverURL: z.string({ message: "Invalid input." }),
+    protocol: z.enum(["http://", "https://"])
 })
 
 function ServerSetup() {
@@ -34,6 +36,7 @@ function ServerSetup() {
         resolver: zodResolver(formSchema),
         defaultValues: {
             serverURL: "",
+            protocol: "https://"
           },
     })
 
@@ -55,7 +58,7 @@ function ServerSetup() {
     async function onSubmit(values: z.infer<typeof formSchema>) {
         setSubmitStatus(true);
         setSubmitText(<Loader2 className="h-4 w-4 animate-spin" />);
-
+        console.log(values)
         if(serverFolder == "") {
             // server folder not set
             toast("Please select a folder.");
@@ -65,7 +68,6 @@ function ServerSetup() {
 
             return;
         }
-
         // make folder, but check if it exists first
         const folderExists: boolean = await exists(serverFolder);
         if(folderExists) {
@@ -81,19 +83,18 @@ function ServerSetup() {
         }
 
         // TODO error handling; if response isnt what we expected
-        const data = await (await fetch(values.serverURL + "/client-config")).json();
+        const data = await (await fetch(values.protocol + values.serverURL + "/client-config")).json();
         console.log(data)
         setSubmitStatus(false);
         setSubmitText(<p>Submit</p>)
 
 
         await invoke("add_server", {
-            url: values.serverURL,
+            url: values.protocol + values.serverURL,
             clerk: data.clerk_publickey,
             localDir: serverFolder,
             name: data.name
         });
-        console.log("hehehe")
         navigate({ to: "/signin" })
     }
 
@@ -104,11 +105,32 @@ function ServerSetup() {
         <TooltipProvider>
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col w-3/4 my-12 space-y-4">
+            <div className="flex flex-row items-end">
+                <FormField
+                    control={form.control}
+                    name="protocol"
+                    render={({ field }) => (
+                        <FormItem>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="https://"/>
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    <SelectItem value="http://">http://</SelectItem>
+                                    <SelectItem value="https://">https://</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                    />
                 <FormField
                     control={form.control}
                     name="serverURL"
                     render={({ field }) => (
-                        <FormItem>
+                        <FormItem className="grow">
                             <FormLabel className="text-md">Server URL</FormLabel>
                             <FormControl>
                                 <Input  {...field} />
@@ -117,6 +139,7 @@ function ServerSetup() {
                         </FormItem>
                     )}
                     />
+            </div>
                     <Tooltip>
                         <TooltipTrigger asChild className="flex flex-row items-center space-x-4 mb-16">
                         <div className="">
