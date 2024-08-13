@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Link } from '@tanstack/react-router';
 import { createFileRoute } from '@tanstack/react-router'
 import { invoke } from '@tauri-apps/api/core'
+import { FolderOpen } from 'lucide-react';
 
 interface LocalProject {
   pid: number,
@@ -24,8 +25,9 @@ function Dashboard() {
   // TODO add button to navigate to /projects or /teams
   if(data.length == 0) {
     return (
-      <div>
-        No local projects found
+      <div className='flex flex-col items-center justify-items-center p-2 space-y-2'>
+        <div className='text-xl'>No local projects found</div>
+        <FolderOpen size={90}/>
       </div>
     )
   }

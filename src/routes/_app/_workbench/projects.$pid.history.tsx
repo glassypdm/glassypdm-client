@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/_app/_workbench/projects/$pid/history')({
@@ -45,7 +46,7 @@ const data: Data = {
       commitNumber: 43,
       numFiles: 414,
       author: "Josh Tenorio",
-      comment: "yap yap yap yap yap yap yap yap yap yap yap yap yap yap yap yap yap yap yap yap yap yap yap",
+      comment: "yap yap yap yap yap yap yap yap yap yap yap yap yap",
       timestamp: 0
     },
     {
@@ -92,11 +93,11 @@ function DescriptionCard(props: DescriptionCardProps) {
   return (
     <Card className=''>
       <div className='flex flex-row items-center'>
-        <CardHeader className='p-4'>
+        <CardHeader className='p-4 grow'>
           <CardTitle className='text-lg'>{commitdesc.author} made {commitdesc.numFiles} changes</CardTitle>
-          <CardDescription className='max-w-[400px]'>Project Update {commitdesc.commitNumber} - {commitdesc.comment}</CardDescription>
+          <CardDescription className='w-[400px]'>Project Update {commitdesc.commitNumber} - {commitdesc.comment}</CardDescription>
         </CardHeader>
-        <CardContent className='p-0'>
+        <CardContent className='p-4 justify-self-end'>
           <Button>View</Button>
         </CardContent>
       </div>
@@ -110,13 +111,15 @@ function DescriptionCard(props: DescriptionCardProps) {
 function History() {
   return (
     <div className='flex flex-col items-center'>
-      <div className='space-y-2'>
-      <DescriptionCard commitDesc={data.commits[0]} />
-      <DescriptionCard commitDesc={data.commits[1]} />
-      <DescriptionCard commitDesc={data.commits[2]} />
-      <DescriptionCard commitDesc={data.commits[3]} />
-      <DescriptionCard commitDesc={data.commits[4]} />
-      </div>
+      <ScrollArea className='h-96 space-y-2'>
+        <div className='space-y-2 p-4'>
+        <DescriptionCard commitDesc={data.commits[0]} />
+        <DescriptionCard commitDesc={data.commits[1]} />
+        <DescriptionCard commitDesc={data.commits[2]} />
+        <DescriptionCard commitDesc={data.commits[3]} />
+        <DescriptionCard commitDesc={data.commits[4]} />
+        </div>
+      </ScrollArea>
 
       <Pagination>
         <PaginationContent>
