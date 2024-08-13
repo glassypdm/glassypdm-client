@@ -80,9 +80,8 @@ function ServerSetup() {
             await mkdir(serverFolder);
         }
 
-        // fetch data from server/daijin-config
         // TODO error handling; if response isnt what we expected
-        const data = await (await fetch(values.serverURL + "/daijin-config")).json();
+        const data = await (await fetch(values.serverURL + "/client-config")).json();
         console.log(data)
         setSubmitStatus(false);
         setSubmitText(<p>Submit</p>)
