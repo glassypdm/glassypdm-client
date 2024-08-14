@@ -30,6 +30,7 @@ fn main() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_shell::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
             tauri::async_runtime::block_on(async move {
                 let _ = fs::create_dir_all(app.path().app_data_dir().unwrap());
