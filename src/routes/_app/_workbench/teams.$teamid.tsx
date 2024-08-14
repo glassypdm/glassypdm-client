@@ -35,6 +35,7 @@ function TeamDashboard() {
   const [permission, setPermission] = useState("");
   const [email, setEmail] = useState("");
   const { toast } = useToast();
+  const [ submitting, setSubmitting ] = useState(false)
   const queryClient = useQueryClient();
   const { isPending, isError, data, error } = useQuery({
     queryKey: [teamid],
@@ -64,6 +65,7 @@ function TeamDashboard() {
       })
     },
     onSuccess: async (res) => {
+    setSubmitting(false)
       const data = await res.json();
       console.log(data)
       let errStr = "An error occured.";
@@ -80,6 +82,13 @@ function TeamDashboard() {
       queryClient.invalidateQueries({ queryKey: [teamid] })
       toast({
         title: "Permission updated successfully."
+      })
+    },
+    onError: (res) => {
+      setSubmitting(false)
+      console.log(res)
+      toast({
+        title: "An error occured."
       })
     }
   })
@@ -109,6 +118,7 @@ function TeamDashboard() {
       default:
         level = 0;
     }
+    setSubmitting(true)
     mutationPermission.mutate(level)
   }
 
@@ -136,7 +146,7 @@ function TeamDashboard() {
           </SelectContent>
         </Select>
       </div>
-      <Button variant={permission == "Remove" ? "destructive" : "default"} disabled={permission == "" ? true : false} onClick={submitPermission}>Submit</Button>
+      <Button variant={permission == "Remove" ? "destructive" : "default"} disabled={permission == "" || submitting ? true : false} onClick={submitPermission}>Submit</Button>
     </div>
   }
   return (
@@ -147,7 +157,7 @@ function TeamDashboard() {
       {dashboard}
       <Separator />
       <div className='text-xl pb-2'>Membership</div>
-        <ScrollArea className='h-36'>
+        <ScrollArea className='h-48'>
         <Table>
         <TableHeader>
           <TableRow>
