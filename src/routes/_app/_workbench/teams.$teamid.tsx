@@ -51,12 +51,13 @@ function TeamDashboard() {
   const mutationPermission = useMutation({
     mutationFn: async (level: number) => {
       const endpoint = (url as string) + "/permission";
+      console.log("heh")
       return await fetch(endpoint, {
         headers: { Authorization: `Bearer ${await getToken()}`},
         method: "POST",
         mode: "cors",
         body: JSON.stringify({
-          teamId: parseInt(teamid),
+          team_id: parseInt(teamid),
           email: email,
           level: level
         })
@@ -64,8 +65,18 @@ function TeamDashboard() {
     },
     onSuccess: async (res) => {
       const data = await res.json();
-      if(data.status === "valid") {
+      console.log(data)
+      let errStr = "An error occured.";
+      if(data.response === "error") {
+        if(data.error === "user does not exist") {
+          errStr = "User does not exist.";
+        }
+        toast({
+          title: errStr
+        })
+        return;
       }
+      setEmail("")
       queryClient.invalidateQueries({ queryKey: [teamid] })
       toast({
         title: "Permission updated successfully."
@@ -76,7 +87,10 @@ function TeamDashboard() {
   function submitPermission() {
     const input = z.string().email();
     if(!input.safeParse(email).success || permission === "") {
-      // TODO when email is not an email
+      toast({
+        title: "Invalid email."
+      })
+      return
     }
     let level = 169;
     switch(permission) {
@@ -110,7 +124,7 @@ function TeamDashboard() {
     dashboard = <div className='flex flex-col py-2 space-y-2'>
       <div className='text-xl'>Edit Permissions</div>
       <div className='flex flex-row space-x-2'>
-        <Input placeholder='Email' onChange={(e) => setEmail(e.target.value)}/>
+        <Input placeholder='Email' onChange={(e) => setEmail(e.target.value)} value={email} />
         <Select onValueChange={setPermission}>
           <SelectTrigger>
             <SelectValue placeholder="Select a role.." />
@@ -135,7 +149,6 @@ function TeamDashboard() {
       <div className='text-xl pb-2'>Membership</div>
         <ScrollArea className='h-36'>
         <Table>
-        <TableCaption>{data.members.length} member{data.members.length == 1 ? "" : "s"}</TableCaption>
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>
@@ -152,6 +165,7 @@ function TeamDashboard() {
           </TableBody>
       </Table>
       </ScrollArea>
+      <TableCaption>{data.members.length} member{data.members.length == 1 ? "" : "s"}</TableCaption>
       </div>
   )
 }
