@@ -1,7 +1,7 @@
 {
   "productName": "glassyPDM",
   "version": "0.6.0",
-  "identifier": "org.18x18az.pdm",
+  "identifier": "org.glassypdm.app",
   "build": {
     "beforeDevCommand": "pnpm dev",
     "devUrl": "http://localhost:1420",

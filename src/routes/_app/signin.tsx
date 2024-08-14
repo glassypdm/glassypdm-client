@@ -3,7 +3,7 @@ import { Form, FormControl, FormItem, FormLabel, FormField, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator'
 import { zodResolver } from '@hookform/resolvers/zod';
-import { createFileRoute, Navigate, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, Link, Navigate, useNavigate } from '@tanstack/react-router'
 import { useForm } from 'react-hook-form';
 import { z } from "zod";
 import { SignedIn, SignedOut, useSignIn } from "@clerk/clerk-react";
@@ -115,10 +115,14 @@ function SignIn() {
         </Dialog>
         <Separator className='my-4 max-w-md'/>
         <p className='mb-2'>Or</p>
-        <Button variant={"outline"}>Create an Account</Button>
+        <Button variant={"outline"} asChild>
+            <Link to='/signup'>
+            Create an Account
+            </Link>
+        </Button>
         </SignedOut>
         <SignedIn>
-            <Navigate to='/projects'/>
+            <Navigate to='/dashboard'/>
         </SignedIn>
     </div>
   )

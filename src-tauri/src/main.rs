@@ -14,6 +14,7 @@ use tauri::Manager;
 use tauri::path::BaseDirectory;
 use tokio::sync::Mutex;
 use crate::config::*;
+use std::fs;
 use sync::{update_project_info, get_uploads, sync_changes, open_project_dir, get_project_name, get_local_projects, get_downloads, get_conflicts};
 use upload::{upload_files, update_uploaded, reset_files};
 use download::{delete_file_cmd, download_s3_file, download_files};
@@ -31,8 +32,9 @@ fn main() {
         .plugin(tauri_plugin_shell::init())
         .setup(|app| {
             tauri::async_runtime::block_on(async move {
-
+                let _ = fs::create_dir_all(app.path().app_data_dir().unwrap());
                 let db_path = app.path().app_data_dir().unwrap().join("glassypdm.db");
+                println!("db {}", db_path.display());
                 let options = SqliteConnectOptions::new()
                     .filename(db_path)
                     .create_if_missing(true);

@@ -1,21 +1,22 @@
 import { Button } from '@/components/ui/button'
+import { SignUp } from '@clerk/clerk-react'
 import { createFileRoute, Link } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/_app/signup')({
-    component: SignUp,
+    component: hehez,
 })
 
-function SignUp() {
+function hehez() {
   return (
-    <div className='flex flex-col place-items-center'>
-        <h1 className='text-2xl mb-4'>Create an Account</h1>
-        <Button>
+    <div className='flex flex-row justify-center space-x-2 p-2'>
+        <Button asChild>
             <Link to='/signin'>
                 Back to Sign In
             </Link>
         </Button>
-    </div>
+      <SignUp />
+      </div>
   )
 }
 
-export default SignUp
+export default hehez
