@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use tauri_plugin_updater::Update;
 use std::fs;
 use tauri::State;
 use futures::{stream, StreamExt};
@@ -7,15 +8,16 @@ use std::path::Path;
 use sqlx::{Pool, Sqlite, Row};
 use tauri::{AppHandle, Manager, Emitter};
 use crate::download::{delete_file, download_with_client};
-use crate::types::{ChangeType, DownloadInformation, DownloadRequest, UpdatedFile};
+use crate::types::{ChangeType, DownloadInformation, DownloadRequest, ReqwestError, UpdatedFile};
 use crate::util::{get_basehash, get_cache_dir, get_current_server, get_file_as_byte_vec, get_file_info, get_project_dir};
 use reqwest::{Client, Response};
 use reqwest::multipart::*;
 
-const CONCURRENT_REQUESTS: usize = 4;
+const CONCURRENT_DOWNLOAD_REQUESTS: usize = 4;
+const CONCURRENT_UPLOAD_REQUESTS: usize = 3;
 
 #[tauri::command]
-pub async fn upload_files(pid: i32, filepaths: Vec<String>, token: String, app_handle: AppHandle) -> Result<bool, ()> {
+pub async fn upload_files(pid: i32, filepaths: Vec<String>, token: String, app_handle: AppHandle) -> Result<bool, ReqwestError> {
     let state_mutex = app_handle.state::<Mutex<Pool<Sqlite>>>();
     let pool = state_mutex.lock().await;
     let project_dir = get_project_dir(pid, &pool).await.unwrap();
@@ -23,42 +25,62 @@ pub async fn upload_files(pid: i32, filepaths: Vec<String>, token: String, app_h
     let endpoint = server_url + "/store/request";
     let client: Client = reqwest::Client::new();
 
+    let mut to_upload: Vec<UpdatedFile> = vec![];
     let mut uploaded: u32 = 0;
     for filepath in filepaths {
-        // TODO change \\ to the thing so it is OS agnostic
-        let abspath = project_dir.clone() + "\\" + &filepath;
-        println!("project_dir: {}", project_dir.clone());
-        println!("abs path: {}", abspath);
-
-        // if change type is delete we can skip
         let file: UpdatedFile = get_file_info(pid, filepath.clone(), &pool).await.unwrap();
         if file.change == ChangeType::Delete || file.size == 0 {
-
             uploaded += 1;
             let _ = app_handle.emit("fileAction", uploaded);  
             continue;
         }
-
-        println!("file: {}\t hash: {}", filepath, file.hash);
-        let content: Vec<u8> = get_file_as_byte_vec(&abspath);
-        let form: Form = reqwest::multipart::Form::new()
-            .text("hash", file.hash)
-            .part("file", Part::bytes(content).file_name(filepath)); // .file_name(filepath) ncessary?
-
-        let res: Response = client.post(&endpoint)
-            .multipart(form)
-            .bearer_auth(&token)
-            .send()
-            .await.unwrap();
-
-        println!("{}", res.text().await.unwrap());
-
-        // TODO check response
-
-        // emit status
-        uploaded += 1;
-        let _ = app_handle.emit("fileAction", uploaded);        
+        else {
+            to_upload.push(file)
+        }
     }
+
+    let bodies = stream::iter(to_upload)
+        .map(|upload| {
+            let copy_endpoint = endpoint.clone();
+            let copy_client = &client;
+            let copy_token = &token;
+            let abspath = project_dir.clone() + "\\" + &upload.path;
+            println!("project_dir: {}", project_dir.clone());
+            println!("abs path: {}", abspath);
+    
+            let content: Vec<u8> = get_file_as_byte_vec(&abspath);
+            let form: Form = reqwest::multipart::Form::new()
+                .text("hash", upload.hash)
+                .part("file", Part::bytes(content).file_name(upload.path)); // .file_name(filepath) ncessary?
+            
+            async move {
+                let res: Response = copy_client.post(copy_endpoint)
+                .multipart(form)
+                .bearer_auth(copy_token)
+                .send()
+                .await.unwrap();
+                res.text().await
+                
+            }
+        })
+        .buffer_unordered(CONCURRENT_UPLOAD_REQUESTS);
+
+    bodies
+    .for_each(|b| async {
+        match b {
+            // TODO actually do something with this
+            Ok(b) => {
+                println!("{}", b);
+            }
+            Err(e) => {
+                println!("error! {}", e);
+            },
+        }
+
+        // emit upload status event
+        let payload = 4;
+        let _ = app_handle.emit("fileAction", payload);
+    }).await;
 
   Ok(true)
 }
@@ -187,7 +209,7 @@ pub async fn reset_files(pid: i64, filepaths: Vec<String>, token: String, app_ha
                 .await
         }
     })
-    .buffer_unordered(CONCURRENT_REQUESTS);
+    .buffer_unordered(CONCURRENT_DOWNLOAD_REQUESTS);
 
     // download files, save them in a cache (serverdir/.glassycache)
     bodies

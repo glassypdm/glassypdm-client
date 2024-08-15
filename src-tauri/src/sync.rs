@@ -38,6 +38,11 @@ async fn hash_dir(pid: i32, dir_path: PathBuf, pool: &Pool<Sqlite>) {
             continue;
         }
 
+        if filesize == 0 {
+            println!("empty file found");
+            continue;
+        }
+
         // write to sqlite
         let hehe = sqlx::query("INSERT INTO file(filepath, pid, curr_hash, size) VALUES($1, $2, $3, $4)
         ON CONFLICT(filepath, pid) DO UPDATE SET curr_hash = excluded.curr_hash, size = excluded.size, in_fs = 1")

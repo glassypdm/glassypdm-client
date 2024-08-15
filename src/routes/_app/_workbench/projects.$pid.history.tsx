@@ -62,7 +62,7 @@ interface DescriptionCardProps {
 function DescriptionCard(props: DescriptionCardProps) {
   const commitdesc = props.commitDesc;
   const d = new Date(0);
-  d.setUTCSeconds((commitdesc.timestamp) / 1000.0)
+  d.setUTCSeconds((commitdesc.timestamp))
   // d.tolocalestring
   return (
     <Card className=''>

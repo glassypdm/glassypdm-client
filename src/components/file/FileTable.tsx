@@ -40,7 +40,7 @@ import {
   
     return (
       <div className="rounded-md border">
-      <ScrollArea className="h-80">
+      <ScrollArea className="flex h-80">
           <Table>
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (

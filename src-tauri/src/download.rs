@@ -93,7 +93,16 @@ pub async fn download_files(pid: i32, files: Vec<DownloadRequestMessage>, token:
     let mut to_delete: Vec<DownloadRequestMessage> = Vec::new();
     for file in files.clone() {
         if file.download {
-            to_download.push(file.clone());
+            let cached_path = cache_dir.clone() + "\\" + &file.hash;
+
+            if Path::new(&cached_path).exists() {
+                println!("hash exists in cache");
+                let payload = 4;
+                let _ = app_handle.emit("downloadedFile", payload);
+            }
+            else {
+                to_download.push(file.clone());
+            }
         }
         else {
             to_delete.push(file)

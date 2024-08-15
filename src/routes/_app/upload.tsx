@@ -103,7 +103,25 @@ function UploadPage() {
       })
       const data = await response.json();
       console.log(data)
-      // TODO handle when we don't get a successful response
+      // handle when we don't get a successful response
+      if(data.status != "success") {
+        unlisten();
+        let permissionGranted = await isPermissionGranted();
+        if (!permissionGranted) {
+          const permission = await requestPermission();
+          permissionGranted = permission === 'granted';
+        }
+
+        // Once permission has been granted we can send the notification
+        const end = performance.now();
+
+        if (permissionGranted) {
+          sendNotification({ title: 'glassyPDM', body: `Upload failed` });
+        }
+        setStatus(`Upoad failed`);
+      setDisabled(false);
+      return;
+      }
 
       // update db
       await invoke("update_uploaded", { pid: parseInt(pid), commit: data.commitid, files: uploadList })
