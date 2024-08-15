@@ -10,6 +10,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { useState } from 'react';
 import { listen } from "@tauri-apps/api/event";
 import { Textarea } from '@/components/ui/textarea';
+import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/plugin-notification';
 
 export const Route = createFileRoute('/_app/upload')({
   validateSearch: (search) =>
@@ -50,6 +51,7 @@ function UploadPage() {
   const [commitMessage, setCommitMessage] = useState("")
   
   async function handleAction() {
+    const start = performance.now();
     setDisabled(true);
     // get special JWT for rust/store operations
     const uwu = await getToken({ template: "store-operations", leewayInSeconds: 30 })
@@ -112,6 +114,21 @@ function UploadPage() {
     }
 
     unlisten();
+
+    let permissionGranted = await isPermissionGranted();
+
+    // If not we need to request it
+    if (!permissionGranted) {
+      const permission = await requestPermission();
+      permissionGranted = permission === 'granted';
+    }
+
+    // Once permission has been granted we can send the notification
+    const end = performance.now();
+
+    if (permissionGranted) {
+      sendNotification({ title: 'glassyPDM', body: `Finished action in ${(end - start)/1000} seconds` });
+    }
     
     setStatus(`${action} complete!`);
     setDisabled(false);

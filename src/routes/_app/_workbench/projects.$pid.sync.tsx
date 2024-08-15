@@ -4,7 +4,7 @@ import { useAuth } from '@clerk/clerk-react';
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { invoke } from '@tauri-apps/api/core';
 import { useState } from 'react';
-
+import { isPermissionGranted, requestPermission, sendNotification } from "@tauri-apps/plugin-notification";
 export const Route = createFileRoute('/_app/_workbench/projects/$pid/sync')({
   component: () => <SyncPage />,
   loader: async ({ params }) => {
@@ -52,6 +52,8 @@ function SyncPage() {
     setSyncInProgress(true)
     const pid_number = parseInt(pid);
 
+    const start = performance.now();
+
     // TODO put in a try/catch ?
     const data = await fetch(url + "/project/status/by-id/" + pid, {
       headers: { Authorization: `Bearer ${await getToken()}`},
@@ -67,8 +69,14 @@ function SyncPage() {
     }
 
     let project: RemoteFile[] = [];
+    console.log(remote)
     if(remote.project != null) {
       project = remote.project;
+    }
+    let permission = await isPermissionGranted();
+    if (!permission) {
+      const a = await requestPermission();
+      permission = a === 'granted';
     }
 
     await invoke("sync_changes", { pid: pid_number, remote: project });
@@ -85,6 +93,13 @@ function SyncPage() {
     setDownloadSize(downloadOutput.length)
     setUploadSize(uploadOutput.length)
     setSyncInProgress(false)
+
+    const end = performance.now();
+        
+    // Once permission has been granted we can send the notification
+    if (permission) {
+      sendNotification({ title: 'glassyPDM', body: `Finished syncing in ${(end - start)/1000} seconds` });
+    }
   }
 
   async function navigateUpload() {
