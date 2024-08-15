@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useAuth } from '@clerk/clerk-react'
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
@@ -71,8 +72,13 @@ function DescriptionCard(props: DescriptionCardProps) {
           <CardDescription className='w-[400px]'>Project Update {commitdesc.commit_number} - {commitdesc.comment}</CardDescription>
         </CardHeader>
         <CardContent className='p-4 justify-self-end'>
-          <Button>View</Button>
-        </CardContent>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger><Button disabled>View</Button></TooltipTrigger>
+              <TooltipContent>Feature coming soon</TooltipContent>
+            </Tooltip>
+            </TooltipProvider>
+          </CardContent>
       </div>
       <CardFooter className='p-2'>
         <CardDescription>{d.toLocaleString()}</CardDescription>

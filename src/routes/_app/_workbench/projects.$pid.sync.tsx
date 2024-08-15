@@ -65,10 +65,13 @@ function SyncPage() {
       setSyncInProgress(false)
       return;
     }
-    console.log(remote.project)
 
+    let project: RemoteFile[] = [];
+    if(remote.project != null) {
+      project = remote.project;
+    }
 
-    await invoke("sync_changes", { pid: pid_number, remote: remote.project });
+    await invoke("sync_changes", { pid: pid_number, remote: project });
 
     // TODO update download/conflict lists
     // TODO type this so its not any

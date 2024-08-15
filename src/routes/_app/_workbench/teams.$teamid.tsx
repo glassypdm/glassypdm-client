@@ -150,7 +150,7 @@ function TeamDashboard() {
     </div>
   }
   return (
-    <div className='flex flex-col max-w-screen'>
+    <div className='flex flex-col w-screen px-4'>
       <h1 className='font-semibold text-2xl text-center pb-2 w-96'>{data.teamName}</h1>
       <div className='pb-4'>Your role: {data.role}</div>
       <Separator />
