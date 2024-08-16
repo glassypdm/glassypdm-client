@@ -31,7 +31,7 @@ async fn hash_dir(pid: i32, dir_path: PathBuf, pool: &Pool<Sqlite>) {
 
         // ignore temp solidworks files
         if rel_path.contains("~$") {
-            println!("solidworks temporary file detected {}", rel_path);
+            //println!("solidworks temporary file detected {}", rel_path);
             continue;
         } // root directory is empty
         else if rel_path == "" {
