@@ -95,55 +95,64 @@ function UploadPage() {
       setStatus(`${actionedFiles} of ${selectedLength} files ${verb}...`);
     });
     if (action == "Upload") {
-      // upload files w/ store/upload or whatever path
+      // upload files
       await invoke("upload_files", {
         pid: parseInt(pid),
         filepaths: selectedFiles,
         token: uwu,
       });
 
-      setStatus("Logging project updates...");
-      // create commit
       const endpoint = url + "/commit";
-      console.log(endpoint);
-      const response = await fetch(endpoint, {
-        method: "POST",
-        mode: "cors",
-        headers: { Authorization: `Bearer ${await getToken()}` },
-        body: JSON.stringify({
-          projectId: parseInt(pid),
-          message: commitMessage,
-          files: uploadList,
-        }),
-      });
-      const data = await response.json();
-      console.log(data);
-      // handle when we don't get a successful response
-      if (data.status != "success") {
-        unlisten();
-        let permissionGranted = await isPermissionGranted();
-        if (!permissionGranted) {
-          const permission = await requestPermission();
-          permissionGranted = permission === "granted";
+      const uploadLimit = 150;
+      setStatus(
+        `Logging project update${uploadList.length > uploadLimit ? "s" : ""}...`
+      );
+
+      // upload 150 files at a time
+      for (let i = 0; i < uploadList.length; i += uploadLimit) {
+        // append to commit message if needed
+        let msg = commitMessage;
+        if (uploadList.length >= uploadLimit) {
+          msg += ` - Part ${i / uploadLimit + 1}`;
         }
 
-        // Once permission has been granted we can send the notification
-        const end = performance.now();
+        // create commit
+        const response = await fetch(endpoint, {
+          method: "POST",
+          mode: "cors",
+          headers: { Authorization: `Bearer ${await getToken()}` },
+          body: JSON.stringify({
+            projectId: parseInt(pid),
+            message: msg,
+            files: uploadList.slice(i, i + uploadLimit),
+          }),
+        });
+        const data = await response.json();
+        console.log(data);
+        if (data.status != "success") {
+          unlisten();
+          let permissionGranted = await isPermissionGranted();
+          if (!permissionGranted) {
+            const permission = await requestPermission();
+            permissionGranted = permission === "granted";
+          }
 
-        if (permissionGranted) {
-          sendNotification({ title: "glassyPDM", body: `Upload failed` });
+          // Once permission has been granted we can send the notification
+          if (permissionGranted) {
+            sendNotification({ title: "glassyPDM", body: `Upload failed` });
+          }
+          setStatus(`Upload failed`);
+          setDisabled(false);
+          return;
         }
-        setStatus(`Upoad failed`);
-        setDisabled(false);
-        return;
+
+        // update db
+        await invoke("update_uploaded", {
+          pid: parseInt(pid),
+          commit: data.commitid,
+          files: uploadList.slice(i, i + uploadLimit),
+        });
       }
-
-      // update db
-      await invoke("update_uploaded", {
-        pid: parseInt(pid),
-        commit: data.commitid,
-        files: uploadList,
-      });
     } else if (action == "Reset") {
       await invoke("reset_files", {
         pid: parseInt(pid),

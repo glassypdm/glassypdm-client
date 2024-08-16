@@ -14,7 +14,7 @@ use reqwest::{Client, Response};
 use reqwest::multipart::*;
 
 const CONCURRENT_DOWNLOAD_REQUESTS: usize = 4;
-const CONCURRENT_UPLOAD_REQUESTS: usize = 3;
+const CONCURRENT_UPLOAD_REQUESTS: usize = 4;
 
 #[tauri::command]
 pub async fn upload_files(pid: i32, filepaths: Vec<String>, token: String, app_handle: AppHandle) -> Result<bool, ReqwestError> {
