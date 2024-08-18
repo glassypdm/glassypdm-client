@@ -17,8 +17,7 @@ pub struct SettingsOptions {
 
 #[derive(Serialize, Deserialize)]
 pub struct UpdatedFile {
-    // relative
-    pub path: String,
+    pub path: String, // relative
     pub hash: String,
     pub size: i32,
     pub change: ChangeType

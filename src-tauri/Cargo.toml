@@ -19,7 +19,7 @@ serde_json = "1"
 tauri-plugin-fs = "2.0.0-rc.0"
 tauri-plugin-dialog = "2.0.0-rc.0"
 sqlx = { version = "0.7", features = [ "runtime-tokio", "sqlite" ] }
-tokio = { version = "1", features = ["full"] }
+tokio = { version = "1.39.3", features = ["full", "rt-multi-thread"] }
 merkle_hash = "3.5"
 reqwest = { version = "0.11.20", features = ["multipart", "blocking", "json"] }
 thiserror = "1.0.51"
@@ -27,6 +27,7 @@ futures = "0.3.29"
 rayon = "1.10.0"
 tauri-plugin-updater = "2.0.0-rc.0"
 tauri-plugin-notification = "2.0.0-rc.0"
+fs-chunker = "0.5.0"
 
 [features]
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!

@@ -3,6 +3,7 @@
 
 mod config;
 mod download;
+mod reset;
 mod sync;
 mod types;
 mod util;
@@ -16,7 +17,8 @@ use tokio::sync::Mutex;
 use crate::config::*;
 use std::fs;
 use sync::{update_project_info, get_uploads, sync_changes, open_project_dir, get_project_name, get_local_projects, get_downloads, get_conflicts};
-use upload::{upload_files, update_uploaded, reset_files};
+use upload::{upload_files, update_uploaded};
+use reset::reset_files;
 use download::{delete_file_cmd, download_s3_file, download_files};
 
 fn main() {

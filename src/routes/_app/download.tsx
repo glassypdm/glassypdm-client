@@ -92,7 +92,7 @@ function DownloadPage() {
               params={{ pid: pid }}
               disabled={disabled}>
           <Button className='flex-none disabled:pointer-events-none disabled:opacity-50' disabled={disabled}>
-Close
+            Close
           </Button></Link>
           <p className='flex-auto text-center'>{status}</p>
           <div className='flex'>
