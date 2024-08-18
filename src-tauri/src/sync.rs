@@ -120,11 +120,11 @@ pub async fn sync_changes(pid: i32, remote: Vec<RemoteFile>, state_mutex: State<
         .bind(file.path)
         .bind(pid)
         .bind(file.commitid)
-        .bind(file.hash)
+        .bind(file.filehash)
         .bind(if file.changetype == 3 { 3 } else { 1 })
         .bind(0)
         .bind(0)
-        .bind(file.size)
+        .bind(file.blocksize)
         .execute(&*pool).await;
         match hehe {
             Ok(_owo) => {},

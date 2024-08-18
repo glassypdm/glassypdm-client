@@ -28,9 +28,9 @@ pub struct RemoteFile {
     pub frid: i32,
     pub path: String,
     pub commitid: i32,
-    pub hash: String,
+    pub filehash: String,
     pub changetype: i32, // TODO use enum
-    pub size: i32
+    pub blocksize: i32
 }
 
 #[derive(Debug, thiserror::Error)]

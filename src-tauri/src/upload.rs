@@ -60,6 +60,7 @@ pub async fn upload_files(pid: i32, filepaths: Vec<String>, token: String, app_h
                     let copied_filehash = file_hash.clone();
                     async move {
                     let Chunk { hash, data, idx } = chunk;
+                    println!("idx {}", idx);
                     let form: Form = reqwest::multipart::Form::new()
                         .part("chunk", Part::bytes(data).file_name(hash.clone()))
                         .text("file_hash", copied_filehash)
@@ -76,10 +77,11 @@ pub async fn upload_files(pid: i32, filepaths: Vec<String>, token: String, app_h
                         },
                         Err(err) => {
                             let hehez = "error uploading chunk: ".to_string() + &err.to_string();
+                            println!("error: {}", err);
                             hehez
                         }
                     };
-                    println!("{}", output);
+                    println!("response output: {}", output);
                     }
                 }).await;
 
