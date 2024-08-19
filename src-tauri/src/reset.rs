@@ -5,7 +5,7 @@ use std::path::Path;
 use sqlx::{Pool, Sqlite, Row};
 use tauri::{AppHandle, Manager, Emitter};
 use crate::download::{delete_file, download_with_client};
-use crate::types::{DownloadInformation, DownloadRequest};
+use crate::types::{DownloadServerOutput, DownloadRequest};
 use crate::util::{get_basehash, get_cache_dir, get_current_server, get_project_dir};
 use reqwest::Client;
 
@@ -23,6 +23,7 @@ pub async fn reset_files(pid: i64, filepaths: Vec<String>, token: String, app_ha
     let aws_client: Client = reqwest::Client::new();
     let cache_dir = get_cache_dir(&pool).await.unwrap();
 
+    /*
     // separate into download and delete lists
     let mut to_download: Vec<DownloadRequest> = Vec::new();
     let mut to_delete: Vec<String> = Vec::new();
@@ -74,7 +75,7 @@ pub async fn reset_files(pid: i64, filepaths: Vec<String>, token: String, app_ha
                 .bearer_auth(auth)
                 .send()
                 .await.unwrap();
-            response.json::<DownloadInformation>()
+            response.json::<DownloadServerOutput>()
                 .await
         }
     })
@@ -172,5 +173,6 @@ pub async fn reset_files(pid: i64, filepaths: Vec<String>, token: String, app_ha
     }
 
     // TODO check output of the queries where we update the database
+    */
   Ok(true)
 }

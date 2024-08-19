@@ -48,12 +48,25 @@ impl serde::Serialize for ReqwestError {
 }
 
 #[derive(Clone, Serialize, Deserialize)]
+pub struct DownloadServerOutput {
+  pub response: String,
+  pub body: Option<DownloadInformation>
+}
+
+#[derive(Clone, Serialize, Deserialize)]
 pub struct DownloadInformation {
-  pub status: String,
-  pub hash: Option<String>,
-  pub rel_path: Option<String>,
-  pub commit_id: Option<i64>,
-  pub url: Option<String>
+  pub file_hash: String,
+  pub file_path: String,
+  pub commit_id: i64,
+  pub file_chunks: Vec<FileChunk>
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+
+pub struct FileChunk {
+    pub s3_url: String,
+    pub block_hash: String,
+    pub chunk_index: i64
 }
 
 #[derive(Serialize, Deserialize, Clone)]

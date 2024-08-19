@@ -1,11 +1,12 @@
 use std::fs::{self, File};
-use std::io;
+use std::io::{self, BufReader, BufWriter, Write};
 use std::path::Path;
 use futures::{stream, StreamExt};
 use reqwest::Client;
 use sqlx::{Pool, Sqlite, Row};
+use tauri::utils::acl;
 use tauri::{AppHandle, Manager, State};
-use crate::types::{DownloadInformation, DownloadRequest, DownloadRequestMessage, ReqwestError};
+use crate::types::{DownloadInformation, DownloadRequest, DownloadRequestMessage, DownloadServerOutput, FileChunk, ReqwestError};
 use crate::util::get_cache_dir;
 use crate::util::{get_current_server, get_project_dir};
 use std::path::PathBuf;
@@ -76,11 +77,10 @@ pub async fn download_s3_file(pid: i32, s3_url: String, rel_path: String, state_
     Ok(true)
 }
 
+#[tokio::main]
 #[tauri::command]
 pub async fn download_files(pid: i32, files: Vec<DownloadRequestMessage>, token: String, state_mutex: State<'_, Mutex<Pool<Sqlite>>>, app_handle: AppHandle) -> Result<bool, ReqwestError> {
     let pool = state_mutex.lock().await;
-    let glassy_client: Client = reqwest::Client::new();
-    let aws_client: Client = reqwest::Client::new();
     let server_url = get_current_server(&pool).await.unwrap();
     let project_dir = get_project_dir(pid, &pool).await.unwrap();
     let cache_dir = get_cache_dir(&pool).await.unwrap();
@@ -89,6 +89,8 @@ pub async fn download_files(pid: i32, files: Vec<DownloadRequestMessage>, token:
         println!("download files: project or cache dir is invalid");
         return Ok(false);
     }
+
+    // sort files into delete and download piles
     let mut to_download: Vec<DownloadRequestMessage> = Vec::new();
     let mut to_delete: Vec<DownloadRequestMessage> = Vec::new();
     for file in files.clone() {
@@ -108,50 +110,88 @@ pub async fn download_files(pid: i32, files: Vec<DownloadRequestMessage>, token:
             to_delete.push(file)
         }
     }
+
     // request S3 presigned urls
     let endpoint = server_url + "/store/download";
-    let bodies = stream::iter(to_download.clone())
-    .map(|file: DownloadRequestMessage| {
-        let g_client = &glassy_client;
-        let auth = token.clone();
-        let cpy_endpoint = endpoint.clone();
-        let body: DownloadRequest = DownloadRequest {
-            project_id: pid.into(),
-            path: file.rel_path,
-            commit_id: file.commit_id
-        };
-        //let project_id = &project_id_cpy;
-        async move {
-            let response = g_client
-                .post(cpy_endpoint)
+
+    let rt = tokio::runtime::Handle::current();
+    let mut handles = vec![];
+    for download in to_download.clone() {
+        // copy needed things like endpoint, client, token, etc
+        let cloned_cache_dir = cache_dir.clone();
+        let cloned_endpoint = endpoint.clone();
+        let cloned_token = token.clone();
+        let tauri_handle = app_handle.clone();
+        let handle = rt.spawn(async move {
+            let glassy_client: Client = reqwest::Client::new();
+            let aws_client: Client = reqwest::Client::new();
+
+            // send a request for the chunk urls, await
+            let body: DownloadRequest = DownloadRequest {
+                project_id: pid.to_owned().into(),
+                path: download.rel_path,
+                commit_id: download.commit_id
+            };
+            let response = glassy_client
+                .post(cloned_endpoint.to_owned())
                 .json(&body)
-                .bearer_auth(auth)
-                .send()
-                .await.unwrap();
-            response.json::<DownloadInformation>()
-                .await
-        }
-    })
-    .buffer_unordered(CONCURRENT_REQUESTS);
+                .bearer_auth(cloned_token.to_owned())
+                .send().await;
 
-    // download files, save them in a cache (serverdir/.glassycache)
-    bodies
-    .for_each(|b| async {
-        match b {
-            Ok(b) => {
-                println!("{}", b.status);
-                let _ = download_with_client(&cache_dir, b, &aws_client).await;
+            let data = match response {
+                Ok(res) => {
+                    res.json::<DownloadServerOutput>().await.unwrap_or_else(
+                        |_| DownloadServerOutput { response: "fail".to_string(), body: None })
+                },
+                Err(err) => {
+                    println!("error: {}", err);
+                    DownloadServerOutput { response: "fail".to_string(), body: None }
+                }
+            };
+
+            // for each chunk url, download them concurrently to cache
+            // in cache, make a file hash folder
+            // save block hashes to the folder
+            // save a json file in the hash folder with the indices
+            if data.response == "success" {
+                let download_info = data.body.unwrap();
+
+                // save json file in the file hash folder with indices
+                let _ = save_filechunkmapping(&cloned_cache_dir, &download_info);
+                let hash_dir = cloned_cache_dir.to_owned() + "\\" + download_info.file_hash.as_str();
+
+                // download chunks
+                let _ = stream::iter(download_info.file_chunks)
+                    .for_each_concurrent(CONCURRENT_REQUESTS, |chunk| {
+                        let hash_folder = hash_dir.clone();
+                        let a_client = aws_client.clone();
+                        async move {
+                            let ret = download_with_client(&hash_folder, chunk, &a_client).await;
+                            match ret {
+                                Ok(out) => {
+                                    if out != true {
+                                        println!("oof")
+                                    }
+                                },
+                                Err(err) => {
+                                    println!("error downloading chunk: {}", err)
+                                }
+                            }
+                        }
+                    }).await;
             }
-            Err(e) => {
-                println!("error! {}", e);
-            },
-        }
 
-        // emit download status event
-        let payload = 4;
-        let _ = app_handle.emit("downloadedFile", payload);
-    }).await;
+            // emit to app handle
+            // FIXME not firing
+            let _ = tauri_handle.emit("downloadedFile", 6030);
+        });
 
+        handles.push(handle);
+    }
+
+    // wait for futures to run to completion
+    futures::future::join_all(handles).await;
+    println!("handles shouldve finished downloading to cache");
     // delete files
     for file in to_delete {
         if !delete_file(pid, file.rel_path.clone(), &pool).await.unwrap() {
@@ -170,7 +210,8 @@ pub async fn download_files(pid: i32, files: Vec<DownloadRequestMessage>, token:
                 if res {
                     let prefix = Path::new(&proj_str).parent().unwrap();
                     fs::create_dir_all(prefix).unwrap();
-                    let _ = fs::copy(cache_str, proj_str);
+                    // assemble file from chunk(s)
+                    let _ = assemble_file(&cache_str, &proj_str);
                 }
                 else {
                     println!("file {} not found in cache", cache_str);
@@ -223,18 +264,17 @@ pub async fn download_files(pid: i32, files: Vec<DownloadRequestMessage>, token:
     Ok(true)
 }
 
-pub async fn download_with_client(cache_dir: &String, download: DownloadInformation, client: &Client) -> Result<bool, ReqwestError> {
-    // TODO validate the options, look at status
-
+// TODO error handle if client couldnt get
+pub async fn download_with_client(dir: &String, chunk_download: FileChunk, client: &Client) -> Result<bool, ReqwestError> {
     let resp = client
-        .get(download.url.unwrap().clone())
+        .get(chunk_download.s3_url)
         .send()
         .await?
         .bytes()
         .await?;
 
     // temp path: cache + hash(.glassy?)
-    let path = cache_dir.to_owned() + "\\" + &download.hash.unwrap();
+    let path = dir.to_owned() + "\\" + &chunk_download.block_hash;
     println!("downloading to {}", path);
 
     // create cache folder if it doesnt exist
@@ -245,6 +285,46 @@ pub async fn download_with_client(cache_dir: &String, download: DownloadInformat
     // save to cache
     let mut f = File::create(&path).expect("Unable to create file");
     io::copy(&mut &resp[..], &mut f).expect("Unable to copy data");
+
+    Ok(true)
+}
+
+// TODO refactor unwrap, lmao
+fn save_filechunkmapping(cache_dir: &String, download: &DownloadInformation) -> Result<bool, ()> {
+    // TODO linux support, create path the proper way
+    let abs_path = cache_dir.to_owned() + "\\" + &download.file_hash + "\\mapping.json";
+    let path: &Path = std::path::Path::new(&abs_path);
+    let prefix = path.parent().unwrap();
+    fs::create_dir_all(prefix).unwrap();
+
+    let file = File::create(path).unwrap();
+    let mut writer = BufWriter::new(file);
+    serde_json::to_writer(&mut writer, &download.file_chunks).unwrap();
+    writer.flush().unwrap();
+
+    Ok(true)
+}
+
+// cache dir should be the folder for the file in the cache dir
+// proj dir should be the complete path to the desired file
+// TODO refactor unwrap
+fn assemble_file(cache_dir: &String, proj_path: &String) -> Result<bool, ()> {
+    // read in mapping.json
+    let mapping_path = cache_dir.to_owned() + "\\mapping.json";
+    let file = File::open(mapping_path).unwrap();
+    let reader = BufReader::new(file);
+    let mapping: Vec<FileChunk> = serde_json::from_reader(reader).unwrap();
+
+    if mapping.len() == 1 {
+        // nothing to do, just copy the file
+        let cache_path = cache_dir.to_owned() + "\\" + &mapping[0].block_hash;
+        fs::copy(cache_path, proj_path);
+        return Ok(true);
+    }
+    else if mapping.len() == 0 {
+        return Ok(false);
+    }
+
 
     Ok(true)
 }

@@ -54,7 +54,7 @@ pub async fn upload_files(pid: i32, filepaths: Vec<String>, token: String, app_h
             let len = chunks.len();
             let copied_client = &copy_client;
             let _chunk_reqs = stream::iter(chunks)
-                .for_each_concurrent(8, |chunk| {
+                .for_each_concurrent(2, |chunk| {
                     let copied_endpoint = copy_endpoint.clone();
                     let copied_token = copy_token.clone();
                     let copied_filehash = file_hash.clone();
