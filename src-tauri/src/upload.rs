@@ -38,7 +38,7 @@ pub async fn upload_files(pid: i32, filepaths: Vec<String>, token: String, app_h
     }
 
     let _ = stream::iter(to_upload)
-        .for_each_concurrent(2, |upload| {
+        .map(|upload| {
             let copy_endpoint = endpoint.clone();
             let copy_client = client.clone();
             let copy_token = token.clone();
@@ -50,8 +50,8 @@ pub async fn upload_files(pid: i32, filepaths: Vec<String>, token: String, app_h
                 let chunks: Vec<Chunk> = fs_chunker::chunk_file(&abspath, 4 * 1024 * 1024, true);
                 let len = chunks.len();
                 let copied_client = &copy_client;
-                let _chunk_reqs = stream::iter(chunks)
-                    .for_each_concurrent(2, |chunk| {
+                let chunk_reqs = stream::iter(chunks)
+                    .map(|chunk| {
                         let copied_endpoint = copy_endpoint.clone();
                         let copied_token = copy_token.clone();
                         let copied_filehash = file_hash.clone();
@@ -68,23 +68,27 @@ pub async fn upload_files(pid: i32, filepaths: Vec<String>, token: String, app_h
                             .multipart(form)
                             .bearer_auth(copied_token)
                             .send().await;
-                        let output: String = match res {
-                            Ok(lol) => {
-                                lol.text().await.unwrap_or_else(|_| "nope".to_string())
-                            },
-                            Err(err) => {
-                                let hehez = "error uploading chunk: ".to_string() + &err.to_string();
-                                println!("error: {}", err);
-                                hehez
-                            }
-                        };
-                        println!("response output: {}", output);
+                        res
                         }
-                    }).await;
+                    }).buffer_unordered(CONCURRENT_UPLOAD_REQUESTS);
+
+                chunk_reqs.for_each(|res| async {
+                    let output: String = match res {
+                        Ok(lol) => {
+                            lol.text().await.unwrap_or_else(|_| "nope".to_string())
+                        },
+                        Err(err) => {
+                            let hehez = "error uploading chunk: ".to_string() + &err.to_string();
+                            println!("error: {}", err);
+                            hehez
+                        }
+                    };
+                    println!("response output: {}", output);
+                }).await;
     
                 let _ = cloned_app.emit("fileAction", 6030); 
             }
-        }).await;
+        }).buffer_unordered(CONCURRENT_UPLOAD_REQUESTS).collect::<()>().await;
   Ok(true)
 }
 
