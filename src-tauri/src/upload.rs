@@ -1,17 +1,17 @@
 use fs_chunker::Chunk;
+use futures::future;
 use serde::{Deserialize, Serialize};
 use tauri::State;
-use futures::{future, stream, StreamExt, TryFutureExt};
-use tokio::runtime::Builder;
+use futures::{stream, StreamExt};
 use tokio::sync::Mutex;
 use sqlx::{Pool, Sqlite};
 use tauri::{AppHandle, Manager, Emitter};
 use crate::types::{ChangeType, ReqwestError, UpdatedFile};
-use crate::util::{get_current_server, get_file_as_byte_vec, get_file_info, get_project_dir};
+use crate::util::{get_current_server, get_file_info, get_project_dir};
 use reqwest::{Client, Response};
 use reqwest::multipart::*;
 
-const CONCURRENT_UPLOAD_REQUESTS: usize = 5;
+const CONCURRENT_UPLOAD_REQUESTS: usize = 3;
 
 #[tokio::main]
 #[tauri::command]
@@ -37,58 +37,63 @@ pub async fn upload_files(pid: i32, filepaths: Vec<String>, token: String, app_h
         }
     }
 
-    let _ = stream::iter(to_upload)
-        .map(|upload| {
-            let copy_endpoint = endpoint.clone();
-            let copy_client = client.clone();
-            let copy_token = token.clone();
-            let abspath = project_dir.clone() + "\\" + &upload.path;
-            let file_hash = upload.hash.clone();
-            let cloned_app = app_handle.clone();
-            async move {
-                // 4 mb chunks
-                let chunks: Vec<Chunk> = fs_chunker::chunk_file(&abspath, 4 * 1024 * 1024, true);
-                let len = chunks.len();
-                let copied_client = &copy_client;
-                let chunk_reqs = stream::iter(chunks)
-                    .map(|chunk| {
-                        let copied_endpoint = copy_endpoint.clone();
-                        let copied_token = copy_token.clone();
-                        let copied_filehash = file_hash.clone();
-                        async move {
-                        let Chunk { hash, data, idx } = chunk;
-                        println!("idx {}", idx);
-                        let form: Form = reqwest::multipart::Form::new()
-                            .part("chunk", Part::bytes(data).file_name(hash.clone()))
-                            .text("file_hash", copied_filehash)
-                            .text("block_hash", hash)
-                            .text("num_chunks", len.to_string())
-                            .text("chunk_index", idx.to_string());
-                        let res = copied_client.post(copied_endpoint)
-                            .multipart(form)
-                            .bearer_auth(copied_token)
-                            .send().await;
-                        res
-                        }
-                    }).buffer_unordered(CONCURRENT_UPLOAD_REQUESTS);
+    let rt = tokio::runtime::Handle::current();
+    let mut handles = vec![];
 
-                chunk_reqs.for_each(|res| async {
-                    let output: String = match res {
-                        Ok(lol) => {
-                            lol.text().await.unwrap_or_else(|_| "nope".to_string())
-                        },
-                        Err(err) => {
-                            let hehez = "error uploading chunk: ".to_string() + &err.to_string();
-                            println!("error: {}", err);
-                            hehez
-                        }
-                    };
-                    println!("response output: {}", output);
-                }).await;
-    
-                let _ = cloned_app.emit("fileAction", 6030); 
-            }
-        }).buffer_unordered(CONCURRENT_UPLOAD_REQUESTS).collect::<()>().await;
+    for upload in to_upload {
+        let copy_endpoint = endpoint.clone();
+        let copy_client = client.clone();
+        let copy_token = token.clone();
+        let abspath = project_dir.clone() + "\\" + &upload.path;
+        let file_hash = upload.hash.clone();
+        let cloned_app = app_handle.clone();
+        let handle = rt.spawn(async move {
+            // 4 mb chunks
+            let chunks: Vec<Chunk> = fs_chunker::chunk_file(&abspath, 4 * 1024 * 1024, true);
+            let len = chunks.len();
+            let copied_client = &copy_client;
+            let chunk_reqs = stream::iter(chunks)
+                .map(|chunk| {
+                    let copied_endpoint = copy_endpoint.clone();
+                    let copied_token = copy_token.clone();
+                    let copied_filehash = file_hash.clone();
+                    async move {
+                    let Chunk { hash, data, idx } = chunk;
+                    println!("idx {}", idx);
+                    let form: Form = reqwest::multipart::Form::new()
+                        .part("chunk", Part::bytes(data).file_name(hash.clone()))
+                        .text("file_hash", copied_filehash)
+                        .text("block_hash", hash)
+                        .text("num_chunks", len.to_string())
+                        .text("chunk_index", idx.to_string());
+                    let res = copied_client.post(copied_endpoint)
+                        .multipart(form)
+                        .bearer_auth(copied_token)
+                        .send().await;
+                    res
+                    }
+                }).buffer_unordered(CONCURRENT_UPLOAD_REQUESTS);
+
+            chunk_reqs.for_each(|res| async {
+                let output: String = match res {
+                    Ok(lol) => {
+                        lol.text().await.unwrap_or_else(|_| "nope".to_string())
+                    },
+                    Err(err) => {
+                        let hehez = "error uploading chunk: ".to_string() + &err.to_string();
+                        println!("error: {}", err);
+                        hehez
+                    }
+                };
+                println!("response output: {}", output);
+            }).await;
+
+            let _ = cloned_app.emit("fileAction", 6030); 
+        });
+        handles.push(handle);
+    }
+
+    future::join_all(handles).await;
   Ok(true)
 }
 
