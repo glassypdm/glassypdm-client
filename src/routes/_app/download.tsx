@@ -7,6 +7,7 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { RowSelectionState } from '@tanstack/react-table'
 import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
+import { Loader2 } from 'lucide-react'
 import { useState } from 'react'
 
 export const Route = createFileRoute('/_app/download')({
@@ -37,7 +38,7 @@ export const Route = createFileRoute('/_app/download')({
 })
 
 function DownloadPage() {
-  const { downloads, selectionList, projectName, url } = Route.useLoaderData();
+  const { downloads, selectionList, projectName } = Route.useLoaderData();
   const { getToken } = useAuth();
   const { pid } = Route.useSearch();
   const [status, setStatus] = useState("");
@@ -67,18 +68,24 @@ function DownloadPage() {
       });
     }
 
-    const selectedLength = selectedDownload.length;
     let hehe = 0;
     const unlisten = await listen('downloadedFile', (event: any) => {
       console.log(event)
-      setProgress(100 * ++hehe / selectedLength)
-      setStatus(`${hehe} of ${selectedLength} files downloaded...`);
+      setProgress(100 * ++hehe / event.payload)
+      setStatus(`${hehe} of ${event.payload} file chunks downloaded...`);
     });
 
-    console.log(uwu)
+    const unlisten2 = await listen('deletedFile', (event: any) => {
+      console.log(event)
+      setStatus(`Assembling files...`)
+    })
+
+    setStatus("Preparing files to download...");
+
     let ret = await invoke("download_files", { pid: parseInt(pid), files: selectedDownload, token: uwu });
 
     unlisten();
+    unlisten2();
     setStatus(`Download complete!`);
     setDisabled(false);
   }
@@ -99,7 +106,7 @@ function DownloadPage() {
           <Button
             onClick={handleDownload}
             disabled={Object.keys(selection).length == 0 || disabled || progress == 100}
-            >{progress == 100 ? "Download Complete" : "Download Selected"}</Button>
+            >{progress == 100 ? "Download Complete" : progress == 0 || disabled ? "Download Selected" : <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Please wait</>}</Button>
           </div>
         </div>
       <div className='py-4 space-y-2'>

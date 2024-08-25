@@ -96,16 +96,19 @@ pub async fn download_files(pid: i32, files: Vec<DownloadRequestMessage>, token:
     let mut to_delete: Vec<DownloadRequestMessage> = Vec::new();
     for file in files.clone() {
         if file.download {
-            let cached_path = cache_dir.clone() + "\\" + &file.hash;
+            let _cached_path = cache_dir.clone() + "\\" + &file.hash;
 
-            if Path::new(&cached_path).exists() {
-                println!("hash exists in cache");
-                let payload = 4;
-                let _ = app_handle.emit("downloadedFile", payload);
-            }
-            else {
+            // TODO if we have the file in the cache already,
+            // we should include it in the list to assemble and copy
+
+            //if Path::new(&cached_path).exists() {
+            //    println!("hash exists in cache");
+            //    let payload = 4;
+            //    let _ = app_handle.emit("downloadedFile", payload);
+            //}
+            //else {
                 to_download.push(file.clone());
-            }
+            //}
         }
         else {
             to_delete.push(file)
@@ -161,35 +164,39 @@ pub async fn download_files(pid: i32, files: Vec<DownloadRequestMessage>, token:
                 }
             }
             else {
-                // TODO
+                // TODO handle error
                 println!("error TODO something L159 download.rs: response= {}", output.response);
             }
         }
     }).await;
 
-    println!("s3 urls obtained, downloading {} chunks...", chunk_downloads.lock().await.len());
-
-    let copy = (*chunk_downloads).lock().await.clone();
+    let num_chunks = chunk_downloads.lock().await.len();
+    println!("s3 urls obtained, downloading {} chunks...", num_chunks);
+    
     // download chunks
+    let copy = (*chunk_downloads).lock().await.clone();
     let aws_client: Client = reqwest::Client::new();
     let _ = stream::iter(copy.into_iter())
         .for_each_concurrent(CONCURRENT_AWS_REQUESTS, |chunk_info| {
+            let handle = &app_handle;
             let client = &aws_client;
             // create cache_dir/file_hash directory
             let filehash_dir = cache_dir.clone() + "\\" + chunk_info.file_hash.as_str();
             // download using download_with_Client
             async move {
+                // TODO handle error
                 let _res = download_with_client(&filehash_dir, chunk_info, client).await;
+                let _ = handle.emit("downloadedFile", &num_chunks);
             }
         }).await;
 
     // delete files
+    let _ = app_handle.emit("cacheComplete", 4);
+
     for file in to_delete {
         if !delete_file(pid, file.rel_path.clone(), &pool).await.unwrap() {
             // TODO handle error
         }
-        let payload = 4;
-        let _ = app_handle.emit("downloadedFile", payload);
     }
     let mut oops = 0;
     for file in to_download {
@@ -309,7 +316,7 @@ fn assemble_file(cache_dir: &String, proj_path: &String) -> Result<bool, ()> {
     if mapping.len() == 1 {
         // nothing to do, just copy the file
         let cache_path = cache_dir.to_owned() + "\\" + &mapping[0].block_hash;
-        fs::copy(cache_path, proj_path);
+        let _ = fs::copy(cache_path, proj_path);
         return Ok(true);
     }
     else if mapping.len() == 0 {
