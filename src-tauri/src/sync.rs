@@ -60,14 +60,22 @@ async fn hash_dir(pid: i32, dir_path: PathBuf, pool: &Pool<Sqlite>) {
     }
 
     // TODO verify the below logic
+    // no change
     let _ = sqlx::query(
         "UPDATE file SET change_type = 0 WHERE in_fs = 1 AND change_type = 3 AND pid = $1"
     ).bind(pid).execute(pool).await;
 
+    // updated file
     let _ = sqlx::query(
         "UPDATE file SET change_type = 2 WHERE in_fs = 1 AND base_hash != curr_hash AND pid = $1 AND base_hash != ''"
     ).bind(pid).execute(pool).await;
 
+    // uploaded file
+    let _ = sqlx::query(
+        "UPDATE file SET change_type = 1 WHERE in_fs = 1 AND base_hash != curr_hash AND pid = $1 AND base_hash == ''"
+    ).bind(pid).execute(pool).await;
+
+    // deleted file
     let _ = sqlx::query(
         "UPDATE file SET change_type = 3 WHERE in_fs = 0 AND pid = $1 AND base_hash != ''"
     ).bind(pid).execute(pool).await;
@@ -198,21 +206,18 @@ pub async fn get_downloads(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>
 }
 
 #[tauri::command]
-pub async fn get_conflicts(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<Vec<String>, ()> {
+pub async fn get_conflicts(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<Vec<FileChange>, ()> {
     let pool = state_mutex.lock().await;
 
-    // TODO fix/test
-    /*
-    let output: Vec<String> = sqlx::query_as(
-        "SELECT filepath FROM file WHERE pid = $1 AND
+    let output: Vec<FileChange> = sqlx::query_as(
+        "SELECT filepath, size, change_type, curr_hash as hash, base_commitid as commit_id FROM file WHERE pid = $1 AND
         tracked_hash != curr_hash AND curr_hash != '' AND tracked_hash != base_hash"
     )
     .bind(pid).fetch_all(&*pool)
     .await.unwrap();
-*/
 
     // TODO don't unwrap
-    Ok(vec![])
+    Ok(output)
 }
 
 #[tauri::command]

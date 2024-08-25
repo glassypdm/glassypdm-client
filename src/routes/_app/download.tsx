@@ -75,7 +75,7 @@ function DownloadPage() {
       setStatus(`${hehe} of ${event.payload} file chunks downloaded...`);
     });
 
-    const unlisten2 = await listen('deletedFile', (event: any) => {
+    const unlisten2 = await listen('cacheComplete', (event: any) => {
       console.log(event)
       setStatus(`Assembling files...`)
     })
