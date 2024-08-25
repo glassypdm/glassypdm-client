@@ -66,7 +66,8 @@ pub struct DownloadInformation {
 pub struct FileChunk {
     pub s3_url: String,
     pub block_hash: String,
-    pub chunk_index: i64
+    pub chunk_index: i64,
+    pub file_hash: String
 }
 
 #[derive(Serialize, Deserialize, Clone)]

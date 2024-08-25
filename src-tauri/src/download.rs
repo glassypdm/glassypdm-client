@@ -1,11 +1,11 @@
 use std::fs::{self, File};
 use std::io::{self, BufReader, BufWriter, Write};
 use std::path::Path;
+use std::sync::Arc;
 use futures::{stream, StreamExt};
 use reqwest::Client;
 use sqlx::{Pool, Sqlite, Row};
-use tauri::utils::acl;
-use tauri::{AppHandle, Manager, State};
+use tauri::{AppHandle, State};
 use crate::types::{DownloadInformation, DownloadRequest, DownloadRequestMessage, DownloadServerOutput, FileChunk, ReqwestError};
 use crate::util::get_cache_dir;
 use crate::util::{get_current_server, get_project_dir};
@@ -13,7 +13,8 @@ use std::path::PathBuf;
 use tauri::Emitter;
 use tokio::sync::Mutex;
 
-const CONCURRENT_REQUESTS: usize = 4;
+const CONCURRENT_SERVER_REQUESTS: usize = 2;
+const CONCURRENT_AWS_REQUESTS: usize = 4;
 
 #[tauri::command]
 pub async fn delete_file_cmd(pid: i32, rel_path: String, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<bool, ()> {
@@ -47,6 +48,7 @@ pub async fn delete_file(pid: i32, rel_path: String, pool: &Pool<Sqlite>) -> Res
 }
 
 // download a single file
+// TODO fix
 #[tauri::command]
 pub async fn download_s3_file(pid: i32, s3_url: String, rel_path: String, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<bool, ()> {
     let pool = state_mutex.lock().await;
@@ -77,7 +79,6 @@ pub async fn download_s3_file(pid: i32, s3_url: String, rel_path: String, state_
     Ok(true)
 }
 
-#[tokio::main]
 #[tauri::command]
 pub async fn download_files(pid: i32, files: Vec<DownloadRequestMessage>, token: String, state_mutex: State<'_, Mutex<Pool<Sqlite>>>, app_handle: AppHandle) -> Result<bool, ReqwestError> {
     let pool = state_mutex.lock().await;
@@ -113,78 +114,75 @@ pub async fn download_files(pid: i32, files: Vec<DownloadRequestMessage>, token:
 
     // request S3 presigned urls
     let endpoint = server_url + "/store/download";
-
-    let _ = stream::iter(to_download.clone())
-        .for_each_concurrent(2, |download| {
-            let cloned_cache_dir = cache_dir.clone();
+    let glassy_client: Client = reqwest::Client::new();
+    let outputs = stream::iter(to_download.clone())
+        .map(|download| {
             let cloned_endpoint = endpoint.clone();
             let cloned_token = token.clone();
-            let tauri_handle = app_handle.clone();
+            let g_client = &glassy_client;
             async move {
-                let glassy_client: Client = reqwest::Client::new();
-                let aws_client: Client = reqwest::Client::new();
-    
                 // send a request for the chunk urls, await
                 let body: DownloadRequest = DownloadRequest {
                     project_id: pid.to_owned().into(),
                     path: download.rel_path,
                     commit_id: download.commit_id
                 };
-                let response = glassy_client
+                let response = g_client
                     .post(cloned_endpoint.to_owned())
                     .json(&body)
                     .bearer_auth(cloned_token.to_owned())
                     .send().await;
     
-                let data = match response {
+                match response {
                     Ok(res) => {
                         res.json::<DownloadServerOutput>().await.unwrap_or_else(
-                            |_| DownloadServerOutput { response: "fail".to_string(), body: None })
+                            |_| DownloadServerOutput { response: "server error".to_string(), body: None })
                     },
                     Err(err) => {
                         println!("error: {}", err);
-                        DownloadServerOutput { response: "fail".to_string(), body: None }
+                        DownloadServerOutput { response: "reqwest error".to_string(), body: None }
                     }
-                };
-    
-                // for each chunk url, download them concurrently to cache
-                // in cache, make a file hash folder
-                // save block hashes to the folder
-                // save a json file in the hash folder with the indices
-                if data.response == "success" {
-                    let download_info = data.body.unwrap();
-    
-                    // save json file in the file hash folder with indices
-                    let _ = save_filechunkmapping(&cloned_cache_dir, &download_info);
-                    let hash_dir = cloned_cache_dir.to_owned() + "\\" + download_info.file_hash.as_str();
-    
-                    // download chunks
-                    let _ = stream::iter(download_info.file_chunks)
-                        .for_each_concurrent(3, |chunk| {
-                            let hash_folder = hash_dir.clone();
-                            let a_client = aws_client.clone();
-                            async move {
-                                let ret = download_with_client(&hash_folder, chunk, &a_client).await;
-                                match ret {
-                                    Ok(out) => {
-                                        if out != true {
-                                            println!("oof")
-                                        }
-                                    },
-                                    Err(err) => {
-                                        println!("error downloading chunk: {}", err)
-                                    }
-                                }
-                            }
-                        }).await;
                 }
+            }
+        }).buffer_unordered(CONCURRENT_SERVER_REQUESTS);
     
-                let _ = tauri_handle.emit("downloadedFile", 6030);
+    let chunk_downloads = Arc::new(Mutex::new(Vec::<FileChunk>::new()));
+    let moved_chunk_downloads = Arc::clone(&chunk_downloads);
+    outputs.for_each(|output| {
+        let cloned_boi = Arc::clone(&moved_chunk_downloads);
+        let cache = cache_dir.clone();
+
+        async move {
+            if output.response == "success" {
+                let info = output.body.unwrap();
+                let _ = save_filechunkmapping(&cache, &info);
+                for chunk in info.file_chunks {
+                    cloned_boi.lock().await.push(chunk);
+                }
+            }
+            else {
+                // TODO
+                println!("error TODO something L159 download.rs");
+            }
+        }
+    }).await;
+
+    println!("s3 urls obtained, downloading {} chunks...", chunk_downloads.lock().await.len());
+
+    let copy = (*chunk_downloads).lock().await.clone();
+    // download chunks
+    let aws_client: Client = reqwest::Client::new();
+    let _ = stream::iter(copy.into_iter())
+        .for_each_concurrent(CONCURRENT_AWS_REQUESTS, |chunk_info| {
+            let client = &aws_client;
+            // create cache_dir/file_hash directory
+            let filehash_dir = cache_dir.clone() + "\\" + chunk_info.file_hash.as_str();
+            // download using download_with_Client
+            async move {
+                let _res = download_with_client(&filehash_dir, chunk_info, client).await;
             }
         }).await;
 
-    // wait for futures to run to completion
-    println!("handles shouldve finished downloading to cache");
     // delete files
     for file in to_delete {
         if !delete_file(pid, file.rel_path.clone(), &pool).await.unwrap() {
