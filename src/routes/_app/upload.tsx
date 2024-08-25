@@ -102,29 +102,29 @@ function UploadPage() {
         token: uwu,
       });
 
-      const endpoint = url + "/commit";
-      const uploadLimit = 150;
+      const ENDPOINT = url + "/commit";
+      const UPLOAD_LIMIT = 150;
       setStatus(
-        `Logging project update${uploadList.length > uploadLimit ? "s" : ""}...`
+        `Logging project update${uploadList.length > UPLOAD_LIMIT ? "s" : ""}...`
       );
 
       // upload 150 files at a time
-      for (let i = 0; i < uploadList.length; i += uploadLimit) {
+      for (let i = 0; i < uploadList.length; i += UPLOAD_LIMIT) {
         // append to commit message if needed
         let msg = commitMessage;
-        if (uploadList.length >= uploadLimit) {
-          msg += ` - Part ${i / uploadLimit + 1}`;
+        if (uploadList.length >= UPLOAD_LIMIT) {
+          msg += ` - Part ${i / UPLOAD_LIMIT + 1}`;
         }
 
         // create commit
-        const response = await fetch(endpoint, {
+        const response = await fetch(ENDPOINT, {
           method: "POST",
           mode: "cors",
           headers: { Authorization: `Bearer ${await getToken()}` },
           body: JSON.stringify({
             projectId: parseInt(pid),
             message: msg,
-            files: uploadList.slice(i, i + uploadLimit),
+            files: uploadList.slice(i, i + UPLOAD_LIMIT),
           }),
         });
         const data = await response.json();
@@ -150,7 +150,7 @@ function UploadPage() {
         await invoke("update_uploaded", {
           pid: parseInt(pid),
           commit: data.commitid,
-          files: uploadList.slice(i, i + uploadLimit),
+          files: uploadList.slice(i, i + UPLOAD_LIMIT),
         });
       }
     } else if (action == "Reset") {

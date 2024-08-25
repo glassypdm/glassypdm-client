@@ -75,7 +75,7 @@ function DownloadPage() {
       setStatus(`${hehe} of ${selectedLength} files downloaded...`);
     });
 
-    console.log(selectedDownload)
+    console.log(uwu)
     let ret = await invoke("download_files", { pid: parseInt(pid), files: selectedDownload, token: uwu });
 
     unlisten();

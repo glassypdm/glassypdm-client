@@ -118,7 +118,7 @@ pub async fn download_files(pid: i32, files: Vec<DownloadRequestMessage>, token:
     let outputs = stream::iter(to_download.clone())
         .map(|download| {
             let cloned_endpoint = endpoint.clone();
-            let cloned_token = token.clone();
+            let auth = token.clone();
             let g_client = &glassy_client;
             async move {
                 // send a request for the chunk urls, await
@@ -128,9 +128,9 @@ pub async fn download_files(pid: i32, files: Vec<DownloadRequestMessage>, token:
                     commit_id: download.commit_id
                 };
                 let response = g_client
-                    .post(cloned_endpoint.to_owned())
+                    .post(cloned_endpoint)
                     .json(&body)
-                    .bearer_auth(cloned_token.to_owned())
+                    .bearer_auth(auth)
                     .send().await;
     
                 match response {
@@ -162,7 +162,7 @@ pub async fn download_files(pid: i32, files: Vec<DownloadRequestMessage>, token:
             }
             else {
                 // TODO
-                println!("error TODO something L159 download.rs");
+                println!("error TODO something L159 download.rs: response= {}", output.response);
             }
         }
     }).await;
@@ -297,13 +297,13 @@ fn save_filechunkmapping(cache_dir: &String, download: &DownloadInformation) -> 
 }
 
 // cache dir should be the folder for the file in the cache dir
-// proj dir should be the complete path to the desired file
+// proj dir should be the complete path to the desired file and must exist
 // TODO refactor unwrap
 fn assemble_file(cache_dir: &String, proj_path: &String) -> Result<bool, ()> {
     // read in mapping.json
     let mapping_path = cache_dir.to_owned() + "\\mapping.json";
-    let file = File::open(mapping_path).unwrap();
-    let reader = BufReader::new(file);
+    let map_file = File::open(&mapping_path).unwrap();
+    let reader = BufReader::new(map_file);
     let mapping: Vec<FileChunk> = serde_json::from_reader(reader).unwrap();
 
     if mapping.len() == 1 {
@@ -313,7 +313,22 @@ fn assemble_file(cache_dir: &String, proj_path: &String) -> Result<bool, ()> {
         return Ok(true);
     }
     else if mapping.len() == 0 {
+        println!("assemble file: mapping was 0 for {}", mapping_path);
         return Ok(false);
+    }
+    else {
+        // otherwise we need to assemble the file
+        let proj_file = File::create(proj_path).unwrap();
+        let mut writer = BufWriter::new(proj_file);
+        for chunk in mapping {
+            let cache_path = cache_dir.to_owned() + "\\" + &chunk.block_hash;
+            let chunk_data = fs::read(cache_path).unwrap();
+            let _ = writer.write_all(&chunk_data);
+            //let chunk_file = File::open(cache_path).unwrap();
+            //let chunk_reader = BufReader::new(chunk_file);
+        }
+
+        let _ = writer.flush();
     }
 
 
