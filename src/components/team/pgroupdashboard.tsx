@@ -5,7 +5,7 @@ import { z } from "zod"
 import { useForm } from "react-hook-form"
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "../ui/form"
 import { Input } from "../ui/input"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useAuth } from "@clerk/clerk-react"
 import { useState } from "react"
 import { useToast } from "../ui/use-toast"
@@ -24,6 +24,18 @@ function PermissionGroupDashboard(props: PermissionGroupDashboardProps) {
     const [submitting, setSubmitting] = useState(false)
     const queryClient = useQueryClient();
     const { toast } = useToast();
+    const { data, isPending, isError, error } = useQuery({
+        queryKey: ['pgroup'],
+        queryFn: async () => {
+            const endpoint = props.serverUrl + "/team/by-id/" + props.teamId as string + "/pgroup/list";
+            const resp = await fetch(endpoint, {
+                headers: { Authorization: `Bearer ${await getToken()}`},
+                method: "GET",
+                mode: "cors"
+            })
+            return resp.json();
+        }
+    })
     const mutationCreatePG = useMutation({
         mutationFn: async (pgName: string) => {
             const endpoint = props.serverUrl + "/team/by-id/" + props.teamId as string + "/pgroup/create";
@@ -68,7 +80,7 @@ function PermissionGroupDashboard(props: PermissionGroupDashboardProps) {
                 title: "Successfully created permission group."
             })
             queryClient.invalidateQueries({
-                queryKey: ['pgcreate']
+                queryKey: ['pgroup']
             })
         }
     })
@@ -77,7 +89,31 @@ function PermissionGroupDashboard(props: PermissionGroupDashboardProps) {
         defaultValues: {
             pgroupName: "",
         }
-    })
+    });
+
+    let pgroupList = <></>
+    if(isPending) {
+        pgroupList = <div>Loading permission groups...</div>
+    }
+    else if(isError) {
+        // TODO log error
+        pgroupList = <div>An error occured while fetching data :c</div>
+    }
+    else if(data.response == "success"){
+        console.log(data)
+        if(data.body && data.body.length > 0) {
+            pgroupList = <div>
+            {
+                data.body.map((group: any) => (
+                    <div key={group.pgroupid}>{group.name}</div>
+                ))
+            }
+        </div>
+        }
+        else {
+            pgroupList = <div>No permission groups found</div>
+        }
+    }
 
     function onSubmit(values: z.infer<typeof createPGFormSchema>) {
         setSubmitting(true)
@@ -111,6 +147,7 @@ function PermissionGroupDashboard(props: PermissionGroupDashboardProps) {
                     </Form>
                 </DialogContent>
             </Dialog>
+            {pgroupList}
         </div>
     )
 }

@@ -103,6 +103,12 @@ function Teams() {
             <div>an error occured while fetching data :c</div>
         )
     }
+    else if(data.response != "success") {
+        return (
+            <div>an error occured while fetching data :c</div>
+        )
+    }
+    console.log(data)
 
     return (
         <div className="flex flex-row space-x-4">
@@ -112,8 +118,8 @@ function Teams() {
                     <ScrollArea className="h-48">
                         <NavigationMenuList className="grid grid-flow-row items-center space-y-2 py-2">
                             {
-                                data.teams && !isPending && !isError ?
-                                data.teams.map((team: Team) => 
+                                data.body.teams && !isPending && !isError ?
+                                data.body.teams.map((team: Team) => 
                                     <NavigationMenuItem className="w-48 text-center text-wrap" key={team.id}>
                                         <NavigationMenuLink className={cn(navigationMenuTriggerStyle(), "min-w-full")} asChild>
                                             <Link to="/teams/$teamid" params={{ teamid: String(team.id) }}>{team.name}</Link>

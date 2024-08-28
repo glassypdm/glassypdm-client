@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import PermissionGroupDashboard from "@/components/team/pgroupdashboard";
+import { RectangleEllipsis } from "lucide-react";
 
 export const Route = createFileRoute("/_app/_workbench/teams/$teamid")({
   component: () => <TeamDashboard />,
@@ -197,16 +198,18 @@ function TeamDashboard() {
       <div className="text-xl pb-2">Membership</div>
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Role</TableHead>
+            <TableRow className="flex flex-row w-full">
+              <TableHead className="grow">Name</TableHead>
+              <TableHead className="grow">Role</TableHead>
+              <TableHead className="grow-0">Options</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {data.members.map((member: Member) => (
-              <TableRow key={member.emailID}>
-                <TableCell>{member.name}</TableCell>
-                <TableCell>{member.role}</TableCell>
+              <TableRow key={member.emailID} className="flex flex-row w-full">
+                <TableCell className="grow">{member.name}</TableCell>
+                <TableCell className="grow">{member.role}</TableCell>
+                <TableCell className="grow-0"><RectangleEllipsis /></TableCell>
               </TableRow>
             ))}
           </TableBody>
