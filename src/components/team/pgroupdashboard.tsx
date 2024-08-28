@@ -9,6 +9,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useAuth } from "@clerk/clerk-react"
 import { useState } from "react"
 import { useToast } from "../ui/use-toast"
+import { Table } from "../ui/table"
+import { PermissionGroupTable } from "./pgrouptable"
+import { columns } from "./pgroupcolumn"
 
 const createPGFormSchema = z.object({
     pgroupName: z.string().regex(new RegExp('^[a-zA-Z0-9 -]+$')).trim()
@@ -102,13 +105,7 @@ function PermissionGroupDashboard(props: PermissionGroupDashboardProps) {
     else if(data.response == "success"){
         console.log(data)
         if(data.body && data.body.length > 0) {
-            pgroupList = <div>
-            {
-                data.body.map((group: any) => (
-                    <div key={group.pgroupid}>{group.name}</div>
-                ))
-            }
-        </div>
+            pgroupList = <PermissionGroupTable columns={columns} data={data.body} />
         }
         else {
             pgroupList = <div>No permission groups found</div>
@@ -121,10 +118,9 @@ function PermissionGroupDashboard(props: PermissionGroupDashboardProps) {
     }
 
     return (
-        <div className="flex flex-col py-2">
-            <div className="text-xl">Permission Groups</div>
+        <div className="flex flex-col py-2 space-y-2">
             <Dialog>
-            <DialogTrigger asChild><Button variant={"outline"}>Create Permission Group</Button></DialogTrigger>
+            <DialogTrigger asChild><Button variant={"outline"} className="flex-0">Create Permission Group</Button></DialogTrigger>
             <DialogContent>
                 <DialogHeader><DialogTitle>Create Permission Group</DialogTitle></DialogHeader>
                 <Form {...formCreatePG}>

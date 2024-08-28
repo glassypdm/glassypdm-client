@@ -27,6 +27,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import PermissionGroupDashboard from "@/components/team/pgroupdashboard";
 import { RectangleEllipsis } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export const Route = createFileRoute("/_app/_workbench/teams/$teamid")({
   component: () => <TeamDashboard />,
@@ -143,9 +144,10 @@ function TeamDashboard() {
     return <div>Loading...</div>;
   }
 
-  let dashboard = <></>;
+  let manage = <></>;
+  let pgroup = <></>;
   if (data && (data.role === "Owner" || data.role === "Manager")) {
-    dashboard = (
+    manage = (
       <div className="flex flex-col py-2 space-y-2">
         <div className="text-xl">Edit Permissions</div>
         <div className="flex flex-row space-x-2">
@@ -179,46 +181,59 @@ function TeamDashboard() {
         >
           Submit
         </Button>
-        <Separator />
-        <PermissionGroupDashboard teamId={parseInt(teamid)} serverUrl={url as string}/>
       </div>
+    );
+    pgroup = (
+      <PermissionGroupDashboard
+        teamId={parseInt(teamid)}
+        serverUrl={url as string}
+      />
     );
   }
 
   return (
     <div className="flex flex-col w-screen px-4 h-[500px]">
-      <ScrollArea className="">
       <h1 className="font-semibold text-2xl text-center pb-2 w-96">
         {data.teamName}
       </h1>
-      <div className="pb-4">Your role: {data.role}</div>
-      <Separator />
-      {dashboard}
-      <Separator />
-      <div className="text-xl pb-2">Membership</div>
-        <Table>
-          <TableHeader>
-            <TableRow className="flex flex-row w-full">
-              <TableHead className="grow">Name</TableHead>
-              <TableHead className="grow">Role</TableHead>
-              <TableHead className="grow-0">Options</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {data.members.map((member: Member) => (
-              <TableRow key={member.emailID} className="flex flex-row w-full">
-                <TableCell className="grow">{member.name}</TableCell>
-                <TableCell className="grow">{member.role}</TableCell>
-                <TableCell className="grow-0"><RectangleEllipsis /></TableCell>
+      <Tabs defaultValue="membership">
+        {data && (data.role === "Owner" || data.role === "Manager") ? (
+          <TabsList>
+            <TabsTrigger value="membership">Membership</TabsTrigger>
+            <TabsTrigger value="pgroup">Permission Groups</TabsTrigger>
+            <TabsTrigger value="manage">Manage</TabsTrigger>
+          </TabsList>
+        ) : (
+          <></>
+        )}
+
+        <TabsContent value="membership">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Role</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-          
-      <TableCaption>
-        {data.members.length} member{data.members.length == 1 ? "" : "s"}
-      </TableCaption>
-        </Table>
-      </ScrollArea>
-      </div>
+            </TableHeader>
+            <TableBody>
+              {data.members.map((member: Member) => (
+                <TableRow key={member.emailID}>
+                  <TableCell>{member.name}</TableCell>
+                  <TableCell>{member.role}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+            <TableCaption>
+              {data.members.length} member{data.members.length == 1 ? "" : "s"}
+            </TableCaption>
+          </Table>
+        </TabsContent>
+        <TabsContent value="pgroup">{pgroup}</TabsContent>
+        <TabsContent value="manage">
+          <div className="pb-4">Your role: {data.role}</div>
+          {manage}
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }
