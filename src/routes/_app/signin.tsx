@@ -11,6 +11,7 @@ import { useState } from 'react';
 import { Dialog, DialogTrigger } from '@/components/ui/dialog';
 import ForgotPassword from '@/components/auth/forgot';
 import { invoke } from '@tauri-apps/api/core';
+import { Loader2 } from 'lucide-react';
 
 export const Route = createFileRoute('/_app/signin')({
     component: SignIn,
@@ -33,6 +34,7 @@ function SignIn() {
     const navigate = useNavigate();
     const [forgotState, setForgotState] = useState(false);
     const data = Route.useLoaderData();
+    const [loading, setLoading] = useState(false)
 
     const signInForm = useForm<z.infer<typeof signInSchema>>({
         resolver: zodResolver(signInSchema),
@@ -42,12 +44,11 @@ function SignIn() {
         }
     })
     async function onSigninSubmit(values: z.infer<typeof signInSchema>) {
+        setLoading(true)
         if (!isLoaded) {
-            // TODO error feedback
             return; // clerk hasn't loaded yet
         }
 
-        // TODO try catch or better error handling
         try {
             const completeSignin = await signIn.create({
                 identifier: values.email,
@@ -67,7 +68,14 @@ function SignIn() {
             // This can return an array of errors.
             // See https://clerk.com/docs/custom-flows/error-handling to learn about error handling
             console.error(JSON.stringify(err, null, 2));
+            if(err.errors[0].meta.paramName == "password") {
+                signInForm.setError("password", { message: err.errors[0].message })
+            }
+            else if(err.errors[0].meta.paramName == "identifier") {
+                signInForm.setError("email", { message: err.errors[0].message })
+            }
         }
+        setLoading(false)
 
     }
 
@@ -104,7 +112,7 @@ function SignIn() {
                     </FormItem>
                 )}
                 />
-            <Button type="submit" className='my-2'>Submit</Button>
+            <Button type="submit" className='my-2' disabled={loading}>{loading ? <Loader2 className='w-4 h-4 animate-spin'/> : "Submit"}</Button>
         </form>
         </Form>
         <Dialog>
