@@ -8,7 +8,7 @@ import { invoke } from "@tauri-apps/api/core";
 export const Route = createFileRoute('/_app/_workbench/projects/$pid')({
   component: Project,
 
-  loader: async ({ params }) => {
+  loader: async () => {
       const url = await invoke("get_server_url");
       return {
           url: url
@@ -57,7 +57,7 @@ function Project() {
             </NavigationMenuItem>
             <NavigationMenuItem>
               <NavigationMenuLink className={cn(navigationMenuTriggerStyle(), 'text-md')} asChild>
-                <Link to='/projects/$pid/history' params={{ pid: pid, offset: 0 }}>Project History</Link>
+                <Link to='/projects/$pid/history' params={{ pid: pid }}>Project History</Link>
               </NavigationMenuLink>
             </NavigationMenuItem>
             <NavigationMenuItem>

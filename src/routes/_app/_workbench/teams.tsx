@@ -99,6 +99,7 @@ function Teams() {
       });
     },
     onError: (error) => {
+      console.log(error)
         toast({
             title: "An error ocurred while creating a team.",
             description: "Try again soon."

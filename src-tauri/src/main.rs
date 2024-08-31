@@ -11,8 +11,9 @@ mod upload;
 
 use sqlx::{SqlitePool, sqlite::SqliteConnectOptions};
 use sqlx::migrate::Migrator;
-use tauri::Manager;
+use tauri::{Emitter, Manager};
 use tauri::path::BaseDirectory;
+use tauri_plugin_updater::UpdaterExt;
 use tokio::sync::Mutex;
 use crate::config::*;
 use std::fs;
@@ -27,7 +28,8 @@ fn main() {
             sync_changes, set_local_dir, set_debug, get_server_url,
             get_server_clerk, add_server, init_settings_options, get_server_name, update_project_info,
             get_uploads, open_project_dir, get_project_name, upload_files, update_uploaded, get_local_projects,
-            get_downloads, get_conflicts, delete_file_cmd, download_s3_file, download_files, reset_files
+            get_downloads, get_conflicts, delete_file_cmd, download_s3_file, download_files, reset_files, check_update,
+            restart
             ])
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
@@ -35,6 +37,10 @@ fn main() {
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
+            let handle = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+              //let _ = update(handle).await;
+            });
             tauri::async_runtime::block_on(async move {
                 let _ = fs::create_dir_all(app.path().app_data_dir().unwrap());
                 let db_path = app.path().app_data_dir().unwrap().join("glassypdm.db");
@@ -65,4 +71,46 @@ fn main() {
         })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+async fn update(app: tauri::AppHandle) -> tauri::Result<()> {
+    let update = app.updater().unwrap().check().await;
+    match update {
+        Ok(up) => {
+            if up.is_some() {
+                let mut downloaded = 0;
+            
+                // alternatively we could also call update.download() and update.install() separately
+                let _ = up.unwrap().download_and_install(|chunk_length, content_length| {
+                  downloaded += chunk_length;
+                  println!("downloaded {downloaded} from {content_length:?}");
+                }, || {
+                  println!("download finished");
+                }).await;
+                println!("updates installed");
+                app.restart();
+              }
+              else {
+                println!("no update available");
+              }
+        },
+        Err(err) => {
+            println!("error! {}", err);
+            app.emit("update", 0).unwrap();
+        }
+    }
+
+    
+      Ok(())
+}
+
+#[tauri::command]
+async fn check_update(app: tauri::AppHandle) -> Result<bool, ()> {
+    let _ = update(app).await;
+    return Ok(true)
+}
+
+#[tauri::command]
+async fn restart(app: tauri::AppHandle) -> tauri::Result<()> {
+    Ok(())
 }
