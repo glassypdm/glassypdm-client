@@ -103,9 +103,13 @@ function PermissionGroupDashboard(props: PermissionGroupDashboardProps) {
         pgroupList = <div>An error occured while fetching data :c</div>
     }
     else if(data.response == "success"){
-        console.log(data)
         if(data.body && data.body.length > 0) {
-            pgroupList = <PermissionGroupTable columns={columns} data={data.body} />
+            let pgroupdata = data.body;
+            for(let i = 0; i < pgroupdata.length; i++) {
+                pgroupdata[i].url = props.serverUrl;
+            }
+            console.log()
+            pgroupList = <PermissionGroupTable columns={columns} data={pgroupdata} />
         }
         else {
             pgroupList = <div>No permission groups found</div>
@@ -120,7 +124,7 @@ function PermissionGroupDashboard(props: PermissionGroupDashboardProps) {
     return (
         <div className="flex flex-col py-2 space-y-2">
             <Dialog>
-            <DialogTrigger asChild><Button variant={"outline"} className="flex-0">Create Permission Group</Button></DialogTrigger>
+            <DialogTrigger asChild><Button variant={"outline"} className="flex-0 max-w-48">Create Permission Group</Button></DialogTrigger>
             <DialogContent>
                 <DialogHeader><DialogTitle>Create Permission Group</DialogTitle></DialogHeader>
                 <Form {...formCreatePG}>

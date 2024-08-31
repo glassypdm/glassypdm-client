@@ -1,38 +1,38 @@
 import { ColumnDef } from "@tanstack/react-table";
-import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
-import { Badge } from "../ui/badge";
-import { Settings2 } from "lucide-react";
+import { Settings2, User } from "lucide-react";
+import {
+  Dialog,
+  DialogTrigger,
+} from "../ui/dialog";
+import { PermissionGroup, PermissionGroupConfig } from "./pgroupconfig";
 
-export type PermissionGroup = {
-    pgroupid: number,
-    name: string,
-    count: number
-}
+
 
 export const columns: ColumnDef<PermissionGroup>[] = [
-    {
-        accessorKey: "name",
-        header: "Group Name"
+  {
+    accessorKey: "name",
+    header: "Group Name",
+  },
+  {
+    accessorKey: "count",
+    header: "# Users",
+    cell: ({ row }) => {
+      return (
+        <div className="flex items-center">
+          {row.original.count} <User className="h-4 w-4" />
+        </div>
+      );
     },
-    {
-        accessorKey: "count",
-        header: "# Users"
-    },
-    {
-        id: "actions",
-        cell: ({ row }) => {
-            const group = row.original
+  },
+  {
+    id: "actions",
+    cell: ({ row }) => {
+      const group = row.original;
 
-            return (
-                <Popover>
-                    <PopoverTrigger>
-                        <Settings2 className="w-6 h-6 hover:bg-gray-600 rounded-md transition-colors" />
-                    </PopoverTrigger>
-                    <PopoverContent>
-                        content!
-                    </PopoverContent>
-                </Popover>
-            )
-        }
-    }
-]
+      return (
+          <PermissionGroupConfig group={group} />
+      );
+    },
+  },
+];
+
