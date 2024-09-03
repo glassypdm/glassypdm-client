@@ -146,7 +146,7 @@ function TeamDashboard() {
 
   let manage = <></>;
   let pgroup = <></>;
-  if (data && (data.role === "Owner" || data.role === "Manager")) {
+  if (data && (data.body.role === "Owner" || data.body.role === "Manager")) {
     manage = (
       <div className="flex flex-col py-2 space-y-2">
         <div className="text-xl">Edit Permissions</div>
@@ -194,10 +194,10 @@ function TeamDashboard() {
   return (
     <div className="flex flex-col w-screen px-4 h-[500px]">
       <h1 className="font-semibold text-2xl text-center pb-2 w-96">
-        {data.teamName}
+        {data.body.teamName}
       </h1>
       <Tabs defaultValue="membership">
-        {data && (data.role === "Owner" || data.role === "Manager") ? (
+        {data && (data.body.role === "Owner" || data.body.role === "Manager") ? (
           <TabsList>
             <TabsTrigger value="membership">Membership</TabsTrigger>
             <TabsTrigger value="pgroup">Permission Groups</TabsTrigger>
@@ -216,7 +216,7 @@ function TeamDashboard() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data.members.map((member: Member) => (
+              {data.body.members.map((member: Member) => (
                 <TableRow key={member.emailID}>
                   <TableCell>{member.name}</TableCell>
                   <TableCell>{member.role}</TableCell>
@@ -224,13 +224,13 @@ function TeamDashboard() {
               ))}
             </TableBody>
             <TableCaption>
-              {data.members.length} member{data.members.length == 1 ? "" : "s"}
+              {data.body.members.length} member{data.body.members.length == 1 ? "" : "s"}
             </TableCaption>
           </Table>
         </TabsContent>
         <TabsContent value="pgroup">{pgroup}</TabsContent>
         <TabsContent value="manage">
-          <div className="pb-4">Your role: {data.role}</div>
+          <div className="pb-4">Your role: {data.body.role}</div>
           {manage}
         </TabsContent>
       </Tabs>

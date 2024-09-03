@@ -5,11 +5,6 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { invoke } from "@tauri-apps/api/core";
 import { useState } from "react";
 import {
-  isPermissionGranted,
-  requestPermission,
-  sendNotification,
-} from "@tauri-apps/plugin-notification";
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -18,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { useToast } from "@/components/ui/use-toast";
 export const Route = createFileRoute("/_app/_workbench/projects/$pid/sync")({
   component: () => <SyncPage />,
   loader: async ({ params }) => {
@@ -48,8 +44,8 @@ interface RemoteFile {
 }
 
 interface ProjectStateOutput {
-  status: string;
-  project: RemoteFile[];
+  response: string;
+  body: RemoteFile[];
 }
 
 function SyncPage() {
@@ -62,6 +58,7 @@ function SyncPage() {
   const [conflictList, setConflictList] = useState(conflict);
   const [conflictExists, setConflictExists] = useState(conflict.length > 0);
   const [syncInProgress, setSyncInProgress] = useState(false);
+  const { toast } = useToast();
 
   async function syncChanges() {
     setSyncInProgress(true);
@@ -76,7 +73,7 @@ function SyncPage() {
       mode: "cors",
     });
     const remote: ProjectStateOutput = await data.json();
-    if (remote.status != "success") {
+    if (remote.response != "success") {
       // TODO handle error
       console.log("sync error");
       setSyncInProgress(false);
@@ -85,13 +82,8 @@ function SyncPage() {
 
     let project: RemoteFile[] = [];
     console.log(remote);
-    if (remote.project != null) {
-      project = remote.project;
-    }
-    let permission = await isPermissionGranted();
-    if (!permission) {
-      const a = await requestPermission();
-      permission = a === "granted";
+    if (remote.body != null) {
+      project = remote.body;
     }
 
     await invoke("sync_changes", { pid: pid_number, remote: project });
@@ -117,14 +109,10 @@ function SyncPage() {
     setSyncInProgress(false);
 
     const end = performance.now();
-
-    // Once permission has been granted we can send the notification
-    if (permission) {
-      sendNotification({
-        title: "glassyPDM",
-        body: `Finished syncing in ${(end - start) / 1000} seconds`,
-      });
-    }
+    toast({
+      title: "Sync complete",
+      description: `Action took ${(end - start)/1000} seconds`
+    })
   }
 
   async function navigateUpload() {

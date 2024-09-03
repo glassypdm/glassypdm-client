@@ -15,11 +15,6 @@ import { invoke } from "@tauri-apps/api/core";
 import { useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  isPermissionGranted,
-  requestPermission,
-  sendNotification,
-} from "@tauri-apps/plugin-notification";
 
 export const Route = createFileRoute("/_app/upload")({
   validateSearch: (search) =>
@@ -66,7 +61,7 @@ function UploadPage() {
     // get special JWT for rust/store operations
     const uwu = await getToken({
       template: "store-operations",
-      leewayInSeconds: 30,
+      skipCache: true
     });
     let selectedFiles: string[] = [];
     let uploadList: any[] = [];
@@ -129,18 +124,9 @@ function UploadPage() {
         });
         const data = await response.json();
         console.log(data);
-        if (data.status != "success") {
+        if (data.response != "success") {
           unlisten();
-          let permissionGranted = await isPermissionGranted();
-          if (!permissionGranted) {
-            const permission = await requestPermission();
-            permissionGranted = permission === "granted";
-          }
 
-          // Once permission has been granted we can send the notification
-          if (permissionGranted) {
-            sendNotification({ title: "glassyPDM", body: `Upload failed` });
-          }
           setStatus(`Upload failed`);
           setDisabled(false);
           return;
@@ -163,23 +149,9 @@ function UploadPage() {
 
     unlisten();
 
-    let permissionGranted = await isPermissionGranted();
-
-    // If not we need to request it
-    if (!permissionGranted) {
-      const permission = await requestPermission();
-      permissionGranted = permission === "granted";
-    }
 
     // Once permission has been granted we can send the notification
     const end = performance.now();
-
-    if (permissionGranted) {
-      sendNotification({
-        title: "glassyPDM",
-        body: `Finished action in ${(end - start) / 1000} seconds`,
-      });
-    }
 
     setStatus(`${action} complete!`);
     setDisabled(false);

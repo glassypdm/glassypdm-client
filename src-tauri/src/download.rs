@@ -93,22 +93,23 @@ pub async fn download_files(pid: i32, files: Vec<DownloadRequestMessage>, token:
 
     // sort files into delete and download piles
     let mut to_download: Vec<DownloadRequestMessage> = Vec::new();
+    let mut to_copy: Vec<DownloadRequestMessage> = Vec::new();
     let mut to_delete: Vec<DownloadRequestMessage> = Vec::new();
     for file in files.clone() {
         if file.download {
-            let _cached_path = cache_dir.clone() + "\\" + &file.hash;
+            let cached_path = cache_dir.clone() + "\\" + &file.hash;
 
             // TODO if we have the file in the cache already,
             // we should include it in the list to assemble and copy
+            to_copy.push(file.clone());
+            if Path::new(&cached_path).exists() {
+                println!("hash exists in cache");
+                let _ = app_handle.emit("downloadedFile", 4);
+            }
+            else {
 
-            //if Path::new(&cached_path).exists() {
-            //    println!("hash exists in cache");
-            //    let payload = 4;
-            //    let _ = app_handle.emit("downloadedFile", payload);
-            //}
-            //else {
                 to_download.push(file.clone());
-            //}
+            }
         }
         else {
             to_delete.push(file)
@@ -130,6 +131,7 @@ pub async fn download_files(pid: i32, files: Vec<DownloadRequestMessage>, token:
                     path: download.rel_path,
                     commit_id: download.commit_id
                 };
+                println!("token: {}", auth);
                 let response = g_client
                     .post(cloned_endpoint)
                     .json(&body)
@@ -148,13 +150,11 @@ pub async fn download_files(pid: i32, files: Vec<DownloadRequestMessage>, token:
                 }
             }
         }).buffer_unordered(CONCURRENT_SERVER_REQUESTS);
-    
     let chunk_downloads = Arc::new(Mutex::new(Vec::<FileChunk>::new()));
     let moved_chunk_downloads = Arc::clone(&chunk_downloads);
     outputs.for_each(|output| {
         let cloned_boi = Arc::clone(&moved_chunk_downloads);
         let cache = cache_dir.clone();
-
         async move {
             if output.response == "success" {
                 let info = output.body.unwrap();
@@ -184,11 +184,35 @@ pub async fn download_files(pid: i32, files: Vec<DownloadRequestMessage>, token:
             let filehash_dir = cache_dir.clone() + "\\" + chunk_info.file_hash.as_str();
             // download using download_with_Client
             async move {
-                // TODO handle error
-                let _res = download_with_client(&filehash_dir, chunk_info, client).await;
-                let _ = handle.emit("downloadedFile", &num_chunks);
+                let res = download_with_client(&filehash_dir, chunk_info, client).await;
+                let _ = match res {
+                    Ok(_) => {
+                        let _ = handle.emit("downloadedFile", &num_chunks);
+                    },
+                    Err(err) => {
+                        // TODO handle
+                        println!("error downloading file {}", err);
+                    }
+                };
             }
         }).await;
+
+    // verify the chunks exist
+    for file in to_copy.clone() {
+        let cache_str = cache_dir.clone() + "\\" + file.hash.as_str();
+        match Path::new(&cache_str).try_exists() {
+            Ok(res) => {
+                if !res {
+                    println!("file {} not found in cache", cache_str);
+                    return Ok(false);
+                }
+            },
+            Err(err) => {
+                println!("file {} not found in cache", cache_str);
+                return Ok(false);
+            }
+        }
+    }
 
     // delete files
     let _ = app_handle.emit("cacheComplete", 4);
@@ -196,10 +220,11 @@ pub async fn download_files(pid: i32, files: Vec<DownloadRequestMessage>, token:
     for file in to_delete {
         if !delete_file(pid, file.rel_path.clone(), &pool).await.unwrap() {
             // TODO handle error
+            // need to undo the files we've deleted so far
         }
     }
     let mut oops = 0;
-    for file in to_download {
+    for file in to_copy {
         // find the hash in the cache and copy to rel path
         let cache_str = cache_dir.clone() + "\\" + file.hash.as_str();
         let proj_str = project_dir.clone() + "\\" + file.rel_path.as_str();

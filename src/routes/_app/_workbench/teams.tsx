@@ -107,7 +107,7 @@ function Teams() {
     },
     onSuccess: async (res) => {
       const data = await res.json();
-      if (data.status === "success") {
+      if (data.response === "success") {
         setCreated(true);
         toast({
             title: "Team created successfully."

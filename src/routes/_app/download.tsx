@@ -50,7 +50,14 @@ function DownloadPage() {
     setDisabled(true);
     console.log("hehe")
     console.log(selection)
-    const uwu = await getToken({ template: "store-operations", leewayInSeconds: 30 })
+    const uwu = await getToken({ template: "store-operations", skipCache: true })
+    if(uwu == null) {
+      console.log("null token")
+      return;
+    } else if(uwu == "") {
+      console.log("empty")
+      return;
+    }
 
     // time function
     const startTime = performance.now();

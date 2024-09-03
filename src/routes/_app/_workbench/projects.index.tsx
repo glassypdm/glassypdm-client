@@ -76,20 +76,20 @@ function ProjectsIndex() {
         },
         onSuccess: async (res) => {
             const data = await res.json();
-            if(data.status === "success"){
+            if(data.response === "success"){
                 setProjectMessage("Project successfully created.")
                 queryClient.invalidateQueries({
                     queryKey: ['projects']
                 })
                 return
             }
-            else if(data.status === "project name exists") {
+            else if(data.response === "error" && data.error == "db error") {
                 setProjectMessage("Project name already exists.");
             }
-            else if(data.status === "no permission") {
+            else if(data.response === "error" && data.error == "insufficient permission") {
                 setProjectMessage("You do not have permission to create a project.")
             }
-            else if(data.status === "db error") {
+            else if(data.response === "error" && data.error == "db error") {
                 setProjectMessage("Database error - does your team exist?")
             }
             setDisableCreateProject(false)
