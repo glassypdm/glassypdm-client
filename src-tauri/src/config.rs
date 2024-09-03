@@ -1,7 +1,7 @@
 use tauri::State;
 use tokio::sync::Mutex;
 use sqlx::{Row, Pool, Sqlite};
-use crate::types::SettingsOptions;
+use crate::{types::SettingsOptions, util::get_active_server};
 
 #[tauri::command]
 pub async fn get_server_name(state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<String, ()> {
@@ -131,6 +131,22 @@ pub async fn set_local_dir(dir: String, state_mutex: State<'_, Mutex<Pool<Sqlite
         "UPDATE server SET local_dir = ? WHERE active = 1"
     )
         .bind(dir)
+        .execute(&*pool).await;
+
+    // TODO error handling
+    let url = get_active_server(&pool).await.unwrap();
+
+    // clear file and project table
+    let _ = sqlx::query(
+        "delete from project WHERE url = $1"
+    )
+        .bind(url.clone())
+        .execute(&*pool).await;
+
+    let _ = sqlx::query(
+        "delete from file WHERE url = $1"
+    )
+        .bind(url)
         .execute(&*pool).await;
 
     Ok(())
