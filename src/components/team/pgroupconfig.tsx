@@ -253,7 +253,7 @@ export function PermissionGroupConfig(props: PermissionGroupConfigProps) {
               ))
             ) : (
               <TableRow>
-                <TableCell>No users in permission group</TableCell>
+                <TableCell>No projects mapped to permission group</TableCell>
               </TableRow>
             )}
           </TableBody>

@@ -7,7 +7,7 @@ use reqwest::Client;
 use sqlx::{Pool, Sqlite, Row};
 use tauri::{AppHandle, State};
 use crate::types::{DownloadInformation, DownloadRequest, DownloadRequestMessage, DownloadServerOutput, FileChunk, ReqwestError};
-use crate::util::get_cache_dir;
+use crate::util::{delete_trash, get_cache_dir, get_trash_dir};
 use crate::util::{get_current_server, get_project_dir};
 use std::path::PathBuf;
 use tauri::Emitter;
@@ -80,13 +80,14 @@ pub async fn download_s3_file(pid: i32, s3_url: String, rel_path: String, state_
 }
 
 #[tauri::command]
-pub async fn download_files(pid: i32, files: Vec<DownloadRequestMessage>, token: String, state_mutex: State<'_, Mutex<Pool<Sqlite>>>, app_handle: AppHandle) -> Result<bool, ReqwestError> {
+pub async fn download_files(pid: i32, files: Vec<DownloadRequestMessage>, user: String, state_mutex: State<'_, Mutex<Pool<Sqlite>>>, app_handle: AppHandle) -> Result<bool, ReqwestError> {
     let pool = state_mutex.lock().await;
     let server_url = get_current_server(&pool).await.unwrap();
     let project_dir = get_project_dir(pid, &pool).await.unwrap();
     let cache_dir = get_cache_dir(&pool).await.unwrap();
+    let trash_dir = get_trash_dir(&pool).await.unwrap();
 
-    if project_dir == "" || cache_dir == "" || server_url == "" {
+    if project_dir == "" || cache_dir == "" || server_url == "" || trash_dir == "" {
         println!("download files: project or cache dir is invalid");
         return Ok(false);
     }
@@ -122,20 +123,19 @@ pub async fn download_files(pid: i32, files: Vec<DownloadRequestMessage>, token:
     let outputs = stream::iter(to_download.clone())
         .map(|download| {
             let cloned_endpoint = endpoint.clone();
-            let auth = token.clone();
+            let auth = user.clone();
             let g_client = &glassy_client;
             async move {
                 // send a request for the chunk urls, await
                 let body: DownloadRequest = DownloadRequest {
                     project_id: pid.to_owned().into(),
                     path: download.rel_path,
-                    commit_id: download.commit_id
+                    commit_id: download.commit_id,
+                    user_id: auth
                 };
-                println!("token: {}", auth);
                 let response = g_client
                     .post(cloned_endpoint)
                     .json(&body)
-                    .bearer_auth(auth)
                     .send().await;
     
                 match response {
@@ -150,25 +150,35 @@ pub async fn download_files(pid: i32, files: Vec<DownloadRequestMessage>, token:
                 }
             }
         }).buffer_unordered(CONCURRENT_SERVER_REQUESTS);
+    
     let chunk_downloads = Arc::new(Mutex::new(Vec::<FileChunk>::new()));
     let moved_chunk_downloads = Arc::clone(&chunk_downloads);
+    let error_flag = Arc::new(Mutex::new(false));
+    let moved_error_flag = Arc::clone(&error_flag);
     outputs.for_each(|output| {
         let cloned_boi = Arc::clone(&moved_chunk_downloads);
+        let cloned_error_flag = Arc::clone(&moved_error_flag);
         let cache = cache_dir.clone();
         async move {
+            let mut error = cloned_error_flag.lock().await;
             if output.response == "success" {
                 let info = output.body.unwrap();
-                let _ = save_filechunkmapping(&cache, &info);
+                let _ = save_filechunkmapping(&cache, &info).unwrap();
                 for chunk in info.file_chunks {
                     cloned_boi.lock().await.push(chunk);
                 }
             }
             else {
-                // TODO handle error
+                *error = false;
                 println!("error TODO something L159 download.rs: response= {}", output.response);
             }
         }
     }).await;
+
+    if *error_flag.lock().await {
+        println!("issue getting download link");
+        return Ok(false);
+    }
 
     let num_chunks = chunk_downloads.lock().await.len();
     println!("s3 urls obtained, downloading {} chunks...", num_chunks);
@@ -178,51 +188,68 @@ pub async fn download_files(pid: i32, files: Vec<DownloadRequestMessage>, token:
     let aws_client: Client = reqwest::Client::new();
     let _ = stream::iter(copy.into_iter())
         .for_each_concurrent(CONCURRENT_AWS_REQUESTS, |chunk_info| {
+            let cloned_error_flag = Arc::clone(&moved_error_flag);
             let handle = &app_handle;
             let client = &aws_client;
             // create cache_dir/file_hash directory
             let filehash_dir = cache_dir.clone() + "\\" + chunk_info.file_hash.as_str();
-            // download using download_with_Client
             async move {
                 let res = download_with_client(&filehash_dir, chunk_info, client).await;
+                let mut error = cloned_error_flag.lock().await;
                 let _ = match res {
                     Ok(_) => {
                         let _ = handle.emit("downloadedFile", &num_chunks);
                     },
                     Err(err) => {
-                        // TODO handle
+                        *error = true;
                         println!("error downloading file {}", err);
                     }
                 };
             }
         }).await;
 
+    if *error_flag.lock().await {
+        println!("issue downloading file from s3");
+        return Ok(false);
+    }
+
     // verify the chunks exist
     for file in to_copy.clone() {
         let cache_str = cache_dir.clone() + "\\" + file.hash.as_str();
-        match Path::new(&cache_str).try_exists() {
-            Ok(res) => {
-                if !res {
-                    println!("file {} not found in cache", cache_str);
-                    return Ok(false);
-                }
-            },
-            Err(err) => {
-                println!("file {} not found in cache", cache_str);
-                return Ok(false);
-            }
+        let res = verify_cache(&cache_str).unwrap();
+        if !res {
+
         }
     }
 
     // delete files
     let _ = app_handle.emit("cacheComplete", 4);
 
+    let mut deleted = Vec::<DownloadRequestMessage>::new();
+    let mut error_flag = false;
     for file in to_delete {
-        if !delete_file(pid, file.rel_path.clone(), &pool).await.unwrap() {
-            // TODO handle error
-            // need to undo the files we've deleted so far
+        let proj_path = project_dir.clone() + "\\" + file.rel_path.as_str();
+        if !trash_file(&proj_path, &trash_dir, file.clone().hash).unwrap() {
+            error_flag = true;
+            break;
+        } else {
+            deleted.push(file);
         }
     }
+
+    // if we failed to delete a file, undo delete and return early
+    if error_flag {
+        for file in deleted {
+            let proj_dir = project_dir.clone() + "\\" + file.rel_path.as_str();
+            let _ = recover_file(&trash_dir, &proj_dir).unwrap();
+        }
+        return Ok(false);
+    }
+    else {
+        let _ = delete_trash(&pool).await.unwrap();
+    }
+
+    // copy over files in cache to project
     let mut oops = 0;
     for file in to_copy {
         // find the hash in the cache and copy to rel path
@@ -240,13 +267,11 @@ pub async fn download_files(pid: i32, files: Vec<DownloadRequestMessage>, token:
                     println!("file {} not found in cache", cache_str);
                     oops += 1;
                     continue;
-                    // TODO we should emit something
                 }
             },
             Err(err) => {
                 println!("error copying file: {}", err);
                 oops += 1;
-                // TODO we should emit something
                 continue;
             }
         }
@@ -287,14 +312,19 @@ pub async fn download_files(pid: i32, files: Vec<DownloadRequestMessage>, token:
     Ok(true)
 }
 
-// TODO error handle if client couldnt get
 pub async fn download_with_client(dir: &String, chunk_download: FileChunk, client: &Client) -> Result<bool, ReqwestError> {
-    let resp = client
+    let resp = match client
         .get(chunk_download.s3_url)
         .send()
         .await?
         .bytes()
-        .await?;
+        .await {
+            Ok(r) => r,
+            Err(err) => {
+                println!("error downloading from s3: {}", err);
+                return Ok(false);
+            }
+        };
 
     // temp path: cache + hash(.glassy?)
     let path = dir.to_owned() + "\\" + &chunk_download.block_hash;
@@ -333,10 +363,13 @@ fn save_filechunkmapping(cache_dir: &String, download: &DownloadInformation) -> 
 // TODO refactor unwrap
 fn assemble_file(cache_dir: &String, proj_path: &String) -> Result<bool, ()> {
     // read in mapping.json
-    let mapping_path = cache_dir.to_owned() + "\\mapping.json";
-    let map_file = File::open(&mapping_path).unwrap();
-    let reader = BufReader::new(map_file);
-    let mapping: Vec<FileChunk> = serde_json::from_reader(reader).unwrap();
+    let mapping: Vec<FileChunk> = match read_mapping(cache_dir) {
+        Ok(map) => map,
+        Err(_err) => {
+            println!("error reading mapping for {}", cache_dir);
+            Vec::<FileChunk>::new()
+        }
+    };
 
     if mapping.len() == 1 {
         // nothing to do, just copy the file
@@ -345,24 +378,116 @@ fn assemble_file(cache_dir: &String, proj_path: &String) -> Result<bool, ()> {
         return Ok(true);
     }
     else if mapping.len() == 0 {
-        println!("assemble file: mapping was 0 for {}", mapping_path);
+        println!("assemble file: empty mapping for {}", cache_dir);
         return Ok(false);
     }
     else {
         // otherwise we need to assemble the file
-        let proj_file = File::create(proj_path).unwrap();
+        let proj_file = match File::create(proj_path) {
+            Ok(file) => file,
+            Err(err) => {
+                println!("error creating project file {}", err);
+                return Ok(false);
+            }
+        };
         let mut writer = BufWriter::new(proj_file);
         for chunk in mapping {
             let cache_path = cache_dir.to_owned() + "\\" + &chunk.block_hash;
             let chunk_data = fs::read(cache_path).unwrap();
             let _ = writer.write_all(&chunk_data);
-            //let chunk_file = File::open(cache_path).unwrap();
-            //let chunk_reader = BufReader::new(chunk_file);
         }
 
         let _ = writer.flush();
     }
+    Ok(true)
+}
 
+// cache dir should be the folder for the file in the cache dir
+fn verify_cache(hash_dir: &String) -> Result<bool, ()> {
+    // check existence of folder
+    match Path::new(&hash_dir).try_exists() {
+        Ok(result) => {
+            if !result {
+                return Ok(false);
+            }
+        },
+        Err(err) => {
+            println!("hash folder doesn't exist {}: {}", hash_dir, err);
+            return Ok(false);
+        }
+    };
+
+    // read mapping.json
+    let mapping = read_mapping(hash_dir).unwrap();
+    if mapping.len() == 0 {
+        // ???
+        return Ok(false);
+    }
+
+    // check existence of chunks
+    for chunk in mapping {
+        let cache_path = hash_dir.to_owned() + "\\" + &chunk.block_hash;
+        match Path::new(&cache_path).try_exists() {
+            Ok(result) => {
+                if !result {
+                    return Ok(false);
+                }
+            },
+            Err(err) => {
+                println!("err verifying cache {}: {}", hash_dir, err);
+                return Ok(false);
+            }
+        };
+    }
 
     Ok(true)
+}
+
+fn read_mapping(hash_dir: &String) -> Result<Vec<FileChunk>, ()> {
+    let mapping_path = hash_dir.to_owned() + "\\mapping.json";
+
+    let map_file = match File::open(&mapping_path) {
+        Ok(file) => {
+            file
+        },
+        Err(err) => {
+            return Err(());
+        }
+    };
+    let reader = BufReader::new(map_file);
+    let mapping: Vec<FileChunk> = match serde_json::from_reader(reader) {
+        Ok(map) => {
+            map
+        },
+        Err(err) => {
+            return Err(());
+        }
+    };
+
+    Ok(mapping)
+}
+
+// assumes trash dir exists
+fn trash_file(proj_dir: &String, trash_dir: &String, hash: String) -> Result<bool, ()> {
+    let trash_path = trash_dir.to_owned() + "\\" + hash.as_str();
+    match fs::rename(proj_dir, trash_path) {
+        Ok(_) => {
+            Ok(true)
+        },
+        Err(err) => {
+            Ok(false)
+        }
+    }
+}
+
+// trash dir should be the path to the hash in the trash
+fn recover_file(trash_dir: &String, proj_dir: &String) -> Result<bool, ()> {
+    match fs::rename(trash_dir, proj_dir) {
+        Ok(_) => {
+            Ok(true)
+        },
+        Err(err) => {
+            Ok(false)
+        }
+    }
 }

@@ -13,7 +13,7 @@ const CONCURRENT_DOWNLOAD_REQUESTS: usize = 4;
 
 
 #[tauri::command]
-pub async fn reset_files(pid: i64, filepaths: Vec<String>, token: String, app_handle: AppHandle) -> Result<bool, ()> {
+pub async fn reset_files(pid: i64, filepaths: Vec<String>, user: String, app_handle: AppHandle) -> Result<bool, ()> {
     let state_mutex = app_handle.state::<Mutex<Pool<Sqlite>>>();
     let pool = state_mutex.lock().await;
     let project_dir = get_project_dir(pid.try_into().unwrap(), &pool).await.unwrap();
@@ -23,7 +23,6 @@ pub async fn reset_files(pid: i64, filepaths: Vec<String>, token: String, app_ha
     let aws_client: Client = reqwest::Client::new();
     let cache_dir = get_cache_dir(&pool).await.unwrap();
 
-    /*
     // separate into download and delete lists
     let mut to_download: Vec<DownloadRequest> = Vec::new();
     let mut to_delete: Vec<String> = Vec::new();
@@ -47,7 +46,8 @@ pub async fn reset_files(pid: i64, filepaths: Vec<String>, token: String, app_ha
                     to_download.push(DownloadRequest {
                         project_id: pid,
                         path: file,
-                        commit_id: commit
+                        commit_id: commit,
+                        user_id: user.clone()
                     })
                 }
                 else {
@@ -59,7 +59,7 @@ pub async fn reset_files(pid: i64, filepaths: Vec<String>, token: String, app_ha
             }
         }
     }
-
+    /*
     // download files to cache
     // request S3 presigned urls
     let bodies = stream::iter(to_download.clone())

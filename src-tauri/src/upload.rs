@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use fs_chunker::Chunk;
 use serde::{Deserialize, Serialize};
 use tauri::State;
@@ -7,13 +9,25 @@ use sqlx::{Pool, Sqlite};
 use tauri::{AppHandle, Manager, Emitter};
 use crate::types::{ChangeType, ReqwestError, UpdatedFile};
 use crate::util::{get_current_server, get_file_info, get_project_dir};
-use reqwest::{Client, Response};
+use reqwest::Client;
 use reqwest::multipart::*;
 
 const CONCURRENT_UPLOAD_REQUESTS: usize = 2;
 
+#[derive(Serialize, Deserialize)]
+pub struct UploadResponse {
+    pub response: String,
+    pub body: Option<ServerDefualtSuccessBody>,
+    pub error: Option<String>
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct ServerDefualtSuccessBody {
+    pub message: String
+}
+
 #[tauri::command]
-pub async fn upload_files(pid: i32, filepaths: Vec<String>, token: String, app_handle: AppHandle) -> Result<bool, ReqwestError> {
+pub async fn upload_files(pid: i32, filepaths: Vec<String>, user: String, app_handle: AppHandle) -> Result<bool, ReqwestError> {
     let state_mutex = app_handle.state::<Mutex<Pool<Sqlite>>>();
     let pool = state_mutex.lock().await;
     let project_dir = get_project_dir(pid, &pool).await.unwrap();
@@ -39,7 +53,7 @@ pub async fn upload_files(pid: i32, filepaths: Vec<String>, token: String, app_h
     for upload in to_upload {
         let copy_endpoint = endpoint.clone();
         let copy_client = client.clone();
-        let copy_token = token.clone();
+        let copy_token = user.clone();
         let abspath = project_dir.clone() + "\\" + &upload.path;
         let file_hash = upload.hash.clone();
         let cloned_app = app_handle.clone();
@@ -61,29 +75,53 @@ pub async fn upload_files(pid: i32, filepaths: Vec<String>, token: String, app_h
                     .text("file_hash", copied_filehash)
                     .text("block_hash", hash)
                     .text("num_chunks", len.to_string())
-                    .text("chunk_index", idx.to_string());
+                    .text("chunk_index", idx.to_string())
+                    .text("user_id", copied_token);
                 let res = copied_client.post(copied_endpoint)
                     .multipart(form)
-                    .bearer_auth(copied_token)
                     .send().await;
                 res
                 }
             }).buffer_unordered(CONCURRENT_UPLOAD_REQUESTS);
 
+        let error_flag = Arc::new(Mutex::new(false));
         chunk_reqs.for_each(|res| async {
-            let output: String = match res {
-                Ok(lol) => {
-                    lol.text().await.unwrap_or_else(|_| "nope".to_string())
+            let _output: String = match res {
+                Ok(response) => {
+                    let response_json: UploadResponse = match response.json::<UploadResponse>().await {
+                        Ok(out) => out,
+                        Err(err) => {
+                            println!("error uploading chunk: {}", err);
+                            UploadResponse {
+                                response: "error".to_string(),
+                                error: Some("parsing error".to_string()),
+                                body: None
+                            }
+                        }
+                    };
+                    let res = response_json.response;
+                    if res == "error" {
+                        println!("error: {}", response_json.error.unwrap());
+                        let mut error = error_flag.lock().await;
+                        *error = true;
+                        res
+                    } else {
+                        res
+                    }
                 },
                 Err(err) => {
-                    let hehez = "error uploading chunk: ".to_string() + &err.to_string();
+                    let reqwest_error = "error uploading chunk: ".to_string() + &err.to_string();
                     println!("error: {}", err);
-                    hehez
+                    let mut error = error_flag.lock().await;
+                    *error = true;
+                    reqwest_error
                 }
             };
-            println!("response output: {}", output);
         }).await;
 
+        if *error_flag.lock().await {
+            return Ok(false);
+        }
         let _ = cloned_app.emit("fileAction", 6030); 
     }
 

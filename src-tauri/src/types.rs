@@ -82,5 +82,6 @@ pub struct DownloadRequestMessage {
 pub struct DownloadRequest {
     pub project_id: i64,
     pub path: String,
-    pub commit_id: i64
+    pub commit_id: i64,
+    pub user_id: String
 }

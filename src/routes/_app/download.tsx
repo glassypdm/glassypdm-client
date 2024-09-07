@@ -39,7 +39,7 @@ export const Route = createFileRoute('/_app/download')({
 
 function DownloadPage() {
   const { downloads, selectionList, projectName } = Route.useLoaderData();
-  const { getToken } = useAuth();
+  const { getToken, userId } = useAuth();
   const { pid } = Route.useSearch();
   const [status, setStatus] = useState("");
   const [progress, setProgress] = useState(0);
@@ -56,6 +56,10 @@ function DownloadPage() {
       return;
     } else if(uwu == "") {
       console.log("empty")
+      return;
+    }
+
+    if(userId == null || userId == "") {
       return;
     }
 
@@ -89,7 +93,11 @@ function DownloadPage() {
 
     setStatus("Preparing files to download...");
 
-    let ret = await invoke("download_files", { pid: parseInt(pid), files: selectedDownload, token: uwu });
+    let ret = await invoke("download_files", { pid: parseInt(pid), files: selectedDownload, user: userId });
+    if(!ret) {
+      setStatus("Download failed")
+      setDisabled(false);
+    }
 
     unlisten();
     unlisten2();

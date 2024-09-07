@@ -1,5 +1,5 @@
 use std::io::Read;
-use std::fs::{File, self};
+use std::fs::{self, create_dir_all, remove_dir_all, File};
 use std::path::Path;
 use std::result::Result::Ok;
 use sqlx::{Pool, Sqlite, Row};
@@ -119,6 +119,22 @@ pub async fn get_cache_dir(pool: &Pool<Sqlite>) -> Result<String, ()> {
     }
 }
 
+pub async fn get_trash_dir(pool: &Pool<Sqlite>) -> Result<String, ()> {
+    let server_dir = get_server_dir(pool).await;
+    match server_dir {
+        Ok(dir) => {
+            // TODO change \\ to os agnostic
+            let output = dir + "\\" + ".glassytrash";
+            create_dir_all(output.clone()).unwrap();
+            Ok(output)
+        },
+        Err(_err) => {
+            println!("error getting trash dir");
+            Ok("".to_string())
+        }
+    }
+}
+
 pub async fn get_basehash(pid: i32, path: String, pool: &Pool<Sqlite>) -> Result<String, ()> {
     let result = sqlx::query(
     "SELECT base_hash FROM file WHERE
@@ -136,6 +152,20 @@ pub async fn get_basehash(pid: i32, path: String, pool: &Pool<Sqlite>) -> Result
         Err(err) => {
             println!("error getting base_hash: {}", err);
             Err(())
+        }
+    }
+}
+
+// clear trash bin
+pub async fn delete_trash(pool: &Pool<Sqlite>) -> Result<bool, ()> {
+    let trash_dir = get_trash_dir(pool).await.unwrap();
+    match remove_dir_all(Path::new(&trash_dir)) {
+        Ok(_res) => {
+            Ok(true)
+        },
+        Err(err) => {
+            println!("error deleting trash: {}", err);
+            Ok(false)
         }
     }
 }

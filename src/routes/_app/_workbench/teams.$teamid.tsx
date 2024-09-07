@@ -24,10 +24,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import PermissionGroupDashboard from "@/components/team/pgroupdashboard";
-import { RectangleEllipsis } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 export const Route = createFileRoute("/_app/_workbench/teams/$teamid")({
   component: () => <TeamDashboard />,
@@ -41,7 +40,7 @@ export const Route = createFileRoute("/_app/_workbench/teams/$teamid")({
 });
 
 interface Member {
-  emailID: string;
+  email: string;
   name: string;
   role: string;
 }
@@ -89,6 +88,8 @@ function TeamDashboard() {
       if (data.response === "error") {
         if (data.error === "user does not exist") {
           errStr = "User does not exist.";
+        } else if(data.error === "invalid permission") {
+          errStr = "You have insufficent permission for this action."
         }
         toast({
           title: errStr,
@@ -212,13 +213,15 @@ function TeamDashboard() {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {data.body.members.map((member: Member) => (
-                <TableRow key={member.emailID}>
+                <TableRow key={member.email}>
                   <TableCell>{member.name}</TableCell>
+                  <TableCell>{member.email}</TableCell>
                   <TableCell>{member.role}</TableCell>
                 </TableRow>
               ))}

@@ -15,6 +15,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/components/ui/use-toast";
 
 export const Route = createFileRoute("/_app/upload")({
   validateSearch: (search) =>
@@ -46,7 +47,7 @@ export const Route = createFileRoute("/_app/upload")({
 
 function UploadPage() {
   const { uploads, selectionList, projectName, url } = Route.useLoaderData();
-  const { getToken } = useAuth();
+  const { getToken, userId } = useAuth();
   const { pid } = Route.useSearch();
   const [action, setAction] = useState("Upload");
   const [status, setStatus] = useState("");
@@ -54,15 +55,25 @@ function UploadPage() {
   const [disabled, setDisabled] = useState(false);
   const [selection, setSelection] = useState(selectionList);
   const [commitMessage, setCommitMessage] = useState("");
+  const { toast } = useToast();
+
+  if(userId == null) {
+    return (
+      <div>Loading...</div>
+    )
+  }
 
   async function handleAction() {
     const start = performance.now();
     setDisabled(true);
+    // TODO unused
     // get special JWT for rust/store operations
     const uwu = await getToken({
       template: "store-operations",
       skipCache: true
     });
+
+
     let selectedFiles: string[] = [];
     let uploadList: any[] = [];
     for (let i = 0; i < Object.keys(selection).length; i++) {
@@ -91,11 +102,23 @@ function UploadPage() {
     });
     if (action == "Upload") {
       // upload files
-      await invoke("upload_files", {
+      let res = await invoke("upload_files", {
         pid: parseInt(pid),
         filepaths: selectedFiles,
-        token: uwu,
+        user: userId,
       });
+      if(!res) {
+        console.log("upload failed")
+        // TODO lets pass more info from rust
+        toast({
+          title: "Upload failed",
+          description: "Check your permissions, and try again."
+        });
+        setStatus("Upload failed")
+        unlisten();
+        setDisabled(false)
+        return;
+      }
 
       const ENDPOINT = url + "/commit";
       const UPLOAD_LIMIT = 150;
@@ -103,7 +126,7 @@ function UploadPage() {
         `Logging project update${uploadList.length > UPLOAD_LIMIT ? "s" : ""}...`
       );
 
-      // upload 150 files at a time
+      // commit 150 files at a time
       for (let i = 0; i < uploadList.length; i += UPLOAD_LIMIT) {
         // append to commit message if needed
         let msg = commitMessage;
@@ -135,7 +158,7 @@ function UploadPage() {
         // update db
         await invoke("update_uploaded", {
           pid: parseInt(pid),
-          commit: data.commitid,
+          commit: data.body.commit_id,
           files: uploadList.slice(i, i + UPLOAD_LIMIT),
         });
       }
