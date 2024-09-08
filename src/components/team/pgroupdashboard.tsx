@@ -9,7 +9,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useAuth } from "@clerk/clerk-react"
 import { useState } from "react"
 import { useToast } from "../ui/use-toast"
-import { Table } from "../ui/table"
 import { PermissionGroupTable } from "./pgrouptable"
 import { columns } from "./pgroupcolumn"
 

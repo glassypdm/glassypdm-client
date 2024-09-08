@@ -4,12 +4,11 @@ use std::path::Path;
 use std::sync::Arc;
 use futures::{stream, StreamExt};
 use reqwest::Client;
-use sqlx::{Pool, Sqlite, Row};
+use sqlx::{Pool, Sqlite};
 use tauri::{AppHandle, State};
 use crate::types::{DownloadInformation, DownloadRequest, DownloadRequestMessage, DownloadServerOutput, FileChunk, ReqwestError};
 use crate::util::{delete_trash, get_cache_dir, get_trash_dir};
 use crate::util::{get_current_server, get_project_dir};
-use std::path::PathBuf;
 use tauri::Emitter;
 use tokio::sync::Mutex;
 

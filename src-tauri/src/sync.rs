@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Sqlite, Row};
 use tauri::State;
 use merkle_hash::{bytes_to_hex, Algorithm, MerkleTree};
-use crate::{types::RemoteFile, util::{get_active_server, get_current_server, get_project_dir}};
+use crate::{types::RemoteFile, util::{get_active_server, get_project_dir}};
 use std::path::PathBuf;
 use tokio::sync::Mutex;
 
@@ -210,8 +210,17 @@ pub async fn get_conflicts(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>
     let pool = state_mutex.lock().await;
 
     let output: Vec<FileChange> = sqlx::query_as(
+// commented out: old conflict detection
+// current logic: get_uploads \cap get_downloads
+//        "SELECT filepath, size, change_type, curr_hash as hash, base_commitid as commit_id FROM file WHERE pid = $1 AND
+//        tracked_hash != curr_hash AND curr_hash != '' AND tracked_hash != base_hash"
         "SELECT filepath, size, change_type, curr_hash as hash, base_commitid as commit_id FROM file WHERE pid = $1 AND
-        tracked_hash != curr_hash AND curr_hash != '' AND tracked_hash != base_hash"
+        change_type != 0 AND
+        (
+            (base_hash != tracked_hash AND base_hash != '' AND tracked_changetype = 3) OR
+            (base_hash != tracked_hash AND tracked_changetype != 3)
+        )
+        "
     )
     .bind(pid).fetch_all(&*pool)
     .await.unwrap();
@@ -283,10 +292,5 @@ pub async fn get_local_projects(state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> 
             println!("error: {}", err);
         }
     }
-
-
-    
-
-
     Ok(output)
 }

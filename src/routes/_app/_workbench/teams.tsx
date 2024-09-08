@@ -78,7 +78,7 @@ function Teams() {
     },
   });
   const queryClient = useQueryClient();
-  const {toast} = useToast();
+  const { toast } = useToast();
   const form = useForm<z.infer<typeof createTeamFormSchema>>({
     resolver: zodResolver(createTeamFormSchema),
     defaultValues: {
@@ -156,7 +156,7 @@ function Teams() {
                       asChild
                     >
                       <Link
-                        to="/teams/$teamid"
+                        to="/teams/$teamid/members"
                         params={{ teamid: String(team.id) }}
                       >
                         {team.name}
