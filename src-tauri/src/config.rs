@@ -13,7 +13,7 @@ pub async fn get_server_name(state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Res
         Ok(row.get::<String, &str>("name"))
         },
         Err(err) => {
-            println!("asdfasdf {}", err); // TODO ???
+            println!("asdfasdf {}", err);
             Ok("glassyPDM".to_string())
         }
     }
@@ -30,7 +30,7 @@ pub async fn get_server_url(state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Resu
             Ok(row.get::<String, &str>("url"))
         },
         Err(err) => {
-            println!("asdfasdf {}", err); // TODO ???
+            println!("asdfasdf {}", err);
             Ok("".to_string())
         }
     }
@@ -58,7 +58,6 @@ pub async fn get_server_clerk(state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Re
             Ok(row.get::<String, &str>("clerk_publickey"))
         },
         Err(err) => {
-            // TODO better way to handle error?
             println!("ooga booga {}", err);
             Ok("".to_string())
         }
@@ -72,7 +71,6 @@ pub async fn get_server_dir(pool: &Pool<Sqlite>) -> Result<String, ()> {
             Ok(row.get::<String, &str>("local_dir"))
         },
         Err(err) => {
-            // TODO better way to handle error?
             println!("dir not found {}", err);
             Ok("".to_string())
         }

@@ -20,7 +20,7 @@ use std::fs;
 use sync::{update_project_info, get_uploads, sync_changes, open_project_dir, get_project_name, get_local_projects, get_downloads, get_conflicts};
 use upload::{upload_files, update_uploaded};
 use reset::reset_files;
-use download::{delete_file_cmd, download_s3_file, download_files};
+use download::download_files;
 
 fn main() {
     tauri::Builder::default()
@@ -28,7 +28,7 @@ fn main() {
             sync_changes, set_local_dir, set_debug, get_server_url,
             get_server_clerk, add_server, init_settings_options, get_server_name, update_project_info,
             get_uploads, open_project_dir, get_project_name, upload_files, update_uploaded, get_local_projects,
-            get_downloads, get_conflicts, delete_file_cmd, download_s3_file, download_files, reset_files, check_update,
+            get_downloads, get_conflicts, download_files, reset_files, check_update,
             restart
             ])
         .plugin(tauri_plugin_dialog::init())

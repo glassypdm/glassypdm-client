@@ -109,10 +109,9 @@ function UploadPage() {
       });
       if(!res) {
         console.log("upload failed")
-        // TODO lets pass more info from rust
         toast({
           title: "Upload failed",
-          description: "Check your permissions, and try again."
+          description: "Check your permissions and Internet connection, and try again."
         });
         setStatus("Upload failed")
         unlisten();
@@ -166,7 +165,7 @@ function UploadPage() {
       await invoke("reset_files", {
         pid: parseInt(pid),
         filepaths: selectedFiles,
-        token: uwu,
+        user: userId,
       });
     }
 

@@ -109,7 +109,6 @@ export function PermissionGroupConfig(props: PermissionGroupConfigProps) {
     onSuccess: async (res) => {
       const data = await res.json();
       if (data.response === "success") {
-        // TODO invalidate query
         toast({ title: "Project successfully mapped" });
       } else if (data.response == "error") {
         // TODO
@@ -147,7 +146,7 @@ export function PermissionGroupConfig(props: PermissionGroupConfigProps) {
         console.log(data);
         userForm.setError("user", {
           type: "manual",
-          message: "server error, create an issue",
+          message: "server error, please create an issue on the GitHub repository.",
         });
       } else {
         // TODO
@@ -183,7 +182,7 @@ export function PermissionGroupConfig(props: PermissionGroupConfigProps) {
         console.log(data);
         userForm.setError("user", {
           type: "manual",
-          message: "server error, create an issue",
+          message: "server error, please create an issue on the GitHub repository.",
         });
       } else {
         // TODO
@@ -233,7 +232,7 @@ export function PermissionGroupConfig(props: PermissionGroupConfigProps) {
   } else if (data.response != "success") {
     console.log(data);
     return (
-      <div>An error occured while fetching data, please report an issue</div>
+      <div>An error occured while fetching data, please report an issue on the GitHub repository</div>
     );
   } else {
   }

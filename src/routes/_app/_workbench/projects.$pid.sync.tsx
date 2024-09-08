@@ -66,15 +66,28 @@ function SyncPage() {
 
     const start = performance.now();
 
-    // TODO put in a try/catch ?
-    const data = await fetch(url + "/project/status/by-id/" + pid, {
-      headers: { Authorization: `Bearer ${await getToken()}` },
-      method: "GET",
-      mode: "cors",
-    });
+    let data;
+    try {
+      data = await fetch(url + "/project/status/by-id/" + pid, {
+        headers: { Authorization: `Bearer ${await getToken()}` },
+        method: "GET",
+        mode: "cors",
+      });
+    } catch(err) {
+      console.log(err);
+      toast({
+        title: "Couldn't sync",
+        description: "Check your Internet connection and try again in a few minutes."
+      });
+      setSyncInProgress(false);
+      return;
+    }
     const remote: ProjectStateOutput = await data.json();
     if (remote.response != "success") {
-      // TODO handle error
+      toast({
+        title: "Failed to sync with the server",
+        description: "Please create an issue on the GitHub repository."
+      })
       console.log("sync error");
       setSyncInProgress(false);
       return;
@@ -88,7 +101,6 @@ function SyncPage() {
 
     await invoke("sync_changes", { pid: pid_number, remote: project });
 
-    // TODO update download/conflict lists
     // TODO type this so its not any
     const uploadOutput: any = await invoke("get_uploads", { pid: pid_number });
     console.log(uploadOutput);

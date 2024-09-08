@@ -7,7 +7,7 @@ use crate::{types::RemoteFile, util::{get_active_server, get_project_dir}};
 use std::path::PathBuf;
 use tokio::sync::Mutex;
 
-async fn hash_dir(pid: i32, dir_path: PathBuf, pool: &Pool<Sqlite>) {
+pub async fn hash_dir(pid: i32, dir_path: PathBuf, pool: &Pool<Sqlite>) {
     println!("start: {}", dir_path.display());
 
     let _ = sqlx::query("UPDATE file SET in_fs = 0 WHERE pid = $1").bind(pid).execute(&*pool).await;
@@ -59,23 +59,27 @@ async fn hash_dir(pid: i32, dir_path: PathBuf, pool: &Pool<Sqlite>) {
         }
     }
 
-    // TODO verify the below logic
-    // no change
+    // no change - file was un-deleted (e.g., recovered from user's recycle bin)
     let _ = sqlx::query(
         "UPDATE file SET change_type = 0 WHERE in_fs = 1 AND change_type = 3 AND pid = $1"
     ).bind(pid).execute(pool).await;
 
-    // updated file
+    // no change - file was reset
+    let _ = sqlx::query(
+        "UPDATE file SET change_type = 0 WHERE in_fs = 1 AND base_hash == curr_hash AND pid = $1"
+    ).bind(pid).execute(pool).await;
+
+    // updated file - base hash is different from current hash, and file is tracked, i.e. base hash not empty
     let _ = sqlx::query(
         "UPDATE file SET change_type = 2 WHERE in_fs = 1 AND base_hash != curr_hash AND pid = $1 AND base_hash != ''"
     ).bind(pid).execute(pool).await;
 
-    // uploaded file
+    // new file - base hash is different from current hash and file is untracked, i.e. base hash is empty
     let _ = sqlx::query(
         "UPDATE file SET change_type = 1 WHERE in_fs = 1 AND base_hash != curr_hash AND pid = $1 AND base_hash == ''"
     ).bind(pid).execute(pool).await;
 
-    // deleted file
+    // deleted file - file is tracked, i.e. base hash not empty and file wasn't found in folder
     let _ = sqlx::query(
         "UPDATE file SET change_type = 3 WHERE in_fs = 0 AND pid = $1 AND base_hash != ''"
     ).bind(pid).execute(pool).await;

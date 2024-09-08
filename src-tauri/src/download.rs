@@ -16,69 +16,6 @@ const CONCURRENT_SERVER_REQUESTS: usize = 2;
 const CONCURRENT_AWS_REQUESTS: usize = 4;
 
 #[tauri::command]
-pub async fn delete_file_cmd(pid: i32, rel_path: String, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<bool, ()> {
-    let pool = state_mutex.lock().await;
-    let output = delete_file(pid, rel_path.clone(), &pool).await.unwrap();
-
-    if output {
-        let _ = sqlx::query(
-            "
-            DELETE FROM file
-            WHERE pid = $1 AND filepath = $2
-            "
-        )
-        .bind(pid)
-        .bind(rel_path)
-        .execute(&*pool);
-    }
-
-    Ok(output)
-}
-
-pub async fn delete_file(pid: i32, rel_path: String, pool: &Pool<Sqlite>) -> Result<bool, ()> {
-    let project_dir = get_project_dir(pid, &pool).await.unwrap();
-    if project_dir == "" {
-        return Ok(false);
-    }
-    let path = project_dir + "\\" + &rel_path;
-    println!("{}", path);
-    let _ = fs::remove_file(path);
-    Ok(true)
-}
-
-// download a single file
-// TODO fix
-#[tauri::command]
-pub async fn download_s3_file(pid: i32, s3_url: String, rel_path: String, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<bool, ()> {
-    let pool = state_mutex.lock().await;
-    let mut resp = reqwest::blocking::get(s3_url).unwrap();
-
-    // generate absolute path
-    let project_dir = get_project_dir(pid, &pool).await.unwrap();
-    let path_str = project_dir + &rel_path;
-    let path: &Path = std::path::Path::new(&path_str);
-
-    // create necessary folders for path
-    let prefix = path.parent().unwrap();
-    fs::create_dir_all(prefix).unwrap();
-
-    // create file
-    let mut f = match File::create(&path) {
-        Ok(file) => file,
-        Err(err) => {
-            println!("Encountered error: {err}");
-            return Ok(false);
-            //panic!("unable to create file object for writing");
-        }
-    };
-    io::copy(&mut resp, &mut f).expect("Unable to download data");
-
-    // TODO write to database
-
-    Ok(true)
-}
-
-#[tauri::command]
 pub async fn download_files(pid: i32, files: Vec<DownloadRequestMessage>, user: String, state_mutex: State<'_, Mutex<Pool<Sqlite>>>, app_handle: AppHandle) -> Result<bool, ReqwestError> {
     let pool = state_mutex.lock().await;
     let server_url = get_current_server(&pool).await.unwrap();
@@ -99,15 +36,12 @@ pub async fn download_files(pid: i32, files: Vec<DownloadRequestMessage>, user: 
         if file.download {
             let cached_path = cache_dir.clone() + "\\" + &file.hash;
 
-            // TODO if we have the file in the cache already,
-            // we should include it in the list to assemble and copy
             to_copy.push(file.clone());
-            if Path::new(&cached_path).exists() {
+            if verify_cache(&cached_path).unwrap() {
                 println!("hash exists in cache");
                 let _ = app_handle.emit("downloadedFile", 4);
             }
             else {
-
                 to_download.push(file.clone());
             }
         }
@@ -217,7 +151,7 @@ pub async fn download_files(pid: i32, files: Vec<DownloadRequestMessage>, user: 
         let cache_str = cache_dir.clone() + "\\" + file.hash.as_str();
         let res = verify_cache(&cache_str).unwrap();
         if !res {
-
+            // TODO ???
         }
     }
 
@@ -342,7 +276,7 @@ pub async fn download_with_client(dir: &String, chunk_download: FileChunk, clien
 }
 
 // TODO refactor unwrap, lmao
-fn save_filechunkmapping(cache_dir: &String, download: &DownloadInformation) -> Result<bool, ()> {
+pub fn save_filechunkmapping(cache_dir: &String, download: &DownloadInformation) -> Result<bool, ()> {
     // TODO linux support, create path the proper way
     let abs_path = cache_dir.to_owned() + "\\" + &download.file_hash + "\\mapping.json";
     let path: &Path = std::path::Path::new(&abs_path);
@@ -360,7 +294,7 @@ fn save_filechunkmapping(cache_dir: &String, download: &DownloadInformation) -> 
 // cache dir should be the folder for the file in the cache dir
 // proj dir should be the complete path to the desired file and must exist
 // TODO refactor unwrap
-fn assemble_file(cache_dir: &String, proj_path: &String) -> Result<bool, ()> {
+pub fn assemble_file(cache_dir: &String, proj_path: &String) -> Result<bool, ()> {
     // read in mapping.json
     let mapping: Vec<FileChunk> = match read_mapping(cache_dir) {
         Ok(map) => map,
@@ -402,7 +336,7 @@ fn assemble_file(cache_dir: &String, proj_path: &String) -> Result<bool, ()> {
 }
 
 // cache dir should be the folder for the file in the cache dir
-fn verify_cache(hash_dir: &String) -> Result<bool, ()> {
+pub fn verify_cache(hash_dir: &String) -> Result<bool, ()> {
     // check existence of folder
     match Path::new(&hash_dir).try_exists() {
         Ok(result) => {
@@ -417,11 +351,19 @@ fn verify_cache(hash_dir: &String) -> Result<bool, ()> {
     };
 
     // read mapping.json
-    let mapping = read_mapping(hash_dir).unwrap();
-    if mapping.len() == 0 {
-        // ???
-        return Ok(false);
-    }
+    let mapping = match read_mapping(hash_dir) {
+        Ok(mapping) => {
+            if mapping.len() == 0 {
+                // ???
+                return Ok(false);
+            }
+            mapping
+        },
+        Err(_) => {
+            println!("error reading mapping.json: {}", hash_dir);
+            return Ok(false);
+        }
+    };
 
     // check existence of chunks
     for chunk in mapping {
@@ -450,6 +392,7 @@ fn read_mapping(hash_dir: &String) -> Result<Vec<FileChunk>, ()> {
             file
         },
         Err(err) => {
+            println!("read_mapping error: {}", err);
             return Err(());
         }
     };
@@ -459,6 +402,7 @@ fn read_mapping(hash_dir: &String) -> Result<Vec<FileChunk>, ()> {
             map
         },
         Err(err) => {
+            println!("read_mapping error: {}", err);
             return Err(());
         }
     };
@@ -467,25 +411,27 @@ fn read_mapping(hash_dir: &String) -> Result<Vec<FileChunk>, ()> {
 }
 
 // assumes trash dir exists
-fn trash_file(proj_dir: &String, trash_dir: &String, hash: String) -> Result<bool, ()> {
+pub fn trash_file(proj_dir: &String, trash_dir: &String, hash: String) -> Result<bool, ()> {
     let trash_path = trash_dir.to_owned() + "\\" + hash.as_str();
     match fs::rename(proj_dir, trash_path) {
         Ok(_) => {
             Ok(true)
         },
         Err(err) => {
+            println!("trash_file error: {}", err);
             Ok(false)
         }
     }
 }
 
 // trash dir should be the path to the hash in the trash
-fn recover_file(trash_dir: &String, proj_dir: &String) -> Result<bool, ()> {
+pub fn recover_file(trash_dir: &String, proj_dir: &String) -> Result<bool, ()> {
     match fs::rename(trash_dir, proj_dir) {
         Ok(_) => {
             Ok(true)
         },
         Err(err) => {
+            println!("recover_file error: {}", err);
             Ok(false)
         }
     }

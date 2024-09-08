@@ -15,7 +15,7 @@ pub async fn get_current_server(pool: &Pool<Sqlite>) -> Result<String, ()> {
             Ok(row.get::<String, &str>("url"))
         },
         Err(err) => {
-            println!("asdfasdf {}", err); // TODO ???
+            println!("asdfasdf {}", err);
             Ok("".to_string())
         }
     }
@@ -29,7 +29,7 @@ pub async fn get_active_server(pool: &Pool<Sqlite>) -> Result<String, ()> {
             Ok(row.get::<String, &str>("url"))
         },
         Err(err) => {
-            println!("asdfasdf {}", err); // TODO ???
+            println!("asdfasdf {}", err);
             Ok("".to_string())
         }
     }

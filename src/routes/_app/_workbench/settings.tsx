@@ -16,7 +16,7 @@ export const Route = createFileRoute('/_app/_workbench/settings')({
 
     loader: async () => {
         const url: string = await invoke("get_server_url");
-        const result = await invoke("init_settings_options"); // TODO type this?
+        const result = await invoke("init_settings_options");
         const dir = (result as any).local_dir;
         const debug = (result as any).debug_active;
         return {
