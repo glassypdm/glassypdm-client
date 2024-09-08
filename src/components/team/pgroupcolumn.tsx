@@ -1,9 +1,5 @@
 import { ColumnDef } from "@tanstack/react-table";
-import { Settings2, User } from "lucide-react";
-import {
-  Dialog,
-  DialogTrigger,
-} from "../ui/dialog";
+import { User } from "lucide-react";
 import { PermissionGroup, PermissionGroupConfig } from "./pgroupconfig";
 
 
@@ -28,7 +24,6 @@ export const columns: ColumnDef<PermissionGroup>[] = [
     id: "actions",
     cell: ({ row }) => {
       const group = row.original;
-
       return (
           <PermissionGroupConfig group={group} />
       );

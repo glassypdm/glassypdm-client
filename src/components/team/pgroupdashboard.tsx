@@ -27,7 +27,7 @@ function PermissionGroupDashboard(props: PermissionGroupDashboardProps) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const { data, isPending, isError, error } = useQuery({
-        queryKey: ['pgroup'],
+        queryKey: ['pgroup', props.teamId],
         queryFn: async () => {
             const endpoint = props.serverUrl + "/team/by-id/" + props.teamId as string + "/pgroup/list";
             const resp = await fetch(endpoint, {

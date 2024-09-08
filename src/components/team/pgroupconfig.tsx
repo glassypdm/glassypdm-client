@@ -39,6 +39,18 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogTrigger,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "../ui/alert-dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
+import { ScrollArea } from "../ui/scroll-area";
 
 const userSchema = z.object({
   user: z.string().min(1, { message: "Please select a user." }),
@@ -77,7 +89,6 @@ export function PermissionGroupConfig(props: PermissionGroupConfigProps) {
       return resp.json();
     },
   });
-  // TODO map project mutation
   const mappingMutation = useMutation({
     mutationFn: async (project_id: number) => {
       const endpoint = props.group.url + "/pgroup/map";
@@ -129,7 +140,6 @@ export function PermissionGroupConfig(props: PermissionGroupConfigProps) {
     onSuccess: async (res) => {
       const data = await res.json();
       if (data.response === "success") {
-        // TODO happy path
         toast({ title: "User successfully added" });
       } else if (data.response == "error") {
         // TODO
@@ -144,7 +154,43 @@ export function PermissionGroupConfig(props: PermissionGroupConfigProps) {
         console.log(data);
       }
     },
-  }); // end userMutation
+  }); // end addUserMutation
+
+  const removeUserMutation = useMutation({
+    mutationFn: async (user: string) => {
+      const endpoint = props.group.url + "/pgroup/remove";
+      return await fetch(endpoint, {
+        method: "POST",
+        mode: "cors",
+        headers: { Authorization: `Bearer ${await getToken()}` },
+        body: JSON.stringify({
+          member: user,
+          pgroup_id: props.group.pgroupid,
+        }),
+      });
+    },
+    onError: (err) => {
+      // TODO
+      console.log(err);
+    },
+    onSuccess: async (res) => {
+      const data = await res.json();
+      if (data.response === "success") {
+        toast({ title: "User successfully removed" });
+      } else if (data.response == "error") {
+        // TODO
+        console.log("server error");
+        console.log(data);
+        userForm.setError("user", {
+          type: "manual",
+          message: "server error, create an issue",
+        });
+      } else {
+        // TODO
+        console.log(data);
+      }
+    },
+  }); // end removeUserMutation
 
   const userForm = useForm<z.infer<typeof userSchema>>({
     resolver: zodResolver(userSchema),
@@ -162,6 +208,10 @@ export function PermissionGroupConfig(props: PermissionGroupConfigProps) {
 
   function addUser(values: z.infer<typeof userSchema>) {
     addUserMutation.mutate(values.user);
+  }
+
+  function removeUser(user: any) {
+    removeUserMutation.mutate(user.user_id);
   }
 
   function addMapping(values: z.infer<typeof mappingSchema>) {
@@ -198,124 +248,166 @@ export function PermissionGroupConfig(props: PermissionGroupConfigProps) {
           <DialogTitle>{props.group.name}</DialogTitle>
         </DialogHeader>
         <Separator />
-        Select a project to add or remove
-        <Form {...mapForm}>
-          <form
-            onSubmit={mapForm.handleSubmit(addMapping)}
-            className="flex flex-row space-x-2"
-          >
-            <FormField
-              control={mapForm.control}
-              name="project_id"
-              render={({ field }) => (
-                <FormItem className="flex-grow">
-                  <FormControl>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a project" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {data.body.team_projects.map((project: any) => {
-                          return (
-                            <SelectItem
-                              key={project.id}
-                              value={project.id.toString()}
-                            >
-                              {project.name}
-                            </SelectItem>
-                          );
-                        })}
-                      </SelectContent>
-                    </Select>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button type="submit">Add project to group</Button>
-          </form>
-        </Form>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Project</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {data.body.pg_projects.length > 0 ? (
-              data.body.pg_projects.map((project: any) => (
+        <Tabs defaultValue="member">
+          <TabsList>
+            <TabsTrigger value="member">Members</TabsTrigger>
+            <TabsTrigger value="project">Projects</TabsTrigger>
+          </TabsList>
+          <TabsContent value="member">
+            <Form {...userForm}>
+              <FormLabel>Select a user to add</FormLabel>
+              <form
+                onSubmit={userForm.handleSubmit(addUser)}
+                className="flex flex-row space-x-2"
+              >
+                <FormField
+                  control={userForm.control}
+                  name="user"
+                  render={({ field }) => (
+                    <FormItem className="flex-grow">
+                      <FormControl>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a user" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {data.body.team_membership.map((user: any) => {
+                              return (
+                                <SelectItem
+                                  key={user.user_id}
+                                  value={user.user_id}
+                                >
+                                  {user.name}
+                                </SelectItem>
+                              );
+                            })}
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button type="submit">Add member to group</Button>
+              </form>
+            </Form>
+            <ScrollArea className="flex h-48">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell>{project.name}</TableCell>
+                  <TableHead>User</TableHead>
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell>No projects mapped to permission group</TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-        <Separator />
-        <Form {...userForm}>
-          <FormLabel>Select a user to add</FormLabel>
-          <form
-            onSubmit={userForm.handleSubmit(addUser)}
-            className="flex flex-row space-x-2"
-          >
-            <FormField
-              control={userForm.control}
-              name="user"
-              render={({ field }) => (
-                <FormItem className="flex-grow">
-                  <FormControl>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a user" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {data.body.team_membership.map((user: any) => {
-                          return (
-                            <SelectItem key={user.user_id} value={user.user_id}>
-                              {user.name}
-                            </SelectItem>
-                          );
-                        })}
-                      </SelectContent>
-                    </Select>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button type="submit">Add member to group</Button>
-          </form>
-        </Form>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>User</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {data.body.pg_membership.length > 0 ? (
-              data.body.pg_membership.map((user: any) => (
-                <TableRow>
-                  <TableCell>{user.name}</TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell>No users in permission group</TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+              </TableHeader>
+              <TableBody>
+                {data.body.pg_membership.length > 0 ? (
+                  data.body.pg_membership.map((user: any) => (
+                    <TableRow className="flex flex-row items-center">
+                      <TableCell>{user.name}</TableCell>
+                      <TableCell className="flex-grow"></TableCell>
+                      <TableCell className="place-self-end">
+                        <AlertDialog>
+                          <AlertDialogTrigger>
+                            <Button variant={"outline"}>Remove User</Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>
+                                Remove {user.name}?
+                              </AlertDialogTitle>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <Button
+                                variant={"destructive"}
+                                onClick={() => removeUser(user)}
+                              >
+                                Continue
+                              </Button>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell>No users in permission group</TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+            </ScrollArea>
+            </TabsContent>
+          <TabsContent value="project">
+            <Form {...mapForm}>
+              <FormLabel>Select a project to add</FormLabel>
+              <form
+                onSubmit={mapForm.handleSubmit(addMapping)}
+                className="flex flex-row space-x-2"
+              >
+                <FormField
+                  control={mapForm.control}
+                  name="project_id"
+                  render={({ field }) => (
+                    <FormItem className="flex-grow">
+                      <FormControl>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a project" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {data.body.team_projects.map((project: any) => {
+                              return (
+                                <SelectItem
+                                  key={project.id}
+                                  value={project.id.toString()}
+                                >
+                                  {project.name}
+                                </SelectItem>
+                              );
+                            })}
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button type="submit">Add project to group</Button>
+              </form>
+            </Form>
+            <ScrollArea className="flex h-48">
+              <Table className="py-2">
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Project</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data.body.pg_projects.length > 0 ? (
+                    data.body.pg_projects.map((project: any) => (
+                      <TableRow>
+                        <TableCell>{project.name}</TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell>
+                        No projects mapped to permission group
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </ScrollArea>
+          </TabsContent>
+        </Tabs>
         <DialogFooter>
           <DialogClose asChild>
             <Button variant={"secondary"}>Close</Button>
