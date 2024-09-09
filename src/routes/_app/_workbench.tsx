@@ -67,13 +67,13 @@ function WorkbenchLayout() {
               glassyPDM version: v{GLASSYPDM_VERSION}
               <br />
               Tauri version: v{TAURI_VERSION}
-              <p>Client source code: <a href='https://github.com/joshtenorio/glassypdm-client' target='_blank' className='underline'>GitHub</a></p>
+              <p>Client source code: <a href='https://github.com/glassypdm/glassypdm-client' target='_blank' className='underline'>GitHub</a></p>
               <p>
               The glassyPDM client is released under the GNU General Public License (GPL) version 3 or later version.
               </p>
               <DialogFooter className='flex flex-row'>
               <Button asChild>
-                <a href='https://github.com/joshtenorio/glassypdm-client/issues' target='_blank'>Report Bug</a>
+                <a href='https://github.com/glassypdm/glassypdm-client/issues' target='_blank'>Report Bug</a>
               </Button>
             </DialogFooter>
             </DialogContent>

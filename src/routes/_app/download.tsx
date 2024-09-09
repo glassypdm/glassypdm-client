@@ -105,6 +105,7 @@ function DownloadPage() {
     toast({
       title: `Download took ${(end - startTime)/1000} seconds`
     });
+    setProgress(100); // lol
 
     unlisten();
     unlisten2();
@@ -129,8 +130,8 @@ function DownloadPage() {
             onClick={handleDownload}
             disabled={Object.keys(selection).length == 0 || disabled || progress == 100}
             >{
-              progress == 100 ? "Download Complete" :
-                progress == 0 ?
+              progress == 100 && !disabled ? "Download Complete" :
+                progress == 0 && !disabled ?
                 "Download Selected" :
                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Please wait</>
               }</Button>

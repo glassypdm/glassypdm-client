@@ -39,7 +39,7 @@ pub async fn download_files(pid: i32, files: Vec<DownloadRequestMessage>, user: 
             to_copy.push(file.clone());
             if verify_cache(&cached_path).unwrap() {
                 println!("hash exists in cache");
-                let _ = app_handle.emit("downloadedFile", 4);
+                //let _ = app_handle.emit("downloadedFile", 4);
             }
             else {
                 to_download.push(file.clone());
