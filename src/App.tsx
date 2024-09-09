@@ -1,99 +1,34 @@
-import {
-  ClerkProvider,
-  RedirectToSignIn,
-  SignedIn,
-  SignedOut,
-} from "@clerk/clerk-react";
-import { createHashRouter, Outlet, RouterProvider } from "react-router-dom";
-import { resolveResource } from "@tauri-apps/api/path";
-import { readTextFile } from "@tauri-apps/api/fs";
-import { ThemeProvider } from "@/components/theme-provider";
-import { Workbench } from "@/pages/Workbench";
-import { Sidebar } from "./components/Sidebar";
-import "@/App.css";
-import { Settings } from "./pages/Settings";
-import { Account } from "./pages/Account";
-import { History } from "./pages/History";
-import { About } from "./pages/About";
-import { DownloadPage } from "./pages/DownloadPage";
-import { downloadPageLoader, uploadPageLoader } from "./components/FileColumn";
-import { UploadPage } from "./pages/UploadPage";
-import { settingsLoader } from "./lib/SettingsLoader";
-import { workbenchLoader } from "./lib/WorkbenchLoader";
-import { Toaster } from "./components/ui/toaster";
-import { historyLoader } from "./lib/HistoryLoader";
+import "./App.css";
+import { ThemeProvider } from "./components/theme-provider";
+import { RouterProvider, createRouter } from "@tanstack/react-router";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { routeTree } from "./routeTree.gen";
+import { Toaster } from "./components/ui/sonner";
 
-const clerkPath = await resolveResource("resources/clerk.txt");
-const REACT_APP_CLERK_PUBLISHABLE_KEY = await readTextFile(clerkPath);
 
-const router = createHashRouter([
-  {
-    path: "",
-    element: <Layout />,
-    children: [
-      {
-        path: "*",
-        element: <Workbench className="col-span-3" />,
-        loader: workbenchLoader,
-      },
-      {
-        path: "/",
-        element: <Workbench className="col-span-3" />,
-        loader: workbenchLoader,
-      },
-      {
-        path: "/history",
-        element: <History className="col-span-3" />,
-        loader: historyLoader,
-      },
-      {
-        path: "/settings",
-        element: <Settings className="col-span-3" />,
-        loader: settingsLoader,
-      },
-      {
-        path: "/account",
-        element: <Account className="col-span-3" />,
-      },
-      {
-        path: "/about",
-        element: <About className="col-span-3" />,
-      },
-    ],
-  },
-  {
-    path: "/download",
-    element: <DownloadPage className="" />,
-    loader: downloadPageLoader,
-  },
-  {
-    path: "/upload",
-    element: <UploadPage className="" />,
-    loader: uploadPageLoader,
-  },
-]);
+const router = createRouter({
+  routeTree
+})
 
-export default function App() {
-  return (
-    <ClerkProvider publishableKey={REACT_APP_CLERK_PUBLISHABLE_KEY}>
-      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-        <SignedOut>
-          <RedirectToSignIn />
-        </SignedOut>
-        <SignedIn>
-          <RouterProvider router={router} />
-          <Toaster />
-        </SignedIn>
-      </ThemeProvider>
-    </ClerkProvider>
-  );
+declare module '@tanstack/react-router' {
+  interface Register {
+    router: typeof router
+  }
 }
 
-function Layout() {
+const queryClient = new QueryClient()
+
+function App() {
   return (
-    <div className="grid grid-cols-4 grid-flow-row gap-1 h-full">
-      <Sidebar className="row-span-1" />
-      <Outlet />
+    <div>
+      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+        <QueryClientProvider client={queryClient}>
+          <RouterProvider router={router} />
+          <Toaster />
+        </QueryClientProvider>
+        </ThemeProvider>
     </div>
   );
 }
+
+export default App;

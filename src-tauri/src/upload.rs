@@ -1,113 +1,186 @@
-use std::fs::{File, self};
-use std::io::Write;
-use std::path::PathBuf;
-use log::{error, info};
-use tauri::Manager;
-use reqwest::{Client, Response};
+use std::sync::Arc;
+
+use fs_chunker::Chunk;
+use serde::{Deserialize, Serialize};
+use tauri::State;
+use futures::{stream, StreamExt};
+use tokio::sync::Mutex;
+use sqlx::{Pool, Sqlite};
+use tauri::{AppHandle, Manager, Emitter};
+use crate::types::{ChangeType, ReqwestError, UpdatedFile};
+use crate::util::{get_current_server, get_file_info, get_project_dir};
+use reqwest::Client;
 use reqwest::multipart::*;
-use tauri_plugin_store::StoreBuilder;
-use crate::settings::{get_app_local_data_dir, get_project_dir};
-use crate::types::{UploadStatusPayload, Change, FileUploadStatus, ReqwestError};
-use crate::util::{get_file_as_byte_vec, upsert_into_base_store, delete_from_base_store};
+
+const CONCURRENT_UPLOAD_REQUESTS: usize = 2;
+
+#[derive(Serialize, Deserialize)]
+pub struct UploadResponse {
+    pub response: String,
+    pub body: Option<ServerDefualtSuccessBody>,
+    pub error: Option<String>
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct ServerDefualtSuccessBody {
+    pub message: String
+}
 
 #[tauri::command]
-pub async fn upload_files(app_handle: tauri::AppHandle, files: Vec<Change>, commit: u64, server_url: String) -> Result<(), ReqwestError> {
+pub async fn upload_files(pid: i32, filepaths: Vec<String>, user: String, app_handle: AppHandle) -> Result<bool, ReqwestError> {
+    let state_mutex = app_handle.state::<Mutex<Pool<Sqlite>>>();
+    let pool = state_mutex.lock().await;
+    let project_dir = get_project_dir(pid, &pool).await.unwrap();
+    let server_url = get_current_server(&pool).await.unwrap();
+    let endpoint = server_url + "/store/request";
     let client: Client = reqwest::Client::new();
-    let url: String = server_url.to_string() + "/ingest";
 
-    let project_dir = get_project_dir(app_handle.clone());
-    let total: u32 = files.len().try_into().unwrap();
+    let mut to_upload: Vec<UpdatedFile> = vec![];
     let mut uploaded: u32 = 0;
-    for change in files {
-        let file = change.file;
-        let path: String = file.path.clone();
-        let rel_path = path.replace(&project_dir, "");
-
-        // create request
-        let mut form: Form = reqwest::multipart::Form::new()
-        .text("project", 0.to_string())
-        .text("commit", commit.to_string())
-        .text("path", rel_path.clone())
-        .text("size", file.size.to_string())
-        .text("change", (change.change as u64).to_string())
-        .text("hash", file.hash.clone());
-        // TODO consider using file.change instead of file.file.size to see if we delete the file
-        if file.size != 0 {
-            let content: Vec<u8> = get_file_as_byte_vec(&path);
-            form = form.part("key", Part::bytes(content).file_name(rel_path.clone()));
+    for filepath in filepaths {
+        let file: UpdatedFile = get_file_info(pid, filepath.clone(), &pool).await.unwrap();
+        if file.change == ChangeType::Delete || file.size == 0 {
+            uploaded += 1;
+            let _ = app_handle.emit("fileAction", uploaded);  
+            continue;
         }
-
-        // send request
-        let res: Response = client.post(url.to_string())
-            .multipart(form)
-            .send()
-            .await?;
-        
-        // get s3 key and store it
-        let data = res.json::<FileUploadStatus>().await?;
-        let mut s3 = "oops".to_string();
-        if data.result {
-            s3 = data.s3key;
+        else {
+            to_upload.push(file)
         }
-
-        // update hash
-        if file.size != 0 {
-            upsert_into_base_store(app_handle.clone(), file);
-        } else {
-            delete_from_base_store(app_handle.clone(), &rel_path);
-        }
-
-        // emit status event
-        uploaded += 1;
-        app_handle.emit_all("uploadStatus", UploadStatusPayload { uploaded, total, s3, rel_path }).unwrap();
     }
-    Ok(())
+
+
+    for upload in to_upload {
+        let copy_endpoint = endpoint.clone();
+        let copy_client = client.clone();
+        let copy_token = user.clone();
+        let abspath = project_dir.clone() + "\\" + &upload.path;
+        let file_hash = upload.hash.clone();
+        let cloned_app = app_handle.clone();
+
+        // 4 mb chunks
+        let chunks: Vec<Chunk> = fs_chunker::chunk_file(&abspath, 4 * 1024 * 1024, true);
+        let len = chunks.len();
+        let copied_client = &copy_client;
+        let chunk_reqs = stream::iter(chunks)
+            .map(|chunk| {
+                let copied_endpoint = copy_endpoint.clone();
+                let copied_token = copy_token.clone();
+                let copied_filehash = file_hash.clone();
+                async move {
+                let Chunk { hash, data, idx } = chunk;
+                println!("idx {}", idx);
+                let form: Form = reqwest::multipart::Form::new()
+                    .part("chunk", Part::bytes(data).file_name(hash.clone()))
+                    .text("file_hash", copied_filehash)
+                    .text("block_hash", hash)
+                    .text("num_chunks", len.to_string())
+                    .text("chunk_index", idx.to_string())
+                    .text("user_id", copied_token);
+                let res = copied_client.post(copied_endpoint)
+                    .multipart(form)
+                    .send().await;
+                res
+                }
+            }).buffer_unordered(CONCURRENT_UPLOAD_REQUESTS);
+
+        let error_flag = Arc::new(Mutex::new(false));
+        chunk_reqs.for_each(|res| async {
+            let _output: String = match res {
+                Ok(response) => {
+                    let response_json: UploadResponse = match response.json::<UploadResponse>().await {
+                        Ok(out) => out,
+                        Err(err) => {
+                            println!("error uploading chunk: {}", err);
+                            UploadResponse {
+                                response: "error".to_string(),
+                                error: Some("parsing error".to_string()),
+                                body: None
+                            }
+                        }
+                    };
+                    let res = response_json.response;
+                    if res == "error" {
+                        println!("error: {}", response_json.error.unwrap());
+                        let mut error = error_flag.lock().await;
+                        *error = true;
+                        res
+                    } else {
+                        res
+                    }
+                },
+                Err(err) => {
+                    let reqwest_error = "error uploading chunk: ".to_string() + &err.to_string();
+                    println!("error: {}", err);
+                    let mut error = error_flag.lock().await;
+                    *error = true;
+                    reqwest_error
+                }
+            };
+        }).await;
+
+        if *error_flag.lock().await {
+            return Ok(false);
+        }
+        let _ = cloned_app.emit("fileAction", 6030); 
+    }
+
+  Ok(true)
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct UploadedFile {
+    pub path: String,
+    pub hash: String,
+    pub changetype: i32
 }
 
 #[tauri::command]
-pub fn update_upload_list(app_handle: tauri::AppHandle, changes: Vec<Change>) -> Vec<Change> {
-    let mut data_dir: PathBuf = get_app_local_data_dir(&app_handle);
-    data_dir.push("toUpload.json");
-    let upload_str = match fs::read_to_string(&data_dir) {
-        Ok(content) => content,
-        Err(_error) => "n/a".to_string(),
-    };
+pub async fn update_uploaded(pid: i32, commit: i32, files: Vec<UploadedFile>, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<bool, ()> {
+    let pool = state_mutex.lock().await;
 
-    if upload_str == "n/a" {
-        error!("wasn't able to read toUpload.json");
-        // TODO could handle this better, maybe panic instead?
-        let output: Vec<Change> = Vec::new();
-        return output;
+    println!("updating db...");
+    for file in files {
+        if file.changetype == 3 { // delete
+            let owo = sqlx::query(
+                "DELETE FROM file
+                WHERE pid = $1 AND filepath = $2"
+                )
+                .bind(pid)
+                .bind(file.path)
+                .execute(&*pool).await;
+            match owo {
+                Ok(_) => {
+                },
+                Err(err) => {
+                    println!("db err: {}", err);
+                }
+            }
+        }
+        else if file.changetype == 1 || file.changetype == 2 {
+            let uwu = sqlx::query(
+                "UPDATE file SET
+                change_type = 0,
+                base_hash = curr_hash,
+                tracked_hash = curr_hash,
+                base_commitid = $1,
+                tracked_commitid = $1
+                WHERE pid = $2 AND filepath = $3"
+                )
+                .bind(commit)
+                .bind(pid)
+                .bind(file.path)
+                .execute(&*pool).await;
+            
+            match uwu {
+                Ok(_) => {
+                },
+                Err(err) => {
+                    println!("db err: {}", err);
+                }
+            }
+        }
     }
-    let mut upload_list: Vec<Change> = serde_json::from_str(&upload_str).expect("toUpload.json not formatted");
 
-    // remove files in the initial upload list that are in changes
-    for change in changes {
-        upload_list.retain(|file| file.file.path != change.file.path);
-    }
-
-    // write toUpload.json
-    let json = match serde_json::to_string(&upload_list) {
-        Ok(string) => string,
-        Err(error) => {
-            error!("Problem writing to toUpload.json: {}", error);
-            panic!("Problem writing to toUpload.json: {}", error);
-        },
-    };
-
-    let mut file = File::create(data_dir).unwrap();
-    let _ = file.write_all(json.as_bytes());
-
-    info!("toUpload.json updated");
-    return upload_list;
-}
-
-#[tauri::command]
-pub fn is_file_in_base(app_handle: tauri::AppHandle, abs_path: String) -> bool {
-    let mut base_path = get_app_local_data_dir(&app_handle);
-    base_path.push("base.dat");
-    let mut store = StoreBuilder::new(app_handle.clone(), base_path).build();
-    let _ = store.load();
-
-    return store.has(abs_path);
+    Ok(true)
 }

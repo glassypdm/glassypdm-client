@@ -4,21 +4,20 @@ glassyPDM is a PDM solution for teams looking to collaborate on hardware design.
 Create a ticket [here](https://github.com/joshtenorio/glassypdm-client/issues).
 ## Dev Instructions
 ### Prerequisites
-- Yarn Berry. [link](https://yarnpkg.com/getting-started)
+- pnpm
 - Windows computer setup for Tauri development. [link](https://tauri.app/v1/guides/getting-started/prerequisites)
 - Clerk account setup. [link](https://clerk.com/)
-- An instance of the glassyPDM [server](https://github.com/joshtenorio/glassypdm-server) and [webapp (WIP)](https://github.com/joshtenorio/glassypdm-web) running somewhere.
+- An instance of the glassyPDM [server](https://github.com/joshtenorio/glassypdm-server) and [webapp](https://github.com/joshtenorio/glassypdm-web) running somewhere.
 ### CLI
 ```bash
-# create clerk files
-$ echo -n "PK_FROM_CLERK" >> src-tauri/resources/clerk.txt
-$ echo -n "https://link.to.clerk.userprofile.example.com" >> src-tauri/resources/clerk-profile.txt
+# build activities
+$ pnpm install
 
 # for development
-$ yarn tauri dev
+$ pnpm tauri dev
 
 # for building installers, etc.
-$ yarn tauri build
+$ pnpm tauri build
 ```
 ### Recommended IDE Setup
 
