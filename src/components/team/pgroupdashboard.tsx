@@ -99,7 +99,7 @@ function PermissionGroupDashboard(props: PermissionGroupDashboardProps) {
     }
     else if(isError) {
         console.log(error)
-        pgroupList = <div>An error occured while fetching data :c</div>
+        pgroupList = <div>An error occured while fetching data :c Please check your Internet connection</div>
     }
     else if(data.response == "success"){
         if(data.body && data.body.length > 0) {

@@ -237,7 +237,7 @@ export function PermissionGroupConfig(props: PermissionGroupConfigProps) {
   } else if (isError) {
     console.log(error);
     return (
-      <div>An error occured while fetching data, please try again soon</div>
+      <div>An error occured while fetching data, please try again soon and check your Internet connection</div>
     );
   } else if (data.response != "success") {
     console.log(data);

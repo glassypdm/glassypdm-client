@@ -31,7 +31,9 @@ function Project() {
         });
         const data = await resp.json()
         console.log(data)
-        invoke("update_project_info", { pid: parseInt(pid), teamName: data.teamName, title: data.title, initCommit: data.initCommit })
+        if(data.response == "success") {
+          invoke("update_project_info", { pid: parseInt(pid), teamName: data.body.teamName, title: data.body.title, initCommit: data.body.initCommit })
+        }
         return data
       }
     })
@@ -45,6 +47,9 @@ function Project() {
         <div>{error.name}: {error.message}</div>
       </div>
     }
+    else if(data.response != "success") {
+      <div>An error occurred fetching projects</div>
+    }
 
   return (
     <div className='grid row-auto content-center justify-items-center'>
@@ -52,7 +57,7 @@ function Project() {
           <NavigationMenuList className='space-x-4'>
             <NavigationMenuItem>
             <NavigationMenuLink className={cn(navigationMenuTriggerStyle(), 'text-4xl font-semibold')} asChild>
-                <Link to='/projects/$pid/sync' params={{ pid: pid }}>{data.title}</Link>
+                <Link to='/projects/$pid/sync' params={{ pid: pid }}>{data.body.title}</Link>
             </NavigationMenuLink>
             </NavigationMenuItem>
             <NavigationMenuItem>
@@ -66,7 +71,7 @@ function Project() {
               </NavigationMenuLink>
             </NavigationMenuItem>
             {
-              data.canManage ? 
+              data.body.canManage ? 
               <NavigationMenuItem>
               <NavigationMenuLink className={cn(navigationMenuTriggerStyle(), 'text-md')} asChild>
                 <Link to='/projects/$pid/settings' params={{ pid: pid }}>Settings</Link>

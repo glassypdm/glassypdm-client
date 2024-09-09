@@ -110,8 +110,11 @@ function ProjectsIndex() {
     else if(isError) {
         console.log(error)
         return (
-            <div>an error occured while fetching data :c</div>
+            <div>an error occurred while fetching data :c Check your Internet connection</div>
         )
+    }
+    else if(data.response != "success") {
+        <div>An error occurred while fetching data</div>
     }
 
     function createProject() {
@@ -146,7 +149,7 @@ function ProjectsIndex() {
             <h1 className="text-2xl font-semibold">Projects</h1>
             <Dialog>
                 <DialogTrigger asChild>
-                    <Button variant={"outline"} disabled={data.managed_teams.length == 0}>Create Project</Button>
+                    <Button variant={"outline"} disabled={data.body.managed_teams.length == 0}>Create Project</Button>
                 </DialogTrigger>
                 <DialogContent> {/** TODO this can/should be broken into its own component */}
                     <DialogHeader>
@@ -159,7 +162,7 @@ function ProjectsIndex() {
                         </SelectTrigger>
                         <SelectContent>
                             {
-                            data.managed_teams.map((team: any) => {
+                            data.body.managed_teams.map((team: any) => {
                                 return (
                                     <SelectItem value={team.id} key={team.id}>{team.name}</SelectItem>
                                 )
@@ -176,9 +179,9 @@ function ProjectsIndex() {
             </div>
             <div className="flex flex-col grow">
                 {
-                    data.projects.length == 0 ? 
+                    data.body.projects.length == 0 ? 
                     <div>No projects found</div> :
-                    data.projects.map((project: any) => {
+                    data.body.projects.map((project: any) => {
                         return (
                             <Card className="grid grid-cols-2 items-center mb-2" key={project.id}>
                             <CardHeader className="justify-self-start">

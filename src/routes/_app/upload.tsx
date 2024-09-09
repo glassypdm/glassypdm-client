@@ -16,6 +16,7 @@ import { useState } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
+import { Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/_app/upload")({
   validateSearch: (search) =>
@@ -57,10 +58,8 @@ function UploadPage() {
   const [commitMessage, setCommitMessage] = useState("");
   const { toast } = useToast();
 
-  if(userId == null) {
-    return (
-      <div>Loading...</div>
-    )
+  if (userId == null) {
+    return <div>Loading...</div>;
   }
 
   async function handleAction() {
@@ -70,9 +69,8 @@ function UploadPage() {
     // get special JWT for rust/store operations
     const uwu = await getToken({
       template: "store-operations",
-      skipCache: true
+      skipCache: true,
     });
-
 
     let selectedFiles: string[] = [];
     let uploadList: any[] = [];
@@ -93,7 +91,7 @@ function UploadPage() {
     setStatus(`0 of ${selectedLength} files uploaded...`);
     const unlisten = await listen("fileAction", (event: any) => {
       console.log(event);
-      setProgress((100 * ++actionedFiles) / selectedLength);
+      setProgress(100 * (++actionedFiles) / selectedLength);
       let verb = "uploaded";
       if (action == "Reset") {
         verb = "reset";
@@ -107,15 +105,16 @@ function UploadPage() {
         filepaths: selectedFiles,
         user: userId,
       });
-      if(!res) {
-        console.log("upload failed")
+      if (!res) {
+        console.log("upload failed");
         toast({
           title: "Upload failed",
-          description: "Check your permissions and Internet connection, and try again."
+          description:
+            "Check your permissions and Internet connection, and try again.",
         });
-        setStatus("Upload failed")
+        setStatus("Upload failed");
         unlisten();
-        setDisabled(false)
+        setDisabled(false);
         return;
       }
 
@@ -162,18 +161,32 @@ function UploadPage() {
         });
       }
     } else if (action == "Reset") {
-      await invoke("reset_files", {
+      let result = await invoke("reset_files", {
         pid: parseInt(pid),
         filepaths: selectedFiles,
         user: userId,
       });
+      if (result) {
+      } else {
+        unlisten();
+        toast({
+          title: "Reset failed",
+          description: "Try again soon"
+        });
+        setStatus(`${action} failed`);
+        setDisabled(false);
+        return;
+      }
+      setProgress(100);
     }
 
     unlisten();
 
-
     // Once permission has been granted we can send the notification
     const end = performance.now();
+    toast({
+      title: `${action} took ${(end - start)/1000} seconds`,
+    });
 
     setStatus(`${action} complete!`);
     setDisabled(false);
@@ -204,7 +217,7 @@ function UploadPage() {
             onClick={handleAction}
             variant={action == "Reset" ? "destructive" : "default"}
           >
-            {progress == 100 ? action + " Complete" : action + " Selected"}
+            {progress == 100 && !disabled ? action + " Complete" : progress == 0 ? action + " Selected" : <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Please wait</>}
           </Button>
           <Select onValueChange={(e) => setAction(e)}>
             <SelectTrigger

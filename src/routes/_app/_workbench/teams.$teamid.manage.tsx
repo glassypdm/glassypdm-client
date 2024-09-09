@@ -129,7 +129,7 @@ function Manage() {
               <SelectValue placeholder="Select a role.." />
             </SelectTrigger>
             <SelectContent>
-              {data.role == "Owner" ? (
+              {data.body.role == "Owner" || data.body.role == "Manager" ? (
                 <>
                   <SelectItem value={"Owner"}>Owner</SelectItem>
                   <SelectItem value={"Manager"}>Manager</SelectItem>

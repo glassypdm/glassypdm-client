@@ -14,6 +14,8 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/components/ui/use-toast";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Loader2 } from "lucide-react";
 export const Route = createFileRoute("/_app/_workbench/projects/$pid/sync")({
   component: () => <SyncPage />,
   loader: async ({ params }) => {
@@ -184,14 +186,21 @@ function SyncPage() {
             ? "Up to date"
             : downloadSize + " files ready to download"}
         </Button>
-        <Button variant={"outline"}>Open in Website</Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+            <Button variant={"outline"}>Open in Website</Button>
+            </TooltipTrigger>
+            <TooltipContent>Feature coming soon</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
       <Button
         className="flex h-full"
         onClick={syncChanges}
         disabled={syncInProgress}
       >
-        Sync
+        {syncInProgress ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />: "Sync"}
       </Button>
       <div className="flex flex-col gap-4">
         <Button

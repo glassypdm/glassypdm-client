@@ -2,6 +2,7 @@ import { columns, File } from '@/components/file/FileColumn'
 import { FileTable } from '@/components/file/FileTable'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
+import { useToast } from '@/components/ui/use-toast'
 import { useAuth } from '@clerk/clerk-react'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { RowSelectionState } from '@tanstack/react-table'
@@ -38,6 +39,7 @@ export const Route = createFileRoute('/_app/download')({
 })
 
 function DownloadPage() {
+  const { toast } = useToast();
   const { downloads, selectionList, projectName } = Route.useLoaderData();
   const { getToken, userId } = useAuth();
   const { pid } = Route.useSearch();
@@ -99,6 +101,11 @@ function DownloadPage() {
       setDisabled(false);
     }
 
+    const end = performance.now();
+    toast({
+      title: `Download took ${(end - startTime)/1000} seconds`
+    });
+
     unlisten();
     unlisten2();
     setStatus(`Download complete!`);
@@ -121,7 +128,12 @@ function DownloadPage() {
           <Button
             onClick={handleDownload}
             disabled={Object.keys(selection).length == 0 || disabled || progress == 100}
-            >{progress == 100 ? "Download Complete" : progress == 0 || disabled ? "Download Selected" : <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Please wait</>}</Button>
+            >{
+              progress == 100 ? "Download Complete" :
+                progress == 0 ?
+                "Download Selected" :
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Please wait</>
+              }</Button>
           </div>
         </div>
       <div className='py-4 space-y-2'>

@@ -37,13 +37,17 @@ function ForgotPassword() {
             return;
         }
 
-        // TODO handle when incorrect email is input
-        const res = await signIn.create({
-            strategy: "reset_password_email_code",
-            identifier: email
-        }).then(_ => {
-            setResetState(true);
-        });
+        try {
+            await signIn.create({
+                strategy: "reset_password_email_code",
+                identifier: email
+            }).then(_ => {
+                setResetState(true);
+            });
+        } catch(err) {
+            setEmailError("An error occurred; check your email is correct and you are connected to the Internet.")
+            console.error(err)
+        }
         setLoadingInit(false);
     }
 
