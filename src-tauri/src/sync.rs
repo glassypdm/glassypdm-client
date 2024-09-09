@@ -182,11 +182,16 @@ pub struct FileChange {
 pub async fn get_uploads(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<Vec<FileChange>, ()> {
     let pool = state_mutex.lock().await;
 
-    let output: Vec<FileChange> = sqlx::query_as("SELECT filepath, size, change_type, curr_hash as hash, base_commitid as commit_id FROM file WHERE pid = $1 AND change_type != 0")
+    let output: Vec<FileChange> = match sqlx::query_as("SELECT filepath, size, change_type, curr_hash as hash, base_commitid as commit_id FROM file WHERE pid = $1 AND change_type != 0")
     .bind(pid).fetch_all(&*pool)
-    .await.unwrap();
+    .await {
+        Ok(uploads) => uploads,
+        Err(err) => {
+            println!("get_uploads had error querying db: {}", err);
+            Vec::<FileChange>::new()
+        }
+    };
 
-    // TODO don't unwrap
     Ok(output)
 }
 
@@ -194,7 +199,7 @@ pub async fn get_uploads(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) 
 pub async fn get_downloads(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<Vec<FileChange>, ()> {
     let pool = state_mutex.lock().await;
 
-    let output: Vec<FileChange> = sqlx::query_as(
+    let output: Vec<FileChange> = match sqlx::query_as(
         "SELECT filepath, tracked_size as size, tracked_changetype as change_type, tracked_hash as hash, tracked_commitid as commit_id FROM file WHERE pid = $1 AND
         (
             (base_hash != tracked_hash AND base_hash != '' AND tracked_changetype = 3) OR
@@ -203,9 +208,14 @@ pub async fn get_downloads(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>
         "
     )
     .bind(pid).fetch_all(&*pool)
-    .await.unwrap();
+    .await {
+        Ok(downloads) => downloads,
+        Err(err) => {
+            println!("get_downloads had error querying db: {}", err);
+            Vec::<FileChange>::new()
+        }
+    };
 
-    // TODO don't unwrap
     Ok(output)
 }
 
@@ -213,7 +223,7 @@ pub async fn get_downloads(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>
 pub async fn get_conflicts(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<Vec<FileChange>, ()> {
     let pool = state_mutex.lock().await;
 
-    let output: Vec<FileChange> = sqlx::query_as(
+    let output: Vec<FileChange> = match sqlx::query_as(
 // commented out: old conflict detection
 // current logic: get_uploads \cap get_downloads
 //        "SELECT filepath, size, change_type, curr_hash as hash, base_commitid as commit_id FROM file WHERE pid = $1 AND
@@ -227,9 +237,14 @@ pub async fn get_conflicts(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>
         "
     )
     .bind(pid).fetch_all(&*pool)
-    .await.unwrap();
+    .await {
+        Ok(conflicts) => conflicts,
+        Err(err) => {
+            println!("get_conflicts had error querying db: {}", err);
+            Vec::<FileChange>::new()
+        }
+    };
 
-    // TODO don't unwrap
     Ok(output)
 }
 

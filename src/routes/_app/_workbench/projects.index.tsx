@@ -101,10 +101,9 @@ function ProjectsIndex() {
     }
 
     if(isPending) {
-        // TODO proper skeleton
         return (
             <div>
-                Projects Loading...
+                Loading Projects...
             </div>
         )
     }

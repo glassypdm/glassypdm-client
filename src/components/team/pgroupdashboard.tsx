@@ -98,7 +98,7 @@ function PermissionGroupDashboard(props: PermissionGroupDashboardProps) {
         pgroupList = <div>Loading permission groups...</div>
     }
     else if(isError) {
-        // TODO log error
+        console.log(error)
         pgroupList = <div>An error occured while fetching data :c</div>
     }
     else if(data.response == "success"){

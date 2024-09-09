@@ -103,18 +103,19 @@ export function PermissionGroupConfig(props: PermissionGroupConfigProps) {
       });
     },
     onError: (err) => {
-      // TODO
+      toast({ title: "Error mapping project",
+          description: "Please check your Internet connection."
+        });
       console.log(err);
     },
     onSuccess: async (res) => {
       const data = await res.json();
       if (data.response === "success") {
         toast({ title: "Project successfully mapped" });
-      } else if (data.response == "error") {
-        // TODO
-        console.log(data);
       } else {
-        // TODO
+        toast({ title: "Error mapping project",
+          description: "Check your permissions, if the project still exists, or create an issue on the GitHub repository."
+         });
         console.log(data);
       }
     },
@@ -133,24 +134,26 @@ export function PermissionGroupConfig(props: PermissionGroupConfigProps) {
       });
     },
     onError: (err) => {
-      // TODO
+      toast({
+        title: "Error adding user to group",
+        description: "Check your internet connection."
+      })
       console.log(err);
     },
     onSuccess: async (res) => {
       const data = await res.json();
       if (data.response === "success") {
         toast({ title: "User successfully added" });
-      } else if (data.response == "error") {
-        // TODO
-        console.log("server error");
+      } else {
         console.log(data);
+        toast({
+          title: "Error adding user to group",
+          description: "Check your permission level, if the user is still in the team, or create an issue on the GitHub repository."
+        })
         userForm.setError("user", {
           type: "manual",
           message: "server error, please create an issue on the GitHub repository.",
         });
-      } else {
-        // TODO
-        console.log(data);
       }
     },
   }); // end addUserMutation
@@ -169,24 +172,27 @@ export function PermissionGroupConfig(props: PermissionGroupConfigProps) {
       });
     },
     onError: (err) => {
-      // TODO
+      toast({
+        title: "Error removing user",
+        description: "Check your Internet connection and try again later."
+      });
       console.log(err);
     },
     onSuccess: async (res) => {
       const data = await res.json();
       if (data.response === "success") {
         toast({ title: "User successfully removed" });
-      } else if (data.response == "error") {
-        // TODO
+      } else {
+        toast({
+          title: "Error removing user",
+          description: "Check your permission level, or create an issue on the GitHub repository."
+        });
         console.log("server error");
         console.log(data);
         userForm.setError("user", {
           type: "manual",
           message: "server error, please create an issue on the GitHub repository.",
         });
-      } else {
-        // TODO
-        console.log(data);
       }
     },
   }); // end removeUserMutation
@@ -217,7 +223,11 @@ export function PermissionGroupConfig(props: PermissionGroupConfigProps) {
     console.log(values);
     const project_id = parseInt(values.project_id);
     if (Number.isNaN(project_id)) {
-      return; // TODO set error
+      mapForm.setError("project_id", {
+        type: "manual",
+        message: "Invalid project ID."
+      });
+      return;
     }
     mappingMutation.mutate(project_id);
   }

@@ -180,7 +180,8 @@ pub async fn reset_files(pid: i64, filepaths: Vec<String>, user: String, app_han
         let cache_str = cache_dir.clone() + "\\" + file.hash.as_str();
         let res = verify_cache(&cache_str).unwrap();
         if !res {
-            // TODO ???
+            println!("verifying cache failed: {}", file.hash);
+            return Ok(false);
         }
     }
 
@@ -223,7 +224,12 @@ pub async fn reset_files(pid: i64, filepaths: Vec<String>, user: String, app_han
                     let prefix = Path::new(&proj_str).parent().unwrap();
                     fs::create_dir_all(prefix).unwrap();
                     // assemble file from chunk(s)
-                    let _ = assemble_file(&cache_str, &proj_str);
+                    let res = assemble_file(&cache_str, &proj_str).unwrap();
+                    if !res {
+                        // failure
+                        // how do we want to handle this? because we've already started copying files into project
+                        // TODO
+                    }
                 }
                 else {
                     println!("file {} not found in cache", cache_str);

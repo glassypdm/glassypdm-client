@@ -151,7 +151,8 @@ pub async fn download_files(pid: i32, files: Vec<DownloadRequestMessage>, user: 
         let cache_str = cache_dir.clone() + "\\" + file.hash.as_str();
         let res = verify_cache(&cache_str).unwrap();
         if !res {
-            // TODO ???
+            println!("verifying cache failed: {}", file.hash);
+            return Ok(false);
         }
     }
 
@@ -194,7 +195,12 @@ pub async fn download_files(pid: i32, files: Vec<DownloadRequestMessage>, user: 
                     let prefix = Path::new(&proj_str).parent().unwrap();
                     fs::create_dir_all(prefix).unwrap();
                     // assemble file from chunk(s)
-                    let _ = assemble_file(&cache_str, &proj_str);
+                    let res = assemble_file(&cache_str, &proj_str).unwrap();
+                    if !res {
+                        // failure
+                        // how do we want to handle this? because we've already started copying files into project
+                        // TODO
+                    }
                 }
                 else {
                     println!("file {} not found in cache", cache_str);
@@ -293,7 +299,6 @@ pub fn save_filechunkmapping(cache_dir: &String, download: &DownloadInformation)
 
 // cache dir should be the folder for the file in the cache dir
 // proj dir should be the complete path to the desired file and must exist
-// TODO refactor unwrap
 pub fn assemble_file(cache_dir: &String, proj_path: &String) -> Result<bool, ()> {
     // read in mapping.json
     let mapping: Vec<FileChunk> = match read_mapping(cache_dir) {
@@ -326,7 +331,13 @@ pub fn assemble_file(cache_dir: &String, proj_path: &String) -> Result<bool, ()>
         let mut writer = BufWriter::new(proj_file);
         for chunk in mapping {
             let cache_path = cache_dir.to_owned() + "\\" + &chunk.block_hash;
-            let chunk_data = fs::read(cache_path).unwrap();
+            let chunk_data = match fs::read(cache_path.clone()) {
+                Ok(data) => data,
+                Err(err) => {
+                    println!("error reading chunk data from {}: {}", cache_path, err);
+                    return Ok(false);
+                }
+            };
             let _ = writer.write_all(&chunk_data);
         }
 
