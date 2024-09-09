@@ -1,5 +1,45 @@
 # Changelog
 
+## [0.5.1](https://github.com/joshtenorio/glassypdm-client/compare/v0.5.0...v0.5.1) (2024-04-10)
+
+
+### Miscellaneous
+
+* bump tauri version ([7b62a88](https://github.com/joshtenorio/glassypdm-client/commit/7b62a889b06866852ffc7cb0a177e3be1e320eaa))
+
+## [0.5.0](https://github.com/joshtenorio/glassypdm-client/compare/v0.4.0...v0.5.0) (2024-02-20)
+
+
+### Features
+
+* add notification if upload goes wrong ([373e9cf](https://github.com/joshtenorio/glassypdm-client/commit/373e9cf286bbc38a94071e57155bd0d1a3a77776))
+* hash project directory while downloading files ([2282b85](https://github.com/joshtenorio/glassypdm-client/commit/2282b8508e895e97c69b61c75d893bb713e56afb))
+* server status is displayed on sidebar ([f05471c](https://github.com/joshtenorio/glassypdm-client/commit/f05471c6ac54cee4e37897759fa52740e26ce3b7))
+* setup logging, add buttons for viewing log directory ([d6ca311](https://github.com/joshtenorio/glassypdm-client/commit/d6ca3119b40e21ead474e743b7187ef87a8ea397))
+* update base hash while uploading ([9cacd46](https://github.com/joshtenorio/glassypdm-client/commit/9cacd4660309fb8636fbbfe96801880cb9702116))
+
+
+### Bug Fixes
+
+* file count total when resetting updated files is now correct ([9f4d0f5](https://github.com/joshtenorio/glassypdm-client/commit/9f4d0f5807b28068d34ff1410d799ad4818f6b1f))
+* send change type on file created/modified ([1cde21c](https://github.com/joshtenorio/glassypdm-client/commit/1cde21c7be2320772d5a2b51845ae5faeeeccf90))
+* styling in download/upload pages ([b5a980d](https://github.com/joshtenorio/glassypdm-client/commit/b5a980d7f5f4f166061737145640bb7e45117713))
+
+
+### Miscellaneous
+
+* a single instance of glassyPDM running at a time is now ensured ([822ac2d](https://github.com/joshtenorio/glassypdm-client/commit/822ac2dde958227c660ea7f4a1eac343bdcaccda))
+* breaking up main.rs into different files ([0f55bda](https://github.com/joshtenorio/glassypdm-client/commit/0f55bda0c99253852d72cb0b931c43a9b86b4477))
+* client doesn't freeze up while uploading files ([7eefafb](https://github.com/joshtenorio/glassypdm-client/commit/7eefafb5d90923732766ed4af7ca6c7d59a56ce5))
+* implement concurrent downloads ([c912075](https://github.com/joshtenorio/glassypdm-client/commit/c9120753e1893f77d9b4c726055d5a6fe29564d6))
+* millisecond timers are rounded ([b6eb231](https://github.com/joshtenorio/glassypdm-client/commit/b6eb2316f715f4eb8c593dbff4bd8dd07ea7e534))
+* move sync logic to rust ([2c50092](https://github.com/joshtenorio/glassypdm-client/commit/2c50092f1ba4fe562a36b574068e61cf0381945d))
+* Re-format settings page ([aa5a77d](https://github.com/joshtenorio/glassypdm-client/commit/aa5a77da893fe90e56c6392060a4917888072140))
+* redesign workbench page ([fddd871](https://github.com/joshtenorio/glassypdm-client/commit/fddd871d22f70f7d06f9897c793819018a33a4e6))
+* rewrite more upload/reset logic to rust ([46a5111](https://github.com/joshtenorio/glassypdm-client/commit/46a5111477812251c63073dba992844bfb8c91ec))
+* update local s3 key store when syncing ([754c885](https://github.com/joshtenorio/glassypdm-client/commit/754c885d87db89c98341bb41eda124fac8c192ba))
+* use constants for app data files and use update function ([0d1617d](https://github.com/joshtenorio/glassypdm-client/commit/0d1617d0e9191ad8482c5f14b46649b1f684e1e9))
+
 ## [0.4.0](https://github.com/joshtenorio/glassypdm-client/compare/v0.3.0...v0.4.0) (2023-11-05)
 
 
