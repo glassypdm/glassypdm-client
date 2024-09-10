@@ -119,12 +119,12 @@ function UploadPage() {
       }
 
       const ENDPOINT = url + "/commit";
-      const UPLOAD_LIMIT = 150;
+      const UPLOAD_LIMIT = 200;
       setStatus(
         `Logging project update${uploadList.length > UPLOAD_LIMIT ? "s" : ""}...`
       );
 
-      // commit 150 files at a time
+      // commit 200 files at a time
       for (let i = 0; i < uploadList.length; i += UPLOAD_LIMIT) {
         // append to commit message if needed
         let msg = commitMessage;
