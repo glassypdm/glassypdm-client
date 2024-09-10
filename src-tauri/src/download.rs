@@ -12,8 +12,8 @@ use crate::util::{get_current_server, get_project_dir};
 use tauri::Emitter;
 use tokio::sync::Mutex;
 
-const CONCURRENT_SERVER_REQUESTS: usize = 2;
-const CONCURRENT_AWS_REQUESTS: usize = 4;
+const CONCURRENT_SERVER_REQUESTS: usize = 6;
+const CONCURRENT_AWS_REQUESTS: usize = 6;
 
 #[tauri::command]
 pub async fn download_files(pid: i32, files: Vec<DownloadRequestMessage>, user: String, state_mutex: State<'_, Mutex<Pool<Sqlite>>>, app_handle: AppHandle) -> Result<bool, ReqwestError> {
