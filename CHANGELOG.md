@@ -1,5 +1,37 @@
 # Changelog
 
+## [0.6.0](https://github.com/glassypdm/glassypdm-client/compare/v0.5.1...v0.6.0) (2024-09-09)
+
+
+### Features
+
+* add report bug link in about dialog ([e406ea5](https://github.com/glassypdm/glassypdm-client/commit/e406ea5ca48972296a236c581c2aaed3f7cfecdb))
+* auto updater ([cb22f89](https://github.com/glassypdm/glassypdm-client/commit/cb22f89b17884a5a63503475010494dd1ec15fd6))
+* can create and manage permission groups ([9033189](https://github.com/glassypdm/glassypdm-client/commit/9033189894975ac58a581497dc2fc29405bdc4d8))
+* Can create projects from the client ([5931961](https://github.com/glassypdm/glassypdm-client/commit/593196189f8df8af77248e5413308cfdbf162ff2))
+* concurrent uploads ([5d5be5c](https://github.com/glassypdm/glassypdm-client/commit/5d5be5c8347910cef03983db507a3be55e91f6fb))
+* forgot password auth flow ([d2ee6b2](https://github.com/glassypdm/glassypdm-client/commit/d2ee6b2c75033dbbb8de682b5928aa338b53d64d))
+* light mode option ([a8b499b](https://github.com/glassypdm/glassypdm-client/commit/a8b499b9b9285d8a8c721170adf68c88f51ebdf1))
+* load projects ([f5178a4](https://github.com/glassypdm/glassypdm-client/commit/f5178a408a7625f9da7642ea76b4b84f6e77a072))
+* new home page ([32dfcb5](https://github.com/glassypdm/glassypdm-client/commit/32dfcb5e38ad6179f6126f169bae3d0fadde8985))
+* redesign team permission dashboard ([bcdcf8c](https://github.com/glassypdm/glassypdm-client/commit/bcdcf8c6c0b50128abd33fbf2f90129ee2dd861d))
+* Replace default tauri icon ([f1f6d31](https://github.com/glassypdm/glassypdm-client/commit/f1f6d31a56c325e1ddd8fd4321d7bba46d5cc810))
+* support chunked uploads ([1687540](https://github.com/glassypdm/glassypdm-client/commit/1687540d0ba5cd1ef1a649dc1505e6fb2e840f41))
+* switch for swapping between dev/prod servers ([276b908](https://github.com/glassypdm/glassypdm-client/commit/276b908c36ed7e9190d5dc39cf40871f3d8c0ec4))
+* team selection/creation page ([a252207](https://github.com/glassypdm/glassypdm-client/commit/a2522072fbcfd7af741bc69002a032e994bbf4f7))
+
+
+### Miscellaneous
+
+* Improved error handling for managing teams ([1ab33a2](https://github.com/glassypdm/glassypdm-client/commit/1ab33a2458be1cd1f168becca67a5e2b1f2b91d8))
+* improved login feedback ([aec76b8](https://github.com/glassypdm/glassypdm-client/commit/aec76b854a44c93a7126db97bb23df8ab990c7d6))
+* large commits are broken into smaller ones automatically ([f58c894](https://github.com/glassypdm/glassypdm-client/commit/f58c8947bf246385f5f8c38fd393b582fcd86d00))
+* redesign settings for changing server folder location ([17ac12b](https://github.com/glassypdm/glassypdm-client/commit/17ac12b2b2aed4603fdcb059397da29bc7d70456))
+* refactor get uploads function ([06d53ec](https://github.com/glassypdm/glassypdm-client/commit/06d53ece97e05c75f4b01ca11c80b8c65cef0824))
+* rewrote hashing project directory code ([7b32f2b](https://github.com/glassypdm/glassypdm-client/commit/7b32f2b143b82a1fc97a032b40c86a5aa1d23f4a))
+* store file hashes in sqlite ([f3f7a86](https://github.com/glassypdm/glassypdm-client/commit/f3f7a86a33aa61ab4a1cf7cf53e5cb5503dbc156))
+* use team name in project path ([a466472](https://github.com/glassypdm/glassypdm-client/commit/a466472a32d1567f8c1928931bdeea98370b5914))
+
 ## [0.5.1](https://github.com/joshtenorio/glassypdm-client/compare/v0.5.0...v0.5.1) (2024-04-10)
 
 

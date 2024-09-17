@@ -1,7 +1,0 @@
-build
-coverage
-src-tauri
-dist
-*.md
-*.txt
-*.yml

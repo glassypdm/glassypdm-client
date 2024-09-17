@@ -1,58 +1,36 @@
+use serde::{Deserialize, Serialize};
 use thiserror;
-use serde::{Serialize, Deserialize};
 
-#[derive(Serialize, Deserialize, Clone)]
-pub struct LocalCADFile {
-    pub path: String, // absolute
-    pub size: u64,
-    pub hash: String
+#[derive(Serialize, Deserialize, PartialEq)]
+pub enum ChangeType {
+    NoChange = 0,
+    Create,
+    Update,
+    Delete
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct DownloadFile {
-    pub rel_path: String,
-    pub size: u64
+pub struct SettingsOptions {
+    pub local_dir: String,
+    pub debug_active: i32
 }
 
-#[derive(Clone, Serialize, Deserialize)]
-pub struct DownloadInformation {
-  pub s3Url: String, // this is not snake_case because the server returns in camelCase
-  pub key: String,
-  pub relPath: String // likewise as above
-}
-
-#[derive(Clone, Serialize, Deserialize)]
-pub struct FileLink {
-  pub key: String,
-  pub rel_path: String // likewise as above
-}
-
-#[derive(Clone, Serialize)]
-pub struct DownloadStatusPayload {
-    pub s3: String,
-    pub rel_path: String
-}
-
-// TODO better name
-#[derive(Clone, Serialize)]
-pub struct UploadStatusPayload {
-    pub uploaded: u32,
-    pub total: u32,
-    pub s3: String,
-    pub rel_path: String
-}
-
-// TODO use LocalCADFile to simplify this struct
-#[derive(Serialize, Deserialize, Clone)]
-pub struct Change {
-    pub file: LocalCADFile,
+#[derive(Serialize, Deserialize)]
+pub struct UpdatedFile {
+    pub path: String, // relative
+    pub hash: String,
+    pub size: i32,
     pub change: ChangeType
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct FileUploadStatus {
-    pub result: bool,
-    pub s3key: String
+pub struct RemoteFile {
+    pub frid: i32,
+    pub path: String,
+    pub commitid: i32,
+    pub filehash: String,
+    pub changetype: i32, // TODO use enum
+    pub blocksize: i32
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -69,39 +47,41 @@ impl serde::Serialize for ReqwestError {
     }
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct SyncOutput {
-    pub upload: Vec<Change>,
-    pub download: Vec<TrackedRemoteFile>,
-    pub conflict: Vec<String>
+#[derive(Clone, Serialize, Deserialize)]
+pub struct DownloadServerOutput {
+  pub response: String,
+  pub body: Option<DownloadInformation>
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Clone, Copy, Default)]
-pub enum ChangeType {
-  Create,
-  Update,
-  Delete,
-  #[default]
-  Unidentified,
+#[derive(Clone, Serialize, Deserialize)]
+pub struct DownloadInformation {
+  pub file_hash: String,
+  pub file_path: String,
+  pub commit_id: i64,
+  pub file_chunks: Vec<FileChunk>
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+
+pub struct FileChunk {
+    pub s3_url: String,
+    pub block_hash: String,
+    pub chunk_index: i64,
+    pub file_hash: String
 }
 
 #[derive(Serialize, Deserialize, Clone)]
-pub struct RemoteFile {
-    pub path: String, // relative
-    pub commitid: u64,
-    pub s3key: Option<String>,
-    pub size: u64,
+pub struct DownloadRequestMessage {
+    pub commit_id: i64,
+    pub rel_path: String,
     pub hash: String,
+    pub download: bool
 }
 
 #[derive(Serialize, Deserialize, Clone)]
-pub struct TrackedRemoteFile {
-  pub file: RemoteFile,
-  pub change: ChangeType
-}
-
-#[derive(Clone, serde::Serialize)]
-pub struct SingleInstancePayload {
-  pub args: Vec<String>,
-  pub cwd: String,
+pub struct DownloadRequest {
+    pub project_id: i64,
+    pub path: String,
+    pub commit_id: i64,
+    pub user_id: String
 }

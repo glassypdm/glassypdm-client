@@ -1,275 +1,315 @@
-use merkle_hash::{bytes_to_hex, Algorithm, MerkleTree, anyhow::Error};
-use tauri::Manager;
-use tauri_plugin_store::StoreBuilder;
-use serde_json::json;
-use std::fs::File;
-use std::io::Write;
-use log::{info, trace, error};
-use crate::util::{is_key_in_list, vec_lcf_diff, store_to_vec};
-use crate::settings::{get_project_dir, get_app_local_data_dir};
-use crate::types::{LocalCADFile, Change, SyncOutput, RemoteFile, ChangeType, TrackedRemoteFile, FileLink};
+use std::{fs, process::Command};
+use serde::{Deserialize, Serialize};
+use sqlx::{Pool, Sqlite, Row};
+use tauri::State;
+use merkle_hash::{bytes_to_hex, Algorithm, MerkleTree};
+use crate::{types::RemoteFile, util::{get_active_server, get_project_dir}};
+use std::path::PathBuf;
+use tokio::sync::Mutex;
 
-#[tauri::command]
-pub fn hash_dir(app_handle: tauri::AppHandle, results_path: &str, ignore_list: Vec<String>) {
-    trace!("hashing project directory");
-    let path: String = get_project_dir(app_handle.clone());
-    if path == "no lol" {
-        error!("hashing failed; invalid project directory");
-        return;
-    }
-    let mut store = StoreBuilder::new(app_handle, results_path.parse().unwrap()).build();
-    let _ = store.clear().unwrap();
+pub async fn hash_dir(pid: i32, dir_path: PathBuf, pool: &Pool<Sqlite>) {
+    println!("start: {}", dir_path.display());
 
-    let mut files: Vec<LocalCADFile> = Vec::new();
+    let _ = sqlx::query("UPDATE file SET in_fs = 0 WHERE pid = $1").bind(pid).execute(&*pool).await;
 
-    info!("ignoring {} files", ignore_list.len());
-    // first, handle ignorelist
-    let base_json: Vec<LocalCADFile> = store_to_vec(store.values());
-    for ignored_file in &ignore_list {
-        info!("ignoring file {}", ignored_file);
-        for file in &base_json {
-            if file.path == ignored_file.clone() {
-                let output: LocalCADFile = LocalCADFile {
-                    path: ignored_file.clone(),
-                    size: file.size,
-                    hash: file.hash.clone()
-                };
-                let _ = store.insert(ignored_file.clone(), json!(output));
-                files.push(output);
+    let tree = MerkleTree::builder(dir_path.display().to_string())
+    .algorithm(Algorithm::Blake3)
+    .hash_names(false)
+    .build().unwrap();
+    
+    for file in tree {
+        // uwu
+        let rel_path = file.path.relative.into_string();
+        let metadata = std::fs::metadata(file.path.absolute.clone()).unwrap();
+        let hash = bytes_to_hex(file.hash);
+        let filesize = metadata.len();
+        // ignore folders
+        if metadata.is_dir() {
+            continue;
+        }
+        //println!("hash {}", hash);
+
+        // ignore temp solidworks files
+        if rel_path.contains("~$") {
+            //println!("solidworks temporary file detected {}", rel_path);
+            continue;
+        } // root directory is empty
+        else if rel_path == "" {
+            continue;
+        }
+
+        if filesize == 0 {
+            println!("empty file found");
+            continue;
+        }
+
+        // write to sqlite
+        let hehe = sqlx::query("INSERT INTO file(filepath, pid, curr_hash, size) VALUES($1, $2, $3, $4)
+        ON CONFLICT(filepath, pid) DO UPDATE SET curr_hash = excluded.curr_hash, size = excluded.size, in_fs = 1")
+        .bind(rel_path)
+        .bind(pid)
+        .bind(hash)
+        .bind(filesize as i64)
+        .execute(&*pool).await;
+        match hehe {
+            Ok(_owo) => {},
+            Err(err) =>{
+                println!("error! {}", err);
             }
         }
     }
 
-    // build hash
-    let do_steps = || -> Result<(), Error> {
-        let tree = MerkleTree::builder(path)
-        .algorithm(Algorithm::Blake3)
-        .hash_names(true)
-        .build().unwrap();
+    // no change - file was un-deleted (e.g., recovered from user's recycle bin)
+    let _ = sqlx::query(
+        "UPDATE file SET change_type = 0 WHERE in_fs = 1 AND change_type = 3 AND pid = $1"
+    ).bind(pid).execute(pool).await;
 
-        for item in tree {
-            let pathbuf = item.path.absolute.into_string();
-            let s_hash = bytes_to_hex(item.hash);
+    // no change - file was reset
+    let _ = sqlx::query(
+        "UPDATE file SET change_type = 0 WHERE in_fs = 1 AND base_hash == curr_hash AND pid = $1"
+    ).bind(pid).execute(pool).await;
 
-            if pathbuf.as_str() == "" {
-                continue;
+    // updated file - base hash is different from current hash, and file is tracked, i.e. base hash not empty
+    let _ = sqlx::query(
+        "UPDATE file SET change_type = 2 WHERE in_fs = 1 AND base_hash != curr_hash AND pid = $1 AND base_hash != ''"
+    ).bind(pid).execute(pool).await;
+
+    // new file - base hash is different from current hash and file is untracked, i.e. base hash is empty
+    let _ = sqlx::query(
+        "UPDATE file SET change_type = 1 WHERE in_fs = 1 AND base_hash != curr_hash AND pid = $1 AND base_hash == ''"
+    ).bind(pid).execute(pool).await;
+
+    // deleted file - file is tracked, i.e. base hash not empty and file wasn't found in folder
+    let _ = sqlx::query(
+        "UPDATE file SET change_type = 3 WHERE in_fs = 0 AND pid = $1 AND base_hash != ''"
+    ).bind(pid).execute(pool).await;
+
+    // delete entries of files that are untracked and deleted
+    let _ = sqlx::query(
+        "DELETE FROM file WHERE in_fs = 0 AND pid = $1 AND base_hash = ''"
+    ).bind(pid).execute(pool).await;
+
+}
+
+// :clown:
+#[tauri::command]
+pub async fn open_project_dir(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<(), ()> {
+    let pool = state_mutex.lock().await;
+    let project_dir = get_project_dir(pid, &pool).await.unwrap();
+    let _ = fs::create_dir_all(&project_dir);
+
+    // TODO windows only
+    Command::new("explorer")
+        .arg(project_dir)
+        .spawn()
+        .unwrap();
+
+    return Ok(())
+}
+// precondition: we have a server_url
+#[tauri::command]
+pub async fn sync_changes(pid: i32, remote: Vec<RemoteFile>, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<bool, ()> {
+    let pool = state_mutex.lock().await;
+    let project_dir = get_project_dir(pid, &pool).await.unwrap();
+
+    // create folder if it does not exist
+    let _ = fs::create_dir_all(&project_dir);
+
+    // hash local files
+    hash_dir(pid, project_dir.into(), &pool).await;
+    println!("hashing done");
+
+    // update table with remote files
+    for file in remote {
+        // write to sqlite
+        let hehe = sqlx::query("INSERT INTO file(filepath, pid, tracked_commitid, tracked_hash, tracked_changetype, in_fs, change_type, tracked_size)
+            VALUES($1, $2, $3, $4, $5, $6, $7, $8)
+            ON CONFLICT(filepath, pid) DO UPDATE SET
+            tracked_commitid = excluded.tracked_commitid,
+            tracked_hash = excluded.tracked_hash,
+            tracked_changetype = CASE WHEN base_hash != '' THEN excluded.tracked_changetype ELSE 1 END,
+            tracked_size = excluded.tracked_size")
+        .bind(file.path)
+        .bind(pid)
+        .bind(file.commitid)
+        .bind(file.filehash)
+        .bind(if file.changetype == 3 { 3 } else { 1 })
+        .bind(0)
+        .bind(0)
+        .bind(file.blocksize)
+        .execute(&*pool).await;
+        match hehe {
+            Ok(_owo) => {},
+            Err(err) =>{
+                println!("error! {}", err);
             }
-            let metadata = std::fs::metadata(pathbuf.as_str())?;
-            let isthisfile = metadata.is_file();
-            let filesize = metadata.len();
-
-            // ignore if directory
-            if !isthisfile {
-                continue;
-            }
-
-            // if file is in ignorelist, we already handled it
-            // so ignore it
-            if is_key_in_list(pathbuf.clone(), ignore_list.clone()) {
-                continue;
-            }
-
-            // ignore temporary solidworks files
-            if pathbuf.as_str().contains("~$") {
-                continue;
-            }
-
-            //println!("{}: {}", pathbuf, s_hash);
-            let file = LocalCADFile {
-                hash: s_hash,
-                path: pathbuf.clone(),
-                size: filesize,
-            };
-            let _ = store.insert(pathbuf, json!(file));
-            files.push(file);
         }
-
-        //let json = serde_json::to_string(&files)?;
-
-        //let mut file = File::create(results_path)?;
-        //file.write_all(json.as_bytes())?;
-        let _ = store.save();
-        Ok(())
-    };
-    let _ = do_steps();
-
-    trace!("fn hash_dir done");
+    }
+    
+    // TODO update last_synced in project table
+    Ok(true)
 }
 
 #[tauri::command]
-pub fn sync_server(app_handle: tauri::AppHandle, remote_files: Vec<RemoteFile>) -> SyncOutput {
-    // get project directory
-    let project_dir: String = get_project_dir(app_handle.clone());
+pub async fn update_project_info(pid: i32, title: String, team_name: String, init_commit: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<(), ()> {
+    let pool = state_mutex.lock().await;
+    let server = get_active_server(&pool).await.unwrap();
 
-    // read in base.json
-    let mut base_path = get_app_local_data_dir(&app_handle);
-    base_path.push("base.dat");
-    //let base_str = fs::read_to_string(base_path).unwrap();
-    //let base_files: Vec<LocalCADFile> = serde_json::from_str(&base_str).unwrap();
-    let mut store = StoreBuilder::new(app_handle.clone(), base_path).build();
-    let _ = store.load();
-    let base_files = store_to_vec(store.values());
+    let _output = sqlx::query("INSERT INTO project(pid, url, title, team_name, base_commitid, remote_title) VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT(pid, url) DO UPDATE SET remote_title = excluded.title")
+        .bind(pid)
+        .bind(server)
+        .bind(title.clone())
+        .bind(team_name)
+        .bind(init_commit)
+        .bind(title.clone())
+        .execute(&*pool)
+        .await;
 
-    // do comparisons
-    let upload: Vec<Change> = get_uploads(&app_handle, &base_files);
-    let download: Vec<TrackedRemoteFile> = get_downloads(&app_handle, &base_files, remote_files, &project_dir);
-    let conflict: Vec<String> = get_conflicts(&upload, &download, &project_dir);
-
-    let output: SyncOutput = SyncOutput {
-        upload, download, conflict
-    };
-
-    return output;
+    Ok(())
 }
 
-fn get_uploads(app_handle: &tauri::AppHandle, base_files: &Vec<LocalCADFile>) -> Vec<Change> {
-    // read in compare.json
-    let mut compare_path = get_app_local_data_dir(&app_handle);
-    compare_path.push("compare.dat");
-    let mut store = StoreBuilder::new(app_handle.clone(), compare_path).build();
-    let _ = store.load();
-    //let compare_str = fs::read_to_string(compare_path).unwrap();
-    let compare_files: Vec<LocalCADFile> = store_to_vec(store.values());
+#[derive(sqlx::FromRow, Serialize, Deserialize)]
+pub struct FileChange {
+    filepath: String,
+    size: u32,
+    change_type: u32,
+    hash: String,
+    commit_id: i32
+}
 
-    // populate upload list
-    let mut output: Vec<Change> = Vec::new();
+#[tauri::command]
+pub async fn get_uploads(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<Vec<FileChange>, ()> {
+    let pool = state_mutex.lock().await;
 
-    // if files in base \cap compare differ, they should be uploaded
-    for b_file in base_files {
-        for c_file in compare_files.clone() {
-            if b_file.path == c_file.path && (b_file.hash != c_file.hash || b_file.size != c_file.size) {
-                output.push(Change {
-                    file: LocalCADFile {
-                        path: c_file.path,
-                        size: c_file.size,
-                        hash: c_file.hash
+    let output: Vec<FileChange> = match sqlx::query_as("SELECT filepath, size, change_type, curr_hash as hash, base_commitid as commit_id FROM file WHERE pid = $1 AND change_type != 0")
+    .bind(pid).fetch_all(&*pool)
+    .await {
+        Ok(uploads) => uploads,
+        Err(err) => {
+            println!("get_uploads had error querying db: {}", err);
+            Vec::<FileChange>::new()
+        }
+    };
+
+    Ok(output)
+}
+
+#[tauri::command]
+pub async fn get_downloads(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<Vec<FileChange>, ()> {
+    let pool = state_mutex.lock().await;
+
+    let output: Vec<FileChange> = match sqlx::query_as(
+        "SELECT filepath, tracked_size as size, tracked_changetype as change_type, tracked_hash as hash, tracked_commitid as commit_id FROM file WHERE pid = $1 AND
+        (
+            (base_hash != tracked_hash AND base_hash != '' AND tracked_changetype = 3) OR
+            (base_hash != tracked_hash AND tracked_changetype != 3)
+        )
+        "
+    )
+    .bind(pid).fetch_all(&*pool)
+    .await {
+        Ok(downloads) => downloads,
+        Err(err) => {
+            println!("get_downloads had error querying db: {}", err);
+            Vec::<FileChange>::new()
+        }
+    };
+
+    Ok(output)
+}
+
+#[tauri::command]
+pub async fn get_conflicts(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<Vec<FileChange>, ()> {
+    let pool = state_mutex.lock().await;
+
+    let output: Vec<FileChange> = match sqlx::query_as(
+// commented out: old conflict detection
+// current logic: get_uploads \cap get_downloads
+//        "SELECT filepath, size, change_type, curr_hash as hash, base_commitid as commit_id FROM file WHERE pid = $1 AND
+//        tracked_hash != curr_hash AND curr_hash != '' AND tracked_hash != base_hash"
+        "SELECT filepath, size, change_type, curr_hash as hash, base_commitid as commit_id FROM file WHERE pid = $1 AND
+        change_type != 0 AND
+        (
+            (base_hash != tracked_hash AND base_hash != '' AND tracked_changetype = 3) OR
+            (base_hash != tracked_hash AND tracked_changetype != 3)
+        )
+        "
+    )
+    .bind(pid).fetch_all(&*pool)
+    .await {
+        Ok(conflicts) => conflicts,
+        Err(err) => {
+            println!("get_conflicts had error querying db: {}", err);
+            Vec::<FileChange>::new()
+        }
+    };
+
+    Ok(output)
+}
+
+#[tauri::command]
+pub async fn get_project_name(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<String, ()> {
+    let pool = state_mutex.lock().await;
+    let server = get_active_server(&pool).await.unwrap();
+    let output = sqlx::query("SELECT title FROM project WHERE pid = $1 AND url = $2")
+        .bind(pid)
+        .bind(server)
+        .fetch_one(&*pool)
+        .await;
+
+    match output {
+        Ok(row) => {
+            Ok(row.get::<String, &str>("title"))
+        },
+        Err(err) => {
+            println!("Error retrieving project name: {}", err);
+            Ok("".to_string())
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct LocalProject {
+    pid: i32,
+    title: String,
+    team_name: String
+}
+
+#[tauri::command]
+pub async fn get_local_projects(state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<Vec<LocalProject>, ()> {
+    let pool = state_mutex.lock().await;
+    let server = get_active_server(&pool).await.unwrap();
+
+    let pid_query = sqlx::query("SELECT DISTINCT pid FROM file")
+        .fetch_all(&*pool).await;
+    let mut output: Vec<LocalProject> = vec![];
+    match pid_query {
+        Ok(rows) => {
+            for row in rows {
+                let pid = row.get::<i32, &str>("pid");
+                let query = sqlx::query("SELECT title, team_name FROM project WHERE url = $1 AND pid = $2")
+                    .bind(server.clone())
+                    .bind(pid)
+                    .fetch_one(&*pool).await;
+
+                match query {
+                    Ok(row) => {
+                        output.push( LocalProject {
+                            pid: pid,
+                            title: row.get::<String, &str>("title").to_string(),
+                            team_name: row.get::<String, &str>("team_name").to_string()
+                        })
                     },
-                    change: ChangeType::Update
-                });
+                    Err(err) => {
+                        println!("error: {}", err);
+                    }
+                }
             }
-        }
-    }
-
-    // if files are in base \setminus compare, they should be deleted
-    let base_diff: Vec<LocalCADFile> = vec_lcf_diff(base_files.to_vec(), &compare_files);
-    for file in base_diff.clone() {
-        output.push(Change {
-            file: LocalCADFile {
-                path: file.path,
-                size: 0,
-                hash: file.hash
-            },
-            change: ChangeType::Delete
-        })
-    }
-    trace!("{} files found in the base diff", base_diff.len());
-
-    // if files are in compare \setminus base, they should be uploaded (new files)
-    let compare_diff: Vec<LocalCADFile> = vec_lcf_diff(compare_files, base_files);
-    for file in compare_diff.clone() {
-        output.push(Change {
-            file: LocalCADFile {
-                path: file.path,
-                size: file.size,
-                hash: file.hash
-            },
-            change: ChangeType::Create
-        })
-    }
-    trace!("{} files found in the compare diff", compare_diff.len());
-
-    // write to toUpload.json
-    let json = match serde_json::to_string(&output) {
-        Ok(string) => string,
-        Err(error) => {
-            error!("Problem writing to toUpload.json: {}", error);
-            panic!("Problem writing to toUpload.json: {}", error);
         },
-    };
-
-    let mut output_path = get_app_local_data_dir(&app_handle);
-    output_path.push("toUpload.json");
-    let mut file = File::create(output_path).unwrap();
-    let _ = file.write_all(json.as_bytes());
-
-    info!("{} files to upload", output.len());
-    return output;
-}
-
-fn get_downloads(app_handle: &tauri::AppHandle, base_files: &Vec<LocalCADFile>, remote_files: Vec<RemoteFile>, project_dir: &String) -> Vec<TrackedRemoteFile> {
-    let mut output: Vec<TrackedRemoteFile> = Vec::new();
-
-    // populate download list
-    for r_file in remote_files {
-        let mut t_file: TrackedRemoteFile = TrackedRemoteFile {
-            file: r_file.clone(),
-            change: ChangeType::Unidentified
-        };
-        let mut found: bool = false;
-        for b_file in base_files {
-            let b_path: String = b_file.path.replace(project_dir, "");
-            if r_file.path == b_path && r_file.size == 0 {
-                found = true;
-                t_file.change = ChangeType::Delete;
-                info!("Detected file to delete: {}", t_file.clone().file.path);
-                output.push(t_file.clone());
-                break;
-            }
-            else if r_file.path == b_path && (r_file.size != b_file.size || r_file.hash != b_file.hash) {
-                found = true;
-                t_file.change = ChangeType::Update;
-                output.push(t_file.clone());
-                info!("Detected file to update: {}", t_file.clone().file.path);
-                break;
-            }
-            else if r_file.path == b_path {
-                // file exists and hasn't been changed
-                found = true;
-                // ensure s3key.dat is up-to-date
-                let _ = match &t_file.file.s3key {
-                    Some(key) => app_handle.emit_all("updateKeyStore", FileLink { rel_path: t_file.clone().file.path, key: key.to_string() }),
-                    None => Ok(())
-                };
-            }
-        }
-
-        if !found && r_file.size != 0 {
-            t_file.change = ChangeType::Create;
-            info!("Detected file to create: {}", t_file.file.path);
-            output.push(t_file);
+        Err(err) => {
+            println!("error: {}", err);
         }
     }
-
-    // write to toDownload.json
-    let json = match serde_json::to_string(&output) {
-        Ok(string) => string,
-        Err(error) => {
-            error!("Problem writing to toDownload.json: {}", error);
-            panic!("Problem writing to toDownload.json: {}", error);
-        },
-    };
-
-    let mut output_path = get_app_local_data_dir(&app_handle);
-    output_path.push("toDownload.json");
-    let mut file = File::create(output_path).unwrap();
-    let _ = file.write_all(json.as_bytes());
-
-    info!("{} files to download", output.len());
-    return output;
-}
-
-fn get_conflicts(upload: &Vec<Change>, download: &Vec<TrackedRemoteFile>, project_dir: &String) -> Vec<String> {
-    let mut output: Vec<String> = Vec::new();
-    for u_file in upload {
-        for d_file in download {
-            let u_path: String = u_file.file.path.replace(project_dir, "");
-            if u_path == d_file.file.path {
-                info!("found conflicting file: {}", u_path);
-                output.push(u_path);
-            }
-        }
-    }
-
-    info!("{} conflicting files", output.len());
-    return output;
+    Ok(output)
 }
