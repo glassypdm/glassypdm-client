@@ -13,38 +13,98 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: google-github-actions/release-please-action@v3
+        id: version
         with:
           release-type: simple
           package-name: glassyPDM
           changelog-types: '[
-          {
-            "type": "feat",
-            "section": "Features",
-            "hidden": false
-          },
-          {
-            "type": "fix",
-            "section": "Bug Fixes",
-            "hidden": false
-          },
-          {
-            "type": "perf",
-            "section": "Miscellaneous",
-            "hidden": false
-          },
-          {
-            "type": "refactor",
-            "section": "Miscellaneous",
-            "hidden": false
-          },
-          {
-            "type": "style",
-            "section": "Miscellaneous",
-            "hidden": false
-          },
-          {
-            "type": "misc",
-            "section": "Miscellaneous",
-            "hidden": false
-          }
-          ]'
+            {
+              "type": "feat",
+              "section": "Features",
+              "hidden": false
+            },
+            {
+              "type": "fix",
+              "section": "Bug Fixes",
+              "hidden": false
+            },
+            {
+              "type": "perf",
+              "section": "Miscellaneous",
+              "hidden": false
+            },
+            {
+              "type": "refactor",
+              "section": "Miscellaneous",
+              "hidden": false
+            },
+            {
+              "type": "style",
+              "section": "Miscellaneous",
+              "hidden": false
+            },
+            {
+              "type": "misc",
+              "section": "Miscellaneous",
+              "hidden": false
+            }]'
+    outputs:
+      version: ${{ steps.version.outputs.major }}.${{ steps.version.outputs.minor }}.${{ steps.version.outputs.patch }}
+      release-created: ${{ steps.version.outputs.release-created }}
+      release-tag: ${{ steps.version.outputs.release-tag }}
+
+  publish:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.release-created == 'true' }}
+    permissions:
+      contents: write
+    strategy:
+      matrix:
+        include:
+          - platform: 'ubuntu-22.04'
+            args: ''
+          - platform: 'windows-latest'
+            args: '--bundle nsis'
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Change Version (Windows)
+        if: matrix.platform == 'windows-latest'
+        run: |
+          jq '.version = "${{ needs.release-please.outputs.version }}"' package.json | Out-File -Encoding utf8 package.json.tmp
+          mv -Force package.json.tmp package.json
+      
+      - name: Change Version (Unix)
+        if: matrix.platform != 'windows-latest'
+        run: |
+          sed -i "s/\"version\": \".*\"/\"version\": \"${{ needs.release-please.outputs.version }}\"/" package.json
+
+      - name: install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          # Those targets are only used on macos runners so it's in an `if` to slightly speed up windows and linux builds.
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - name: install dependencies (ubuntu only)
+        if: matrix.platform == 'ubuntu-22.04' # This must match the platform value defined above.
+        # change to libwebkit2gtk-4.1-dev on update to Tauri 2.0
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: install frontend dependencies
+        run: pnpm install
+
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: v__VERSION__ # the action automatically replaces \_\_VERSION\_\_ with the app version.
+          releaseName: 'v__VERSION__'
+          args: ${{ matrix.args }}
