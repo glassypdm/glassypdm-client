@@ -1,25 +1,36 @@
-use std::fs;
-use std::sync::Arc;
-use futures::{stream, StreamExt};
-use tokio::sync::Mutex;
-use std::path::Path;
-use sqlx::{Pool, Sqlite, Row};
-use tauri::{AppHandle, Manager, Emitter};
-use crate::download::{assemble_file, download_with_client, recover_file, save_filechunkmapping, trash_file, verify_cache};
+use crate::download::{
+    assemble_file, download_with_client, recover_file, save_filechunkmapping, trash_file,
+    verify_cache,
+};
 use crate::sync::hash_dir;
 use crate::types::{DownloadRequest, DownloadRequestMessage, DownloadServerOutput, FileChunk};
-use crate::util::{delete_trash, get_cache_dir, get_current_server, get_project_dir, get_trash_dir};
+use crate::util::{
+    delete_trash, get_cache_dir, get_current_server, get_project_dir, get_trash_dir,
+};
+use futures::{stream, StreamExt};
 use reqwest::Client;
+use sqlx::{Pool, Row, Sqlite};
+use std::fs;
+use std::path::Path;
+use std::sync::Arc;
+use tauri::{AppHandle, Emitter, Manager};
+use tokio::sync::Mutex;
 
 const CONCURRENT_SERVER_REQUESTS: usize = 2;
 const CONCURRENT_AWS_REQUESTS: usize = 4;
 
-
 #[tauri::command]
-pub async fn reset_files(pid: i64, filepaths: Vec<String>, user: String, app_handle: AppHandle) -> Result<bool, ()> {
+pub async fn reset_files(
+    pid: i64,
+    filepaths: Vec<String>,
+    user: String,
+    app_handle: AppHandle,
+) -> Result<bool, ()> {
     let state_mutex = app_handle.state::<Mutex<Pool<Sqlite>>>();
     let pool = state_mutex.lock().await;
-    let project_dir = get_project_dir(pid.try_into().unwrap(), &pool).await.unwrap();
+    let project_dir = get_project_dir(pid.try_into().unwrap(), &pool)
+        .await
+        .unwrap();
     let server_url = get_current_server(&pool).await.unwrap();
     let cache_dir = get_cache_dir(&pool).await.unwrap();
     let trash_dir = get_trash_dir(&pool).await.unwrap();
@@ -33,11 +44,12 @@ pub async fn reset_files(pid: i64, filepaths: Vec<String>, user: String, app_han
             "
             SELECT base_commitid, base_hash, curr_hash FROM file WHERE
             pid = $1 AND filepath = $2 LIMIT 1;
-            "
+            ",
         )
         .bind(pid)
         .bind(file.clone())
-        .fetch_one(&*pool).await;
+        .fetch_one(&*pool)
+        .await;
 
         match result {
             Ok(row) => {
@@ -50,7 +62,7 @@ pub async fn reset_files(pid: i64, filepaths: Vec<String>, user: String, app_han
                         hash: base_hash,
                         rel_path: file.clone(),
                         commit_id: commit,
-                        download: true
+                        download: true,
                     });
 
                     // if file isnt in cache, we need to  download it
@@ -59,19 +71,18 @@ pub async fn reset_files(pid: i64, filepaths: Vec<String>, user: String, app_han
                             project_id: pid,
                             path: file,
                             commit_id: commit,
-                            user_id: user.clone()
+                            user_id: user.clone(),
                         });
                     }
-                }
-                else {
+                } else {
                     to_delete.push(DownloadRequestMessage {
                         commit_id: -1,
                         download: false,
                         rel_path: file,
-                        hash: curr_hash
+                        hash: curr_hash,
                     });
                 }
-            },
+            }
             Err(err) => {
                 println!("reset files error: {}", err);
                 return Ok(false);
@@ -93,49 +104,57 @@ pub async fn reset_files(pid: i64, filepaths: Vec<String>, user: String, app_han
                     project_id: pid.to_owned().into(),
                     path: download.path,
                     commit_id: download.commit_id,
-                    user_id: auth
+                    user_id: auth,
                 };
-                let response = g_client
-                    .post(cloned_endpoint)
-                    .json(&body)
-                    .send().await;
-    
+                let response = g_client.post(cloned_endpoint).json(&body).send().await;
+
                 match response {
-                    Ok(res) => {
-                        res.json::<DownloadServerOutput>().await.unwrap_or_else(
-                            |_| DownloadServerOutput { response: "server error".to_string(), body: None })
-                    },
+                    Ok(res) => res
+                        .json::<DownloadServerOutput>()
+                        .await
+                        .unwrap_or_else(|_| DownloadServerOutput {
+                            response: "server error".to_string(),
+                            body: None,
+                        }),
                     Err(err) => {
                         println!("error: {}", err);
-                        DownloadServerOutput { response: "reqwest error".to_string(), body: None }
+                        DownloadServerOutput {
+                            response: "reqwest error".to_string(),
+                            body: None,
+                        }
                     }
                 }
             }
-        }).buffer_unordered(CONCURRENT_SERVER_REQUESTS);
-    
+        })
+        .buffer_unordered(CONCURRENT_SERVER_REQUESTS);
+
     let chunk_downloads = Arc::new(Mutex::new(Vec::<FileChunk>::new()));
     let moved_chunk_downloads = Arc::clone(&chunk_downloads);
     let error_flag = Arc::new(Mutex::new(false));
     let moved_error_flag = Arc::clone(&error_flag);
-    outputs.for_each(|output| {
-        let cloned_boi = Arc::clone(&moved_chunk_downloads);
-        let cloned_error_flag = Arc::clone(&moved_error_flag);
-        let cache = cache_dir.clone();
-        async move {
-            let mut error = cloned_error_flag.lock().await;
-            if output.response == "success" {
-                let info = output.body.unwrap();
-                let _ = save_filechunkmapping(&cache, &info).unwrap();
-                for chunk in info.file_chunks {
-                    cloned_boi.lock().await.push(chunk);
+    outputs
+        .for_each(|output| {
+            let cloned_boi = Arc::clone(&moved_chunk_downloads);
+            let cloned_error_flag = Arc::clone(&moved_error_flag);
+            let cache = cache_dir.clone();
+            async move {
+                let mut error = cloned_error_flag.lock().await;
+                if output.response == "success" {
+                    let info = output.body.unwrap();
+                    let _ = save_filechunkmapping(&cache, &info).unwrap();
+                    for chunk in info.file_chunks {
+                        cloned_boi.lock().await.push(chunk);
+                    }
+                } else {
+                    *error = false;
+                    println!(
+                        "error TODO something L159 download.rs: response= {}",
+                        output.response
+                    );
                 }
             }
-            else {
-                *error = false;
-                println!("error TODO something L159 download.rs: response= {}", output.response);
-            }
-        }
-    }).await;
+        })
+        .await;
 
     if *error_flag.lock().await {
         println!("issue getting download link");
@@ -144,7 +163,7 @@ pub async fn reset_files(pid: i64, filepaths: Vec<String>, user: String, app_han
 
     let num_chunks = chunk_downloads.lock().await.len();
     println!("s3 urls obtained, downloading {} chunks...", num_chunks);
-    
+
     // download chunks
     let copy = (*chunk_downloads).lock().await.clone();
     let aws_client: Client = reqwest::Client::new();
@@ -161,14 +180,15 @@ pub async fn reset_files(pid: i64, filepaths: Vec<String>, user: String, app_han
                 let _ = match res {
                     Ok(_) => {
                         let _ = handle.emit("downloadedFile", &num_chunks);
-                    },
+                    }
                     Err(err) => {
                         *error = true;
                         println!("error downloading file {}", err);
                     }
                 };
             }
-        }).await;
+        })
+        .await;
 
     if *error_flag.lock().await {
         println!("issue downloading file from s3");
@@ -207,8 +227,7 @@ pub async fn reset_files(pid: i64, filepaths: Vec<String>, user: String, app_han
             let _ = recover_file(&trash_dir, &proj_dir).unwrap();
         }
         return Ok(false);
-    }
-    else {
+    } else {
         let _ = delete_trash(&pool).await.unwrap();
     }
 
@@ -230,13 +249,12 @@ pub async fn reset_files(pid: i64, filepaths: Vec<String>, user: String, app_han
                         // how do we want to handle this? because we've already started copying files into project
                         // TODO
                     }
-                }
-                else {
+                } else {
                     println!("file {} not found in cache", cache_str);
                     oops += 1;
                     continue;
                 }
-            },
+            }
             Err(err) => {
                 println!("error copying file: {}", err);
                 oops += 1;

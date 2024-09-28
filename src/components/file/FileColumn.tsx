@@ -1,5 +1,6 @@
 import { ColumnDef } from "@tanstack/react-table"
 import { Checkbox } from "../ui/checkbox";
+import { cn } from "@/lib/utils";
 
 export interface File {
     change_type: number
@@ -54,9 +55,9 @@ export const columns: ColumnDef<File>[] = [
               break;
           }
           return (
-            <p className={color}>
+            <div className={cn(color, "w-96")}>
               {symbol} {file.filepath}
-            </p>
+            </div>
           );
         },
       },

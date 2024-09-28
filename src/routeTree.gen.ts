@@ -303,34 +303,250 @@ declare module '@tanstack/react-router' {
 
 // Create and export the route tree
 
-export const routeTree = rootRoute.addChildren({
-  IndexRoute,
-  AppRoute: AppRoute.addChildren({
-    AppWorkbenchRoute: AppWorkbenchRoute.addChildren({
-      AppWorkbenchDashboardRoute,
-      AppWorkbenchSettingsRoute,
-      AppWorkbenchTeamsRoute: AppWorkbenchTeamsRoute.addChildren({
-        AppWorkbenchTeamsTeamidRoute: AppWorkbenchTeamsTeamidRoute.addChildren({
-          AppWorkbenchTeamsTeamidManageRoute,
-          AppWorkbenchTeamsTeamidMembersRoute,
-          AppWorkbenchTeamsTeamidPgroupsRoute,
-        }),
-      }),
-      AppWorkbenchProjectsPidRoute: AppWorkbenchProjectsPidRoute.addChildren({
-        AppWorkbenchProjectsPidFilesRoute,
-        AppWorkbenchProjectsPidHistoryRoute,
-        AppWorkbenchProjectsPidSettingsRoute,
-        AppWorkbenchProjectsPidSyncRoute,
-      }),
-      AppWorkbenchProjectsIndexRoute,
-    }),
-    AppDownloadRoute,
-    AppSigninRoute,
-    AppSignupRoute,
-    AppUploadRoute,
-  }),
-  ServersetupRoute,
-})
+interface AppWorkbenchTeamsTeamidRouteChildren {
+  AppWorkbenchTeamsTeamidManageRoute: typeof AppWorkbenchTeamsTeamidManageRoute
+  AppWorkbenchTeamsTeamidMembersRoute: typeof AppWorkbenchTeamsTeamidMembersRoute
+  AppWorkbenchTeamsTeamidPgroupsRoute: typeof AppWorkbenchTeamsTeamidPgroupsRoute
+}
+
+const AppWorkbenchTeamsTeamidRouteChildren: AppWorkbenchTeamsTeamidRouteChildren =
+  {
+    AppWorkbenchTeamsTeamidManageRoute: AppWorkbenchTeamsTeamidManageRoute,
+    AppWorkbenchTeamsTeamidMembersRoute: AppWorkbenchTeamsTeamidMembersRoute,
+    AppWorkbenchTeamsTeamidPgroupsRoute: AppWorkbenchTeamsTeamidPgroupsRoute,
+  }
+
+const AppWorkbenchTeamsTeamidRouteWithChildren =
+  AppWorkbenchTeamsTeamidRoute._addFileChildren(
+    AppWorkbenchTeamsTeamidRouteChildren,
+  )
+
+interface AppWorkbenchTeamsRouteChildren {
+  AppWorkbenchTeamsTeamidRoute: typeof AppWorkbenchTeamsTeamidRouteWithChildren
+}
+
+const AppWorkbenchTeamsRouteChildren: AppWorkbenchTeamsRouteChildren = {
+  AppWorkbenchTeamsTeamidRoute: AppWorkbenchTeamsTeamidRouteWithChildren,
+}
+
+const AppWorkbenchTeamsRouteWithChildren =
+  AppWorkbenchTeamsRoute._addFileChildren(AppWorkbenchTeamsRouteChildren)
+
+interface AppWorkbenchProjectsPidRouteChildren {
+  AppWorkbenchProjectsPidFilesRoute: typeof AppWorkbenchProjectsPidFilesRoute
+  AppWorkbenchProjectsPidHistoryRoute: typeof AppWorkbenchProjectsPidHistoryRoute
+  AppWorkbenchProjectsPidSettingsRoute: typeof AppWorkbenchProjectsPidSettingsRoute
+  AppWorkbenchProjectsPidSyncRoute: typeof AppWorkbenchProjectsPidSyncRoute
+}
+
+const AppWorkbenchProjectsPidRouteChildren: AppWorkbenchProjectsPidRouteChildren =
+  {
+    AppWorkbenchProjectsPidFilesRoute: AppWorkbenchProjectsPidFilesRoute,
+    AppWorkbenchProjectsPidHistoryRoute: AppWorkbenchProjectsPidHistoryRoute,
+    AppWorkbenchProjectsPidSettingsRoute: AppWorkbenchProjectsPidSettingsRoute,
+    AppWorkbenchProjectsPidSyncRoute: AppWorkbenchProjectsPidSyncRoute,
+  }
+
+const AppWorkbenchProjectsPidRouteWithChildren =
+  AppWorkbenchProjectsPidRoute._addFileChildren(
+    AppWorkbenchProjectsPidRouteChildren,
+  )
+
+interface AppWorkbenchRouteChildren {
+  AppWorkbenchDashboardRoute: typeof AppWorkbenchDashboardRoute
+  AppWorkbenchSettingsRoute: typeof AppWorkbenchSettingsRoute
+  AppWorkbenchTeamsRoute: typeof AppWorkbenchTeamsRouteWithChildren
+  AppWorkbenchProjectsPidRoute: typeof AppWorkbenchProjectsPidRouteWithChildren
+  AppWorkbenchProjectsIndexRoute: typeof AppWorkbenchProjectsIndexRoute
+}
+
+const AppWorkbenchRouteChildren: AppWorkbenchRouteChildren = {
+  AppWorkbenchDashboardRoute: AppWorkbenchDashboardRoute,
+  AppWorkbenchSettingsRoute: AppWorkbenchSettingsRoute,
+  AppWorkbenchTeamsRoute: AppWorkbenchTeamsRouteWithChildren,
+  AppWorkbenchProjectsPidRoute: AppWorkbenchProjectsPidRouteWithChildren,
+  AppWorkbenchProjectsIndexRoute: AppWorkbenchProjectsIndexRoute,
+}
+
+const AppWorkbenchRouteWithChildren = AppWorkbenchRoute._addFileChildren(
+  AppWorkbenchRouteChildren,
+)
+
+interface AppRouteChildren {
+  AppWorkbenchRoute: typeof AppWorkbenchRouteWithChildren
+  AppDownloadRoute: typeof AppDownloadRoute
+  AppSigninRoute: typeof AppSigninRoute
+  AppSignupRoute: typeof AppSignupRoute
+  AppUploadRoute: typeof AppUploadRoute
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppWorkbenchRoute: AppWorkbenchRouteWithChildren,
+  AppDownloadRoute: AppDownloadRoute,
+  AppSigninRoute: AppSigninRoute,
+  AppSignupRoute: AppSignupRoute,
+  AppUploadRoute: AppUploadRoute,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
+export interface FileRoutesByFullPath {
+  '/': typeof IndexRoute
+  '': typeof AppWorkbenchRouteWithChildren
+  '/serversetup': typeof ServersetupRoute
+  '/download': typeof AppDownloadRoute
+  '/signin': typeof AppSigninRoute
+  '/signup': typeof AppSignupRoute
+  '/upload': typeof AppUploadRoute
+  '/dashboard': typeof AppWorkbenchDashboardRoute
+  '/settings': typeof AppWorkbenchSettingsRoute
+  '/teams': typeof AppWorkbenchTeamsRouteWithChildren
+  '/projects/$pid': typeof AppWorkbenchProjectsPidRouteWithChildren
+  '/teams/$teamid': typeof AppWorkbenchTeamsTeamidRouteWithChildren
+  '/projects': typeof AppWorkbenchProjectsIndexRoute
+  '/projects/$pid/files': typeof AppWorkbenchProjectsPidFilesRoute
+  '/projects/$pid/history': typeof AppWorkbenchProjectsPidHistoryRoute
+  '/projects/$pid/settings': typeof AppWorkbenchProjectsPidSettingsRoute
+  '/projects/$pid/sync': typeof AppWorkbenchProjectsPidSyncRoute
+  '/teams/$teamid/manage': typeof AppWorkbenchTeamsTeamidManageRoute
+  '/teams/$teamid/members': typeof AppWorkbenchTeamsTeamidMembersRoute
+  '/teams/$teamid/pgroups': typeof AppWorkbenchTeamsTeamidPgroupsRoute
+}
+
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '': typeof AppWorkbenchRouteWithChildren
+  '/serversetup': typeof ServersetupRoute
+  '/download': typeof AppDownloadRoute
+  '/signin': typeof AppSigninRoute
+  '/signup': typeof AppSignupRoute
+  '/upload': typeof AppUploadRoute
+  '/dashboard': typeof AppWorkbenchDashboardRoute
+  '/settings': typeof AppWorkbenchSettingsRoute
+  '/teams': typeof AppWorkbenchTeamsRouteWithChildren
+  '/projects/$pid': typeof AppWorkbenchProjectsPidRouteWithChildren
+  '/teams/$teamid': typeof AppWorkbenchTeamsTeamidRouteWithChildren
+  '/projects': typeof AppWorkbenchProjectsIndexRoute
+  '/projects/$pid/files': typeof AppWorkbenchProjectsPidFilesRoute
+  '/projects/$pid/history': typeof AppWorkbenchProjectsPidHistoryRoute
+  '/projects/$pid/settings': typeof AppWorkbenchProjectsPidSettingsRoute
+  '/projects/$pid/sync': typeof AppWorkbenchProjectsPidSyncRoute
+  '/teams/$teamid/manage': typeof AppWorkbenchTeamsTeamidManageRoute
+  '/teams/$teamid/members': typeof AppWorkbenchTeamsTeamidMembersRoute
+  '/teams/$teamid/pgroups': typeof AppWorkbenchTeamsTeamidPgroupsRoute
+}
+
+export interface FileRoutesById {
+  __root__: typeof rootRoute
+  '/': typeof IndexRoute
+  '/_app': typeof AppRouteWithChildren
+  '/serversetup': typeof ServersetupRoute
+  '/_app/_workbench': typeof AppWorkbenchRouteWithChildren
+  '/_app/download': typeof AppDownloadRoute
+  '/_app/signin': typeof AppSigninRoute
+  '/_app/signup': typeof AppSignupRoute
+  '/_app/upload': typeof AppUploadRoute
+  '/_app/_workbench/dashboard': typeof AppWorkbenchDashboardRoute
+  '/_app/_workbench/settings': typeof AppWorkbenchSettingsRoute
+  '/_app/_workbench/teams': typeof AppWorkbenchTeamsRouteWithChildren
+  '/_app/_workbench/projects/$pid': typeof AppWorkbenchProjectsPidRouteWithChildren
+  '/_app/_workbench/teams/$teamid': typeof AppWorkbenchTeamsTeamidRouteWithChildren
+  '/_app/_workbench/projects/': typeof AppWorkbenchProjectsIndexRoute
+  '/_app/_workbench/projects/$pid/files': typeof AppWorkbenchProjectsPidFilesRoute
+  '/_app/_workbench/projects/$pid/history': typeof AppWorkbenchProjectsPidHistoryRoute
+  '/_app/_workbench/projects/$pid/settings': typeof AppWorkbenchProjectsPidSettingsRoute
+  '/_app/_workbench/projects/$pid/sync': typeof AppWorkbenchProjectsPidSyncRoute
+  '/_app/_workbench/teams/$teamid/manage': typeof AppWorkbenchTeamsTeamidManageRoute
+  '/_app/_workbench/teams/$teamid/members': typeof AppWorkbenchTeamsTeamidMembersRoute
+  '/_app/_workbench/teams/$teamid/pgroups': typeof AppWorkbenchTeamsTeamidPgroupsRoute
+}
+
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths:
+    | '/'
+    | ''
+    | '/serversetup'
+    | '/download'
+    | '/signin'
+    | '/signup'
+    | '/upload'
+    | '/dashboard'
+    | '/settings'
+    | '/teams'
+    | '/projects/$pid'
+    | '/teams/$teamid'
+    | '/projects'
+    | '/projects/$pid/files'
+    | '/projects/$pid/history'
+    | '/projects/$pid/settings'
+    | '/projects/$pid/sync'
+    | '/teams/$teamid/manage'
+    | '/teams/$teamid/members'
+    | '/teams/$teamid/pgroups'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/'
+    | ''
+    | '/serversetup'
+    | '/download'
+    | '/signin'
+    | '/signup'
+    | '/upload'
+    | '/dashboard'
+    | '/settings'
+    | '/teams'
+    | '/projects/$pid'
+    | '/teams/$teamid'
+    | '/projects'
+    | '/projects/$pid/files'
+    | '/projects/$pid/history'
+    | '/projects/$pid/settings'
+    | '/projects/$pid/sync'
+    | '/teams/$teamid/manage'
+    | '/teams/$teamid/members'
+    | '/teams/$teamid/pgroups'
+  id:
+    | '__root__'
+    | '/'
+    | '/_app'
+    | '/serversetup'
+    | '/_app/_workbench'
+    | '/_app/download'
+    | '/_app/signin'
+    | '/_app/signup'
+    | '/_app/upload'
+    | '/_app/_workbench/dashboard'
+    | '/_app/_workbench/settings'
+    | '/_app/_workbench/teams'
+    | '/_app/_workbench/projects/$pid'
+    | '/_app/_workbench/teams/$teamid'
+    | '/_app/_workbench/projects/'
+    | '/_app/_workbench/projects/$pid/files'
+    | '/_app/_workbench/projects/$pid/history'
+    | '/_app/_workbench/projects/$pid/settings'
+    | '/_app/_workbench/projects/$pid/sync'
+    | '/_app/_workbench/teams/$teamid/manage'
+    | '/_app/_workbench/teams/$teamid/members'
+    | '/_app/_workbench/teams/$teamid/pgroups'
+  fileRoutesById: FileRoutesById
+}
+
+export interface RootRouteChildren {
+  IndexRoute: typeof IndexRoute
+  AppRoute: typeof AppRouteWithChildren
+  ServersetupRoute: typeof ServersetupRoute
+}
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexRoute: IndexRoute,
+  AppRoute: AppRouteWithChildren,
+  ServersetupRoute: ServersetupRoute,
+}
+
+export const routeTree = rootRoute
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
 
 /* prettier-ignore-end */
 

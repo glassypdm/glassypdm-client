@@ -282,7 +282,7 @@ export function PermissionGroupConfig(props: PermissionGroupConfigProps) {
                           <SelectTrigger>
                             <SelectValue placeholder="Select a user" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="h-64">
                             {data.body.team_membership.map((user: any) => {
                               return (
                                 <SelectItem
@@ -370,7 +370,7 @@ export function PermissionGroupConfig(props: PermissionGroupConfigProps) {
                           <SelectTrigger>
                             <SelectValue placeholder="Select a project" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="h-64">
                             {data.body.team_projects.map((project: any) => {
                               return (
                                 <SelectItem

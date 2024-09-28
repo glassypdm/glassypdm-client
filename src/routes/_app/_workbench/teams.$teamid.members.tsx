@@ -1,3 +1,4 @@
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Table,
   TableBody,
@@ -46,6 +47,11 @@ function TeamMembers() {
   });
   return (
     <div>
+      <ScrollArea className="h-96">
+      <TableCaption>
+          {data.body.members.length} member
+          {data.body.members.length == 1 ? "" : "s"}
+        </TableCaption>
       <Table>
         <TableHeader>
           <TableRow>
@@ -63,11 +69,8 @@ function TeamMembers() {
             </TableRow>
           ))}
         </TableBody>
-        <TableCaption>
-          {data.body.members.length} member
-          {data.body.members.length == 1 ? "" : "s"}
-        </TableCaption>
       </Table>
+      </ScrollArea>
     </div>
   );
 }

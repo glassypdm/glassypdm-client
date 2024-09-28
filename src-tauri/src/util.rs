@@ -1,8 +1,8 @@
-use std::io::Read;
+use sqlx::{Pool, Row, Sqlite};
 use std::fs::{self, create_dir_all, remove_dir_all, File};
+use std::io::Read;
 use std::path::Path;
 use std::result::Result::Ok;
-use sqlx::{Pool, Sqlite, Row};
 
 use crate::get_server_dir;
 use crate::types::{ChangeType, UpdatedFile};
@@ -11,9 +11,7 @@ pub async fn get_current_server(pool: &Pool<Sqlite>) -> Result<String, ()> {
     let output = sqlx::query("SELECT CASE WHEN debug_active = 1 THEN debug_url ELSE url END as url FROM server WHERE active = 1").fetch_one(&*pool).await;
 
     match output {
-        Ok(row) => {
-            Ok(row.get::<String, &str>("url"))
-        },
+        Ok(row) => Ok(row.get::<String, &str>("url")),
         Err(err) => {
             println!("asdfasdf {}", err);
             Ok("".to_string())
@@ -22,12 +20,12 @@ pub async fn get_current_server(pool: &Pool<Sqlite>) -> Result<String, ()> {
 }
 
 pub async fn get_active_server(pool: &Pool<Sqlite>) -> Result<String, ()> {
-    let output = sqlx::query("SELECT url FROM server WHERE active = 1").fetch_one(&*pool).await;
+    let output = sqlx::query("SELECT url FROM server WHERE active = 1")
+        .fetch_one(&*pool)
+        .await;
 
     match output {
-        Ok(row) => {
-            Ok(row.get::<String, &str>("url"))
-        },
+        Ok(row) => Ok(row.get::<String, &str>("url")),
         Err(err) => {
             println!("asdfasdf {}", err);
             Ok("".to_string())
@@ -50,7 +48,7 @@ pub async fn get_project_dir(pid: i32, pool: &Pool<Sqlite>) -> Result<String, ()
                 .join(row.get::<String, &str>("title"));
             println!("output");
             Ok(output.display().to_string())
-        },
+        }
         Err(err) => {
             println!("asdfasdf {}", err);
             Ok("".to_string())
@@ -59,10 +57,13 @@ pub async fn get_project_dir(pid: i32, pool: &Pool<Sqlite>) -> Result<String, ()
 }
 
 pub async fn get_file_info(pid: i32, path: String, pool: &Pool<Sqlite>) -> Result<UpdatedFile, ()> {
-    let output = sqlx::query("SELECT curr_hash, size, change_type FROM file WHERE filepath = $1 AND pid = $2")
-        .bind(path.clone())
-        .bind(pid)
-        .fetch_one(&*pool).await;
+    let output = sqlx::query(
+        "SELECT curr_hash, size, change_type FROM file WHERE filepath = $1 AND pid = $2",
+    )
+    .bind(path.clone())
+    .bind(pid)
+    .fetch_one(&*pool)
+    .await;
 
     match output {
         Ok(row) => {
@@ -70,13 +71,13 @@ pub async fn get_file_info(pid: i32, path: String, pool: &Pool<Sqlite>) -> Resul
                 1 => ChangeType::Create,
                 2 => ChangeType::Update,
                 3 => ChangeType::Delete,
-                _ => ChangeType::NoChange
+                _ => ChangeType::NoChange,
             };
             let owo: UpdatedFile = UpdatedFile {
                 path: path,
                 hash: row.get::<String, &str>("curr_hash").to_string(),
                 size: row.get::<i32, &str>("size"),
-                change: change
+                change: change,
             };
 
             Ok(owo)
@@ -88,7 +89,7 @@ pub async fn get_file_info(pid: i32, path: String, pool: &Pool<Sqlite>) -> Resul
                 path: "".to_string(),
                 hash: "".to_string(),
                 size: 0,
-                change: ChangeType::NoChange
+                change: ChangeType::NoChange,
             })
         }
     }
@@ -111,7 +112,7 @@ pub async fn get_cache_dir(pool: &Pool<Sqlite>) -> Result<String, ()> {
             // TODO change \\ to os agnostic
             let output = dir + "\\" + ".glassycache";
             Ok(output)
-        },
+        }
         Err(_err) => {
             println!("error getting cache dir");
             Ok("".to_string())
@@ -127,7 +128,7 @@ pub async fn get_trash_dir(pool: &Pool<Sqlite>) -> Result<String, ()> {
             let output = dir + "\\" + ".glassytrash";
             create_dir_all(output.clone()).unwrap();
             Ok(output)
-        },
+        }
         Err(_err) => {
             println!("error getting trash dir");
             Ok("".to_string())
@@ -137,18 +138,17 @@ pub async fn get_trash_dir(pool: &Pool<Sqlite>) -> Result<String, ()> {
 
 pub async fn get_basehash(pid: i32, path: String, pool: &Pool<Sqlite>) -> Result<String, ()> {
     let result = sqlx::query(
-    "SELECT base_hash FROM file WHERE
+        "SELECT base_hash FROM file WHERE
         pid = $1 AND filepath = $2 LIMIT 1
-        "
+        ",
     )
     .bind(pid)
     .bind(path)
-    .fetch_one(pool).await;
+    .fetch_one(pool)
+    .await;
 
     match result {
-        Ok(row) => {
-            Ok(row.get::<String, &str>("base_hash"))
-        },
+        Ok(row) => Ok(row.get::<String, &str>("base_hash")),
         Err(err) => {
             println!("error getting base_hash: {}", err);
             Err(())
@@ -160,9 +160,7 @@ pub async fn get_basehash(pid: i32, path: String, pool: &Pool<Sqlite>) -> Result
 pub async fn delete_trash(pool: &Pool<Sqlite>) -> Result<bool, ()> {
     let trash_dir = get_trash_dir(pool).await.unwrap();
     match remove_dir_all(Path::new(&trash_dir)) {
-        Ok(_res) => {
-            Ok(true)
-        },
+        Ok(_res) => Ok(true),
         Err(err) => {
             println!("error deleting trash: {}", err);
             Ok(false)
