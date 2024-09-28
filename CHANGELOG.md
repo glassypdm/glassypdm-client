@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.6.1](https://github.com/glassypdm/glassypdm-client/compare/v0.6.0...v0.6.1) (2024-09-28)
+
+
+### Bug Fixes
+
+* permission group select elements won't overflow ([8529d80](https://github.com/glassypdm/glassypdm-client/commit/8529d8010241b82b055ac3823a6776ee4ee14e30))
+* properly classifying tracked deleted files ([ea6ec67](https://github.com/glassypdm/glassypdm-client/commit/ea6ec6793c7e08f7a97ca36d129958be90b1103b))
+* team membership table does not overflow in y axis ([5dc3aff](https://github.com/glassypdm/glassypdm-client/commit/5dc3aff73d1c315c514837b9edf27dab6312cb1e))
+
+
+### Miscellaneous
+
+* adjusted file table UI ([ce6998f](https://github.com/glassypdm/glassypdm-client/commit/ce6998fda99fe7fd33ac74be176e7f1380c34707))
+* increase commit file limit to 200 from 150 ([fe455f9](https://github.com/glassypdm/glassypdm-client/commit/fe455f961ac303df6c1363d033df371ab95b1876))
+
 ## [0.6.0](https://github.com/glassypdm/glassypdm-client/compare/v0.5.1...v0.6.0) (2024-09-09)
 
 
