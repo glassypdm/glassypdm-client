@@ -39,6 +39,7 @@ pub async fn upload_files(
     let server_url = get_current_server(&pool).await.unwrap();
     let endpoint = server_url + "/store/request";
     let client: Client = reqwest::Client::new();
+    log::debug!("uploading files for project {}", pid);
 
     let mut to_upload: Vec<UpdatedFile> = vec![];
     let mut uploaded: u32 = 0;
@@ -53,6 +54,7 @@ pub async fn upload_files(
         }
     }
 
+    log::debug!("files sorted");
     for upload in to_upload {
         let copy_endpoint = endpoint.clone();
         let copy_client = client.clone();
@@ -62,7 +64,9 @@ pub async fn upload_files(
         let cloned_app = app_handle.clone();
 
         // 4 mb chunks
+        log::debug!("chunking file {}", abspath.clone());
         let chunks: Vec<Chunk> = fs_chunker::chunk_file(&abspath, 4 * 1024 * 1024, true);
+        log::debug!("chunking file complete");
         let len = chunks.len();
         let copied_client = &copy_client;
         let chunk_reqs = stream::iter(chunks)
@@ -72,7 +76,6 @@ pub async fn upload_files(
                 let copied_filehash = file_hash.clone();
                 async move {
                     let Chunk { hash, data, idx } = chunk;
-                    println!("idx {}", idx);
                     let form: Form = reqwest::multipart::Form::new()
                         .part("chunk", Part::bytes(data).file_name(hash.clone()))
                         .text("file_hash", copied_filehash)
@@ -99,7 +102,7 @@ pub async fn upload_files(
                             match response.json::<UploadResponse>().await {
                                 Ok(out) => out,
                                 Err(err) => {
-                                    println!("error uploading chunk: {}", err);
+                                    log::error!("error uploading a chunk: {}", err);
                                     UploadResponse {
                                         response: "error".to_string(),
                                         error: Some("parsing error".to_string()),
@@ -109,7 +112,10 @@ pub async fn upload_files(
                             };
                         let res = response_json.response;
                         if res == "error" {
-                            println!("error: {}", response_json.error.unwrap());
+                            log::error!(
+                                "encountered glassy server error: {}",
+                                response_json.error.unwrap()
+                            );
                             let mut error = error_flag.lock().await;
                             *error = true;
                             res
@@ -120,7 +126,7 @@ pub async fn upload_files(
                     Err(err) => {
                         let reqwest_error =
                             "error uploading chunk: ".to_string() + &err.to_string();
-                        println!("error: {}", err);
+                        log::error!("error uploading a chunk: {}", err);
                         let mut error = error_flag.lock().await;
                         *error = true;
                         reqwest_error
@@ -135,6 +141,7 @@ pub async fn upload_files(
         let _ = cloned_app.emit("fileAction", 6030);
     }
 
+    log::debug!("files uploaded!");
     Ok(true)
 }
 
@@ -154,7 +161,7 @@ pub async fn update_uploaded(
 ) -> Result<bool, ()> {
     let pool = state_mutex.lock().await;
 
-    println!("updating db...");
+    log::debug!("updating db with uploaded files...");
     for file in files {
         if file.changetype == 3 {
             // delete
@@ -163,13 +170,18 @@ pub async fn update_uploaded(
                 WHERE pid = $1 AND filepath = $2",
             )
             .bind(pid)
-            .bind(file.path)
+            .bind(file.path.clone())
             .execute(&*pool)
             .await;
             match owo {
                 Ok(_) => {}
                 Err(err) => {
-                    println!("db err: {}", err);
+                    log::error!(
+                        "encountered error when deleting {} from db for project {}: {}",
+                        file.path,
+                        pid,
+                        err
+                    );
                 }
             }
         } else if file.changetype == 1 || file.changetype == 2 {
@@ -184,14 +196,19 @@ pub async fn update_uploaded(
             )
             .bind(commit)
             .bind(pid)
-            .bind(file.path)
+            .bind(file.path.clone())
             .execute(&*pool)
             .await;
 
             match uwu {
                 Ok(_) => {}
                 Err(err) => {
-                    println!("db err: {}", err);
+                    log::error!(
+                        "encountered error when updating {} from db for project {}: {}",
+                        file.path,
+                        pid,
+                        err
+                    );
                 }
             }
         }
