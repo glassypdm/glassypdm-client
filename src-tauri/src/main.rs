@@ -27,7 +27,6 @@ use upload::{update_uploaded, upload_files};
 
 fn main() {
     tauri::Builder::default()
-        .plugin(tauri_plugin_log::Builder::new().build())
         .invoke_handler(tauri::generate_handler![
             sync_changes,
             set_local_dir,
@@ -51,6 +50,13 @@ fn main() {
             check_update,
             restart
         ])
+        .plugin(tauri_plugin_log::Builder::new().target(tauri_plugin_log::Target::new(
+            tauri_plugin_log::TargetKind::LogDir {
+              file_name: Some("glassy.log".to_string()),
+            },))
+            .max_file_size(50_000 /* bytes */)
+            .rotation_strategy(tauri_plugin_log::RotationStrategy::KeepAll)
+            .build())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_shell::init())
