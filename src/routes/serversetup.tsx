@@ -41,9 +41,8 @@ export const Route = createFileRoute("/serversetup")({
 const formSchema = z.object({
   serverURL: z
     .string({ message: "Invalid input." })
-    .refine((val) => new RegExp("^(?!http://).+").test(val ?? ""))
-    .refine((val) => new RegExp("^(?!https://).+").test(val ?? ""))
-    .refine((val) => new RegExp(".*[^/]$").test(val ?? "")),
+    .refine((val) => new RegExp("^(?!http://).+").test(val ?? "")) // http:// should not be part of the raw server url input
+    .refine((val) => new RegExp("^(?!https://).+").test(val ?? "")), // https:// "     "
   protocol: z.enum(["http://", "https://"]),
 });
 
@@ -113,16 +112,18 @@ function ServerSetup() {
       await mkdir(serverFolder);
     }
 
+    let url = values.protocol + values.serverURL;
+    if (url.endsWith("/")) {
+      url = url.substring(0, url.length - 1);
+    }
     // TODO error handling; if response isnt what we expected
-    const data = await (
-      await fetch(values.protocol + values.serverURL + "/client-config")
-    ).json();
+    const data = await (await fetch(url + "/client-config")).json();
     console.log(data);
     setSubmitStatus(false);
     setSubmitText(<p>Submit</p>);
-
+    console.log(url);
     await invoke("add_server", {
-      url: values.protocol + values.serverURL,
+      url: url,
       clerk: data.clerk_publickey,
       localDir: serverFolder,
       name: data.name,
