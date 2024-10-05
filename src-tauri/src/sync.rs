@@ -155,13 +155,13 @@ pub async fn sync_changes(
             ON CONFLICT(filepath, pid) DO UPDATE SET
             tracked_commitid = excluded.tracked_commitid,
             tracked_hash = excluded.tracked_hash,
-            tracked_changetype = CASE WHEN base_hash != '' OR excluded.tracked_changetype == 3 THEN excluded.tracked_changetype ELSE 1 END,
+            tracked_changetype = CASE WHEN in_fs = 1 OR excluded.tracked_changetype = 3 THEN excluded.tracked_changetype ELSE 1 END,
             tracked_size = excluded.tracked_size")
         .bind(file.path)
         .bind(pid)
         .bind(file.commitid)
         .bind(file.filehash)
-        .bind(if file.changetype == 3 { 3 } else { 1 })
+        .bind(file.changetype)
         .bind(0)
         .bind(0)
         .bind(file.blocksize)
@@ -244,7 +244,7 @@ pub async fn get_downloads(
     let output: Vec<FileChange> = match sqlx::query_as(
         "SELECT filepath, tracked_size as size, tracked_changetype as change_type, tracked_hash as hash, tracked_commitid as commit_id FROM file WHERE pid = $1 AND
         (
-            (base_hash != tracked_hash AND base_hash != '' AND tracked_changetype = 3) OR
+            (in_fs = 1 AND tracked_changetype = 3) OR
             (base_hash != tracked_hash AND tracked_changetype != 3)
         )
         "
