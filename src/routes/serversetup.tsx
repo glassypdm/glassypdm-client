@@ -97,38 +97,42 @@ function ServerSetup() {
 
       return;
     }
-    // make folder, but check if it exists first
-    const folderExists: boolean = await exists(serverFolder);
-    if (folderExists) {
-      // server folder not set
-      toast(
-        "glassyPDM folder already exists; please select a different location.",
-      );
-      setSubmitText(<p>Submit</p>);
-      setSubmitStatus(false);
-      console.log("already exists");
-      return;
-    } else {
-      await mkdir(serverFolder);
-    }
 
     let url = values.protocol + values.serverURL;
     if (url.endsWith("/")) {
       url = url.substring(0, url.length - 1);
     }
     // TODO error handling; if response isnt what we expected
-    const data = await (await fetch(url + "/client-config")).json();
-    console.log(data);
-    setSubmitStatus(false);
-    setSubmitText(<p>Submit</p>);
-    console.log(url);
-    await invoke("add_server", {
-      url: url,
-      clerk: data.clerk_publickey,
-      localDir: serverFolder,
-      name: data.name,
-    });
-    navigate({ to: "/signin" });
+    try {
+      const data = await (await fetch(url + "/client-config")).json();
+      setSubmitStatus(false);
+      setSubmitText(<p>Submit</p>);
+
+      // make folder, but check if it exists first
+      const folderExists: boolean = await exists(serverFolder);
+      if (folderExists) {
+        // server folder not set
+        toast(
+          "glassyPDM folder already exists; please select a different location.",
+        );
+        setSubmitText(<p>Submit</p>);
+        setSubmitStatus(false);
+        return;
+      } else {
+        await mkdir(serverFolder);
+      }
+      await invoke("add_server", {
+        url: url,
+        clerk: data.clerk_publickey,
+        localDir: serverFolder,
+        name: data.name,
+      });
+      navigate({ to: "/signin" });
+    } catch (err) {
+      toast("setup failed, check your server URL is correct.");
+      setSubmitText(<p>Submit</p>);
+      setSubmitStatus(false);
+    }
   }
 
   return (
