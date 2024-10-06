@@ -68,7 +68,6 @@ function TeamMembers() {
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
               <TableHead>Role</TableHead>
             </TableRow>
           </TableHeader>
@@ -76,7 +75,6 @@ function TeamMembers() {
             {data.body.members.map((member: Member) => (
               <TableRow key={member.name}>
                 <TableCell>{member.name}</TableCell>
-                <TableCell>{member.email}</TableCell>
                 <TableCell>{member.role}</TableCell>
               </TableRow>
             ))}
