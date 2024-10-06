@@ -140,7 +140,7 @@ function PermissionGroupDashboard(props: PermissionGroupDashboardProps) {
             return (
               <AccordionItem value={group.pgroup_id} key={group.pgroup_id}>
                 <AccordionTrigger>{group.pgroup_name}</AccordionTrigger>
-                <AccordionContent className="bg-secondary rounded-md p-2">
+                <AccordionContent className="bg-secondary/50 rounded-md p-2">
                   <PermissionGroupConfig
                     group={group}
                     team_members={data.body.team_membership}
