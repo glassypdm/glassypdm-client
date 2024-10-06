@@ -33,8 +33,8 @@ interface Member {
 function TeamMembers() {
   const { teamid, url } = Route.useLoaderData();
   const { getToken } = useAuth();
-  const { isPending, isError, data, error } = useQuery({
-    queryKey: [teamid],
+  const { isPending, isError, data, error, isFetching } = useQuery({
+    queryKey: ["members", teamid],
     queryFn: async () => {
       const endpoint = (url as string) + "/team/by-id/" + teamid;
       const response = await fetch(endpoint, {
@@ -45,31 +45,41 @@ function TeamMembers() {
       return response.json();
     },
   });
+
+  if (isPending) {
+    return <div>Loading members...</div>;
+  } else if (isError) {
+    return (
+      <div>
+        An error occurred while fetching members, check your Internet connection
+      </div>
+    );
+  }
+
+  console.log(data);
   return (
     <div>
       <ScrollArea className="h-96">
-      <TableCaption>
+        <TableCaption>
           {data.body.members.length} member
           {data.body.members.length == 1 ? "" : "s"}
         </TableCaption>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Email</TableHead>
-            <TableHead>Role</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {data.body.members.map((member: Member) => (
-            <TableRow key={member.email}>
-              <TableCell>{member.name}</TableCell>
-              <TableCell>{member.email}</TableCell>
-              <TableCell>{member.role}</TableCell>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Name</TableHead>
+              <TableHead>Role</TableHead>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {data.body.members.map((member: Member) => (
+              <TableRow key={member.name}>
+                <TableCell>{member.name}</TableCell>
+                <TableCell>{member.role}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </ScrollArea>
     </div>
   );

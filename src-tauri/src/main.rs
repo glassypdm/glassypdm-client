@@ -27,7 +27,6 @@ use upload::{update_uploaded, upload_files};
 
 fn main() {
     tauri::Builder::default()
-        .plugin(tauri_plugin_log::Builder::new().build())
         .invoke_handler(tauri::generate_handler![
             sync_changes,
             set_local_dir,
@@ -51,6 +50,17 @@ fn main() {
             check_update,
             restart
         ])
+        .plugin(
+            tauri_plugin_log::Builder::new()
+                .target(tauri_plugin_log::Target::new(
+                    tauri_plugin_log::TargetKind::LogDir {
+                        file_name: Some("glassy.log".to_string()),
+                    },
+                ))
+                .max_file_size(50_000 /* bytes */)
+                .rotation_strategy(tauri_plugin_log::RotationStrategy::KeepAll)
+                .build(),
+        )
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_shell::init())
@@ -64,7 +74,7 @@ fn main() {
             tauri::async_runtime::block_on(async move {
                 let _ = fs::create_dir_all(app.path().app_data_dir().unwrap());
                 let db_path = app.path().app_data_dir().unwrap().join("glassypdm.db");
-                println!("db {}", db_path.display());
+                log::debug!("db {}", db_path.display());
                 let options = SqliteConnectOptions::new()
                     .filename(db_path)
                     .create_if_missing(true);
@@ -87,10 +97,10 @@ fn main() {
                     }
                     Err(e) => {
                         // TODO what errors could we get? maybe panic and exit tauri
-                        println!("db something wrong with connection? {}", e);
+                        log::error!("db something wrong with connection? {}", e);
                     }
                 }
-                println!("done init")
+                log::info!("done initializing");
             });
             Ok(())
         })

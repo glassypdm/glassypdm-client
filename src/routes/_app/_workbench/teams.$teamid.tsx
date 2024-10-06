@@ -2,7 +2,13 @@ import { useAuth } from "@clerk/clerk-react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
 import { invoke } from "@tauri-apps/api/core";
-import { NavigationMenu, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, navigationMenuTriggerStyle } from "@/components/ui/navigation-menu";
+import {
+  NavigationMenu,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  navigationMenuTriggerStyle,
+} from "@/components/ui/navigation-menu";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/_workbench/teams/$teamid")({
@@ -28,7 +34,7 @@ function TeamDashboard() {
   const { isPending, isError, data, error } = useQuery({
     queryKey: [teamid],
     queryFn: async () => {
-      const endpoint = (url as string) + "/team/by-id/" + teamid;
+      const endpoint = (url as string) + "/team/basic/by-id/" + teamid;
       const response = await fetch(endpoint, {
         headers: { Authorization: `Bearer ${await getToken()}` },
         method: "GET",
@@ -38,9 +44,10 @@ function TeamDashboard() {
     },
   });
 
-
   if (isPending) {
     return <div>Loading...</div>;
+  } else if (isError) {
+    return <div>Encountered error while fetching team information</div>;
   }
 
   return (
@@ -48,31 +55,46 @@ function TeamDashboard() {
       <h1 className="font-semibold text-2xl text-center pb-2 w-96">
         {data.body.team_name}
       </h1>
-        {data && (data.body.role === "Owner" || data.body.role === "Manager") ? (
-          <div className="py-2">
+      {data && (data.body.role === "Owner" || data.body.role === "Manager") ? (
+        <div className="py-2">
           <NavigationMenu>
             <NavigationMenuList>
               <NavigationMenuItem>
-                <NavigationMenuLink className={cn(navigationMenuTriggerStyle(), "")} asChild>
-                  <Link to="/teams/$teamid/members" params={{ teamid: teamid }}>Membership</Link>
+                <NavigationMenuLink
+                  className={cn(navigationMenuTriggerStyle(), "")}
+                  asChild
+                >
+                  <Link to="/teams/$teamid/members" params={{ teamid: teamid }}>
+                    Membership
+                  </Link>
                 </NavigationMenuLink>
               </NavigationMenuItem>
               <NavigationMenuItem>
-                <NavigationMenuLink className={cn(navigationMenuTriggerStyle(), "")} asChild>
-                  <Link to="/teams/$teamid/pgroups" params={{ teamid: teamid }}>Permission Groups</Link>
+                <NavigationMenuLink
+                  className={cn(navigationMenuTriggerStyle(), "")}
+                  asChild
+                >
+                  <Link to="/teams/$teamid/pgroups" params={{ teamid: teamid }}>
+                    Permission Groups
+                  </Link>
                 </NavigationMenuLink>
               </NavigationMenuItem>
               <NavigationMenuItem>
-                <NavigationMenuLink className={cn(navigationMenuTriggerStyle(), "")} asChild>
-                  <Link to="/teams/$teamid/manage" params={{ teamid: teamid }}>Manage</Link>
+                <NavigationMenuLink
+                  className={cn(navigationMenuTriggerStyle(), "")}
+                  asChild
+                >
+                  <Link to="/teams/$teamid/manage" params={{ teamid: teamid }}>
+                    Manage
+                  </Link>
                 </NavigationMenuLink>
               </NavigationMenuItem>
             </NavigationMenuList>
           </NavigationMenu>
-          </div>
-        ) : (
-          <></>
-        )}
+        </div>
+      ) : (
+        <></>
+      )}
       <Outlet />
     </div>
   );
