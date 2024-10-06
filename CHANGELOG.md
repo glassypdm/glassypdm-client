@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.6.2](https://github.com/glassypdm/glassypdm-client/compare/v0.6.1...v0.6.2) (2024-10-06)
+
+
+### Bug Fixes
+
+* Fixed bug where tracked deletions weren't occuring and where tracked changed files were shown as new files ([1ced1a5](https://github.com/glassypdm/glassypdm-client/commit/1ced1a504beebc78ad1ce7d1ed7fe17f60e96b15))
+
+
+### Miscellaneous
+
+* add timeout when server URL is incorrect or fetch fails ([f299fa1](https://github.com/glassypdm/glassypdm-client/commit/f299fa1052710307dac9bb8f1d211b7d39ecf3e6))
+* improved error handling for server URL input ([4da4a97](https://github.com/glassypdm/glassypdm-client/commit/4da4a9783c872ff18012fceab24d8de71b5cd4cc))
+* redesign permission groups page to have a smaller impact on network requests and better UX ([3227f33](https://github.com/glassypdm/glassypdm-client/commit/3227f335b2fc20b38ea72da5a7c36753aa14f460))
+
 ## [0.6.1](https://github.com/glassypdm/glassypdm-client/compare/v0.6.0...v0.6.1) (2024-09-28)
 
 
