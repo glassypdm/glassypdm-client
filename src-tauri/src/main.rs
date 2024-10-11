@@ -15,6 +15,7 @@ use reset::reset_files;
 use sqlx::migrate::Migrator;
 use sqlx::{sqlite::SqliteConnectOptions, SqlitePool};
 use std::fs;
+use util::{delete_cache, get_cache_size};
 use sync::{
     get_conflicts, get_downloads, get_local_projects, get_project_name, get_uploads,
     open_project_dir, sync_changes, update_project_info,
@@ -48,7 +49,9 @@ fn main() {
             download_files,
             reset_files,
             check_update,
-            restart
+            restart,
+            delete_cache,
+            get_cache_size
         ])
         .plugin(
             tauri_plugin_log::Builder::new()

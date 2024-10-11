@@ -43,11 +43,10 @@ function ServerFolder(props: ServerFolderProps) {
             toast("glassyPDM folder already exists; select a different location.");
             return;
         }
-        else {
-            await mkdir(newFolder);
-            setSelectedFolder(newFolder);
-            setChangeMade(false);
-        }
+        
+        await mkdir(newFolder);
+        setSelectedFolder(newFolder);
+        setChangeMade(false);
 
         // update database
         // TODO handle error

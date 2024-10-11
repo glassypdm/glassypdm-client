@@ -46,6 +46,22 @@ function Settings() {
         toast(`Server selection set to ${url}.`)
     }
 
+    async function openAppData() {
+
+    }
+
+    async function openLogs() {
+
+    }
+
+    async function deleteCache() {
+
+    }
+
+    async function deleteAppData() {
+        
+    }
+
     return (
         <div className="flex flex-row space-x-4">
             <div className="flex flex-col">
@@ -54,7 +70,6 @@ function Settings() {
             <ScrollArea className="rounded-lg border bg-card p-2">
             <div className="flex flex-col space-y-4 px-2 max-h-[480px] w-[560px]">
                 <ServerFolder dir={loaderData.dir as string} />
-                {/*
                 <Card>
                     <CardHeader>
                         <CardTitle>App Data</CardTitle>
@@ -63,10 +78,10 @@ function Settings() {
                     <CardContent className="flex flex-row space-x-4">
                     <Button>View App Data</Button>
                     <Button>View App Logs</Button>
+                    <Button variant={"destructive"}>Delete Cache</Button>
                     <Button variant={"outline"}>Delete App Data</Button>
                     </CardContent>
                 </Card>
-                */}
                 <Card>
                     <CardHeader>
                         <CardTitle>Appearance</CardTitle>
