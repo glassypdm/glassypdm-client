@@ -1,10 +1,11 @@
+use std::process::Command;
 use fs_extra::dir::get_size;
 use tokio::sync::Mutex;
-use tauri::State;
+use tauri::{Manager, State};
 use sqlx::{Pool, Row, Sqlite};
 use std::fs::{self, create_dir_all, remove_dir_all, File};
 use std::io::Read;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::result::Result::Ok;
 
 use crate::get_server_dir;
@@ -203,4 +204,48 @@ pub async fn get_cache_size(state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Resu
     };
 
     Ok(size)
+}
+
+#[tauri::command]
+pub fn open_log_dir(app: tauri::AppHandle) -> Result<bool, ()> {
+    let hehe = app.path().app_log_dir();
+    match hehe {
+        Ok(pb) => {
+            open_directory(pb);
+            Ok(true)
+        },
+        Err(err) => {
+            log::warn!("Couldn't resolve app log directory: {}", err);
+            Ok(false)
+        }
+    }
+}
+
+#[tauri::command]
+pub fn open_app_data_dir(app: tauri::AppHandle) -> Result<bool, ()> {
+    let hehe = app.path().app_data_dir();
+    match hehe {
+        Ok(pb) => {
+            open_directory(pb);
+            Ok(true)
+        },
+        Err(err) => {
+            log::warn!("Couldn't resolve app log directory: {}", err);
+            Ok(false)
+        }
+    }
+}
+
+pub fn open_directory(pb: PathBuf) -> bool {
+    #[cfg(target_os = "windows")]
+    {
+        Command::new("explorer").arg(pb).spawn().unwrap();
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        log::warn!("linux open directory not implemented!")
+        // TODO
+    }
+    return true;
 }

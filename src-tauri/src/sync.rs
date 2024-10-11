@@ -1,11 +1,11 @@
 use crate::{
     types::RemoteFile,
-    util::{get_active_server, get_project_dir},
+    util::{get_active_server, get_project_dir, open_directory},
 };
 use merkle_hash::{bytes_to_hex, Algorithm, MerkleTree};
 use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Row, Sqlite};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::{fs, process::Command};
 use tauri::State;
 use tokio::sync::Mutex;
@@ -122,9 +122,10 @@ pub async fn open_project_dir(
     let pool = state_mutex.lock().await;
     let project_dir = get_project_dir(pid, &pool).await.unwrap();
     let _ = fs::create_dir_all(&project_dir);
+    let mut pb = PathBuf::new();
+    pb.push(project_dir);
 
-    // TODO windows only
-    Command::new("explorer").arg(project_dir).spawn().unwrap();
+    open_directory(pb);
 
     return Ok(());
 }
