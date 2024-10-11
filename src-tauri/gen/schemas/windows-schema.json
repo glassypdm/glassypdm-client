@@ -1704,72 +1704,122 @@
                 "properties": {
                   "allow": {
                     "items": {
-                      "title": "Entry",
-                      "description": "A command allowed to be executed by the webview API.",
-                      "type": "object",
-                      "required": [
-                        "args",
-                        "cmd",
-                        "name",
-                        "sidecar"
-                      ],
-                      "properties": {
-                        "args": {
-                          "description": "The allowed arguments for the command execution.",
-                          "allOf": [
-                            {
-                              "$ref": "#/definitions/ShellAllowedArgs"
+                      "title": "ShellScopeEntry",
+                      "description": "Shell scope entry.",
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "cmd",
+                            "name"
+                          ],
+                          "properties": {
+                            "args": {
+                              "description": "The allowed arguments for the command execution.",
+                              "allOf": [
+                                {
+                                  "$ref": "#/definitions/ShellScopeEntryAllowedArgs"
+                                }
+                              ]
+                            },
+                            "cmd": {
+                              "description": "The command name. It can start with a variable that resolves to a system base directory. The variables are: `$AUDIO`, `$CACHE`, `$CONFIG`, `$DATA`, `$LOCALDATA`, `$DESKTOP`, `$DOCUMENT`, `$DOWNLOAD`, `$EXE`, `$FONT`, `$HOME`, `$PICTURE`, `$PUBLIC`, `$RUNTIME`, `$TEMPLATE`, `$VIDEO`, `$RESOURCE`, `$LOG`, `$TEMP`, `$APPCONFIG`, `$APPDATA`, `$APPLOCALDATA`, `$APPCACHE`, `$APPLOG`.",
+                              "type": "string"
+                            },
+                            "name": {
+                              "description": "The name for this allowed shell command configuration.\n\nThis name will be used inside of the webview API to call this command along with any specified arguments.",
+                              "type": "string"
                             }
-                          ]
+                          },
+                          "additionalProperties": false
                         },
-                        "cmd": {
-                          "description": "The command name. It can start with a variable that resolves to a system base directory. The variables are: `$AUDIO`, `$CACHE`, `$CONFIG`, `$DATA`, `$LOCALDATA`, `$DESKTOP`, `$DOCUMENT`, `$DOWNLOAD`, `$EXE`, `$FONT`, `$HOME`, `$PICTURE`, `$PUBLIC`, `$RUNTIME`, `$TEMPLATE`, `$VIDEO`, `$RESOURCE`, `$APP`, `$LOG`, `$TEMP`, `$APPCONFIG`, `$APPDATA`, `$APPLOCALDATA`, `$APPCACHE`, `$APPLOG`.",
-                          "type": "string"
-                        },
-                        "name": {
-                          "description": "The name for this allowed shell command configuration.\n\nThis name will be used inside of the webview API to call this command along with any specified arguments.",
-                          "type": "string"
-                        },
-                        "sidecar": {
-                          "description": "If this command is a sidecar command.",
-                          "type": "boolean"
+                        {
+                          "type": "object",
+                          "required": [
+                            "name",
+                            "sidecar"
+                          ],
+                          "properties": {
+                            "args": {
+                              "description": "The allowed arguments for the command execution.",
+                              "allOf": [
+                                {
+                                  "$ref": "#/definitions/ShellScopeEntryAllowedArgs"
+                                }
+                              ]
+                            },
+                            "name": {
+                              "description": "The name for this allowed shell command configuration.\n\nThis name will be used inside of the webview API to call this command along with any specified arguments.",
+                              "type": "string"
+                            },
+                            "sidecar": {
+                              "description": "If this command is a sidecar command.",
+                              "type": "boolean"
+                            }
+                          },
+                          "additionalProperties": false
                         }
-                      }
+                      ]
                     }
                   },
                   "deny": {
                     "items": {
-                      "title": "Entry",
-                      "description": "A command allowed to be executed by the webview API.",
-                      "type": "object",
-                      "required": [
-                        "args",
-                        "cmd",
-                        "name",
-                        "sidecar"
-                      ],
-                      "properties": {
-                        "args": {
-                          "description": "The allowed arguments for the command execution.",
-                          "allOf": [
-                            {
-                              "$ref": "#/definitions/ShellAllowedArgs"
+                      "title": "ShellScopeEntry",
+                      "description": "Shell scope entry.",
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "cmd",
+                            "name"
+                          ],
+                          "properties": {
+                            "args": {
+                              "description": "The allowed arguments for the command execution.",
+                              "allOf": [
+                                {
+                                  "$ref": "#/definitions/ShellScopeEntryAllowedArgs"
+                                }
+                              ]
+                            },
+                            "cmd": {
+                              "description": "The command name. It can start with a variable that resolves to a system base directory. The variables are: `$AUDIO`, `$CACHE`, `$CONFIG`, `$DATA`, `$LOCALDATA`, `$DESKTOP`, `$DOCUMENT`, `$DOWNLOAD`, `$EXE`, `$FONT`, `$HOME`, `$PICTURE`, `$PUBLIC`, `$RUNTIME`, `$TEMPLATE`, `$VIDEO`, `$RESOURCE`, `$LOG`, `$TEMP`, `$APPCONFIG`, `$APPDATA`, `$APPLOCALDATA`, `$APPCACHE`, `$APPLOG`.",
+                              "type": "string"
+                            },
+                            "name": {
+                              "description": "The name for this allowed shell command configuration.\n\nThis name will be used inside of the webview API to call this command along with any specified arguments.",
+                              "type": "string"
                             }
-                          ]
+                          },
+                          "additionalProperties": false
                         },
-                        "cmd": {
-                          "description": "The command name. It can start with a variable that resolves to a system base directory. The variables are: `$AUDIO`, `$CACHE`, `$CONFIG`, `$DATA`, `$LOCALDATA`, `$DESKTOP`, `$DOCUMENT`, `$DOWNLOAD`, `$EXE`, `$FONT`, `$HOME`, `$PICTURE`, `$PUBLIC`, `$RUNTIME`, `$TEMPLATE`, `$VIDEO`, `$RESOURCE`, `$APP`, `$LOG`, `$TEMP`, `$APPCONFIG`, `$APPDATA`, `$APPLOCALDATA`, `$APPCACHE`, `$APPLOG`.",
-                          "type": "string"
-                        },
-                        "name": {
-                          "description": "The name for this allowed shell command configuration.\n\nThis name will be used inside of the webview API to call this command along with any specified arguments.",
-                          "type": "string"
-                        },
-                        "sidecar": {
-                          "description": "If this command is a sidecar command.",
-                          "type": "boolean"
+                        {
+                          "type": "object",
+                          "required": [
+                            "name",
+                            "sidecar"
+                          ],
+                          "properties": {
+                            "args": {
+                              "description": "The allowed arguments for the command execution.",
+                              "allOf": [
+                                {
+                                  "$ref": "#/definitions/ShellScopeEntryAllowedArgs"
+                                }
+                              ]
+                            },
+                            "name": {
+                              "description": "The name for this allowed shell command configuration.\n\nThis name will be used inside of the webview API to call this command along with any specified arguments.",
+                              "type": "string"
+                            },
+                            "sidecar": {
+                              "description": "If this command is a sidecar command.",
+                              "type": "boolean"
+                            }
+                          },
+                          "additionalProperties": false
                         }
-                      }
+                      ]
                     }
                   }
                 }
@@ -4808,171 +4858,6 @@
           "const": "log:deny-log"
         },
         {
-          "description": "This permission set configures which\nnotification features are by default exposed.\n\n#### Granted Permissions\n\nIt allows all notification related features.\n\n",
-          "type": "string",
-          "const": "notification:default"
-        },
-        {
-          "description": "Enables the batch command without any pre-configured scope.",
-          "type": "string",
-          "const": "notification:allow-batch"
-        },
-        {
-          "description": "Enables the cancel command without any pre-configured scope.",
-          "type": "string",
-          "const": "notification:allow-cancel"
-        },
-        {
-          "description": "Enables the check_permissions command without any pre-configured scope.",
-          "type": "string",
-          "const": "notification:allow-check-permissions"
-        },
-        {
-          "description": "Enables the create_channel command without any pre-configured scope.",
-          "type": "string",
-          "const": "notification:allow-create-channel"
-        },
-        {
-          "description": "Enables the delete_channel command without any pre-configured scope.",
-          "type": "string",
-          "const": "notification:allow-delete-channel"
-        },
-        {
-          "description": "Enables the get_active command without any pre-configured scope.",
-          "type": "string",
-          "const": "notification:allow-get-active"
-        },
-        {
-          "description": "Enables the get_pending command without any pre-configured scope.",
-          "type": "string",
-          "const": "notification:allow-get-pending"
-        },
-        {
-          "description": "Enables the is_permission_granted command without any pre-configured scope.",
-          "type": "string",
-          "const": "notification:allow-is-permission-granted"
-        },
-        {
-          "description": "Enables the list_channels command without any pre-configured scope.",
-          "type": "string",
-          "const": "notification:allow-list-channels"
-        },
-        {
-          "description": "Enables the notify command without any pre-configured scope.",
-          "type": "string",
-          "const": "notification:allow-notify"
-        },
-        {
-          "description": "Enables the permission_state command without any pre-configured scope.",
-          "type": "string",
-          "const": "notification:allow-permission-state"
-        },
-        {
-          "description": "Enables the register_action_types command without any pre-configured scope.",
-          "type": "string",
-          "const": "notification:allow-register-action-types"
-        },
-        {
-          "description": "Enables the register_listener command without any pre-configured scope.",
-          "type": "string",
-          "const": "notification:allow-register-listener"
-        },
-        {
-          "description": "Enables the remove_active command without any pre-configured scope.",
-          "type": "string",
-          "const": "notification:allow-remove-active"
-        },
-        {
-          "description": "Enables the request_permission command without any pre-configured scope.",
-          "type": "string",
-          "const": "notification:allow-request-permission"
-        },
-        {
-          "description": "Enables the show command without any pre-configured scope.",
-          "type": "string",
-          "const": "notification:allow-show"
-        },
-        {
-          "description": "Denies the batch command without any pre-configured scope.",
-          "type": "string",
-          "const": "notification:deny-batch"
-        },
-        {
-          "description": "Denies the cancel command without any pre-configured scope.",
-          "type": "string",
-          "const": "notification:deny-cancel"
-        },
-        {
-          "description": "Denies the check_permissions command without any pre-configured scope.",
-          "type": "string",
-          "const": "notification:deny-check-permissions"
-        },
-        {
-          "description": "Denies the create_channel command without any pre-configured scope.",
-          "type": "string",
-          "const": "notification:deny-create-channel"
-        },
-        {
-          "description": "Denies the delete_channel command without any pre-configured scope.",
-          "type": "string",
-          "const": "notification:deny-delete-channel"
-        },
-        {
-          "description": "Denies the get_active command without any pre-configured scope.",
-          "type": "string",
-          "const": "notification:deny-get-active"
-        },
-        {
-          "description": "Denies the get_pending command without any pre-configured scope.",
-          "type": "string",
-          "const": "notification:deny-get-pending"
-        },
-        {
-          "description": "Denies the is_permission_granted command without any pre-configured scope.",
-          "type": "string",
-          "const": "notification:deny-is-permission-granted"
-        },
-        {
-          "description": "Denies the list_channels command without any pre-configured scope.",
-          "type": "string",
-          "const": "notification:deny-list-channels"
-        },
-        {
-          "description": "Denies the notify command without any pre-configured scope.",
-          "type": "string",
-          "const": "notification:deny-notify"
-        },
-        {
-          "description": "Denies the permission_state command without any pre-configured scope.",
-          "type": "string",
-          "const": "notification:deny-permission-state"
-        },
-        {
-          "description": "Denies the register_action_types command without any pre-configured scope.",
-          "type": "string",
-          "const": "notification:deny-register-action-types"
-        },
-        {
-          "description": "Denies the register_listener command without any pre-configured scope.",
-          "type": "string",
-          "const": "notification:deny-register-listener"
-        },
-        {
-          "description": "Denies the remove_active command without any pre-configured scope.",
-          "type": "string",
-          "const": "notification:deny-remove-active"
-        },
-        {
-          "description": "Denies the request_permission command without any pre-configured scope.",
-          "type": "string",
-          "const": "notification:deny-request-permission"
-        },
-        {
-          "description": "Denies the show command without any pre-configured scope.",
-          "type": "string",
-          "const": "notification:deny-show"
-        },
-        {
           "description": "This permission set configures which\nshell functionality is exposed by default.\n\n#### Granted Permissions\n\nIt allows to use the `open` functionality without any specific\nscope pre-configured. It will allow opening `http(s)://`,\n`tel:` and `mailto:` links.\n",
           "type": "string",
           "const": "shell:default"
@@ -5168,7 +5053,7 @@
         }
       ]
     },
-    "ShellAllowedArg": {
+    "ShellScopeEntryAllowedArg": {
       "description": "A command argument allowed to be executed by the webview API.",
       "anyOf": [
         {
@@ -5196,18 +5081,18 @@
         }
       ]
     },
-    "ShellAllowedArgs": {
-      "description": "A set of command arguments allowed to be executed by the webview API.\n\nA value of `true` will allow any arguments to be passed to the command. `false` will disable all arguments. A list of [`ShellAllowedArg`] will set those arguments as the only valid arguments to be passed to the attached command configuration.",
+    "ShellScopeEntryAllowedArgs": {
+      "description": "A set of command arguments allowed to be executed by the webview API.\n\nA value of `true` will allow any arguments to be passed to the command. `false` will disable all arguments. A list of [`ShellScopeEntryAllowedArg`] will set those arguments as the only valid arguments to be passed to the attached command configuration.",
       "anyOf": [
         {
           "description": "Use a simple boolean to allow all or disable all arguments to this command configuration.",
           "type": "boolean"
         },
         {
-          "description": "A specific set of [`ShellAllowedArg`] that are valid to call for the command configuration.",
+          "description": "A specific set of [`ShellScopeEntryAllowedArg`] that are valid to call for the command configuration.",
           "type": "array",
           "items": {
-            "$ref": "#/definitions/ShellAllowedArg"
+            "$ref": "#/definitions/ShellScopeEntryAllowedArg"
           }
         }
       ]
