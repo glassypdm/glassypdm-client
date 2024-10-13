@@ -10,6 +10,7 @@ import ServerFolder from "@/components/settings/serverfolder";
 import { useState } from "react";
 import { toast } from "sonner";
 import { invoke } from "@tauri-apps/api/core";
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 export const Route = createFileRoute('/_app/_workbench/settings')({
     component: Settings,
@@ -34,10 +35,6 @@ function Settings() {
     const [ server, setServer ] = useState(loaderData.url)
 
     // TODO have an alert dialog so user can confirm they want to change server setting
-    // FIXME when changing to dev server, when you revisit
-    // the settings page it will still show prod server, even though dev server is used.
-    // when revisiting settings page a second time it will show properly
-    // FIXME when changing to prod server, need to hit save twice (?)
 
     async function saveDevSettings() {
         await invoke("set_debug", { debug: debug ? 1 : 0 });
@@ -47,15 +44,11 @@ function Settings() {
     }
 
     async function openAppData() {
-
+        await invoke("open_app_data_dir")
     }
 
     async function openLogs() {
-
-    }
-
-    async function deleteCache() {
-
+        await invoke("open_log_dir")
     }
 
     async function deleteAppData() {
@@ -75,17 +68,33 @@ function Settings() {
                         <CardTitle>App Data</CardTitle>
                         <CardDescription>Manage your local app data.</CardDescription>
                     </CardHeader>
-                    <CardContent className="flex flex-row space-x-4">
-                    <Button>View App Data</Button>
-                    <Button>View App Logs</Button>
-                    <Button variant={"destructive"}>Delete Cache</Button>
-                    <Button variant={"outline"}>Delete App Data</Button>
+                    <CardContent>
+                    <div>
+                        {/** TODO configure delete cache post downloads */}
+                    </div>
+                    <div className="grid-cols-3 space-x-4 space-y-2">
+                        <Button onClick={openAppData}>View App Data</Button>
+                        <Button onClick={openLogs}>View App Logs</Button>
+                        <Dialog>
+                            <DialogTrigger>
+                                <Button variant={"outline"}>Delete App Data</Button>               
+                            </DialogTrigger>
+                            <DialogContent>
+                                <DialogHeader>
+                                <DialogTitle>Are you sure you want to delete the app's data?</DialogTitle>
+                                <DialogDescription>You will need to go through server setup again.</DialogDescription>
+                                </DialogHeader>
+                                <DialogFooter>
+                                    <Button variant={'destructive'}>Delete App Data</Button>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
+                    </div>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardHeader>
                         <CardTitle>Appearance</CardTitle>
-                        <CardDescription>Prettify your PDM experience.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <RadioGroup defaultValue={theme}>
