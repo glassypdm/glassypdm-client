@@ -147,8 +147,7 @@ pub async fn set_local_dir(
         .execute(&*pool)
         .await;
 
-    let _ = sqlx::query("delete from file WHERE url = $1")
-        .bind(url)
+    let _ = sqlx::query("delete from file")
         .execute(&*pool)
         .await;
 

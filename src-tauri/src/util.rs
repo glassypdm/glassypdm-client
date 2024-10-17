@@ -1,7 +1,11 @@
+use std::process::Command;
+use fs_extra::dir::get_size;
+use tokio::sync::Mutex;
+use tauri::{Manager, State};
 use sqlx::{Pool, Row, Sqlite};
 use std::fs::{self, create_dir_all, remove_dir_all, File};
 use std::io::Read;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::result::Result::Ok;
 
 use crate::get_server_dir;
@@ -166,4 +170,82 @@ pub async fn delete_trash(pool: &Pool<Sqlite>) -> Result<bool, ()> {
             Ok(false)
         }
     }
+}
+
+// clear cache
+#[tauri::command]
+pub async fn delete_cache(state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<bool, ()> {
+    let pool = state_mutex.lock().await;
+    let cache_dir = get_cache_dir(&pool).await.unwrap();
+    match remove_dir_all(Path::new(&cache_dir)) {
+        Ok(_res) => Ok(true),
+        Err(err) => {
+            println!("error deleting trash: {}", err);
+            Ok(false)
+        }
+    }
+}
+
+#[tauri::command]
+pub async fn get_cache_size(state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<u64, ()> {
+    let pool = state_mutex.lock().await;
+    let cache_dir = get_cache_dir(&pool).await.unwrap();
+
+    if !Path::new(cache_dir.as_str()).exists() {
+        return Ok(0);
+    }
+    
+    let size = match get_size(cache_dir) {
+        Ok(s) => s,
+        Err(err) => {
+            log::warn!("error while getting cache size: {}", err);
+            0
+        }
+    };
+
+    Ok(size)
+}
+
+#[tauri::command]
+pub fn open_log_dir(app: tauri::AppHandle) -> Result<bool, ()> {
+    let hehe = app.path().app_log_dir();
+    match hehe {
+        Ok(pb) => {
+            open_directory(pb);
+            Ok(true)
+        },
+        Err(err) => {
+            log::warn!("Couldn't resolve app log directory: {}", err);
+            Ok(false)
+        }
+    }
+}
+
+#[tauri::command]
+pub fn open_app_data_dir(app: tauri::AppHandle) -> Result<bool, ()> {
+    let hehe = app.path().app_data_dir();
+    match hehe {
+        Ok(pb) => {
+            open_directory(pb);
+            Ok(true)
+        },
+        Err(err) => {
+            log::warn!("Couldn't resolve app log directory: {}", err);
+            Ok(false)
+        }
+    }
+}
+
+pub fn open_directory(pb: PathBuf) -> bool {
+    #[cfg(target_os = "windows")]
+    {
+        Command::new("explorer").arg(pb).spawn().unwrap();
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        log::warn!("linux open directory not implemented!")
+        // TODO
+    }
+    return true;
 }

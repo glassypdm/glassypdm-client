@@ -8,6 +8,8 @@ import { toast } from "sonner";
 import { sep, join } from "@tauri-apps/api/path";
 import { mkdir, exists } from "@tauri-apps/plugin-fs"; 
 import { invoke } from "@tauri-apps/api/core";
+import { Switch } from "../ui/switch";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
 
 interface ServerFolderProps {
     dir: string
@@ -43,11 +45,10 @@ function ServerFolder(props: ServerFolderProps) {
             toast("glassyPDM folder already exists; select a different location.");
             return;
         }
-        else {
-            await mkdir(newFolder);
-            setSelectedFolder(newFolder);
-            setChangeMade(false);
-        }
+        
+        await mkdir(newFolder);
+        setSelectedFolder(newFolder);
+        setChangeMade(false);
 
         // update database
         // TODO handle error
@@ -62,11 +63,32 @@ function ServerFolder(props: ServerFolderProps) {
         <CardTitle>Server Folder Location</CardTitle>
         <CardDescription>Where your project files are stored and synced.</CardDescription>
     </CardHeader>
-    <CardContent>
+    <CardContent className="space-y-4">
         <div className="flex flex-row space-x-4 items-center">
             <Button onClick={selectFolder} variant={"outline"} type="button">Set Server Folder Location</Button>
             <Label>{ changeMade ? <p>{selectedFolder}<span className="text-gray-400">{sep()}glassyPDM</span></p> : <>{selectedFolder}</>}</Label>
         </div>
+        {/* POSTPONED 
+        <div className="flex flex-row space-x-4 items-center">
+            <Switch/>
+            <Label>Move project files to new location</Label>
+        </div>
+
+        <Dialog>
+        <DialogTrigger>
+            <Button variant={"outline"}>Delete Cache: 32 GB</Button>               
+        </DialogTrigger>
+        <DialogContent>
+            <DialogHeader>
+            <DialogTitle>Are you sure you want to delete the cache?</DialogTitle>
+            <DialogDescription>Resetting files may take longer.</DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+                <Button variant={'destructive'}>Delete Cache</Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
+    */}
     </CardContent>
     <CardFooter className='flex flex-row space-x-4 items-center justify-end'>
         <Button variant={'outline'} disabled={!changeMade} onClick={cancelChanges}>Cancel Changes</Button>

@@ -9,7 +9,7 @@ Create a ticket [here](https://github.com/joshtenorio/glassypdm-client/issues).
 - Clerk account setup. [link](https://clerk.com/)
 - An instance of the glassyPDM [server](https://github.com/joshtenorio/glassypdm-server) and [webapp](https://github.com/joshtenorio/glassypdm-web) running somewhere.
 ### CLI
-```bash
+```powershell
 # build activities
 $ pnpm install
 
@@ -17,6 +17,7 @@ $ pnpm install
 $ pnpm tauri dev
 
 # for building installers, etc.
+$ $env:TAURI_SIGNING_PRIVATE_KEY="Path or content of your private key"
 $ pnpm tauri build
 ```
 ### Recommended IDE Setup

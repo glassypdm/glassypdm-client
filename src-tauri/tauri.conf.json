@@ -1,6 +1,6 @@
 {
   "productName": "glassyPDM",
-  "version": "0.6.2",
+  "version": "0.6.3",
   "identifier": "org.glassypdm.app",
   "build": {
     "beforeDevCommand": "pnpm dev",
