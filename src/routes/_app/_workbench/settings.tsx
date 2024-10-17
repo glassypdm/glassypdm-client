@@ -75,6 +75,7 @@ function Settings() {
                     <div className="grid-cols-3 space-x-4 space-y-2">
                         <Button onClick={openAppData}>View App Data</Button>
                         <Button onClick={openLogs}>View App Logs</Button>
+                        {/* POSTPONED 
                         <Dialog>
                             <DialogTrigger>
                                 <Button variant={"outline"}>Delete App Data</Button>               
@@ -89,6 +90,7 @@ function Settings() {
                                 </DialogFooter>
                             </DialogContent>
                         </Dialog>
+                        */}
                     </div>
                     </CardContent>
                 </Card>

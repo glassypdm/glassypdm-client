@@ -68,6 +68,7 @@ function ServerFolder(props: ServerFolderProps) {
             <Button onClick={selectFolder} variant={"outline"} type="button">Set Server Folder Location</Button>
             <Label>{ changeMade ? <p>{selectedFolder}<span className="text-gray-400">{sep()}glassyPDM</span></p> : <>{selectedFolder}</>}</Label>
         </div>
+        {/* POSTPONED 
         <div className="flex flex-row space-x-4 items-center">
             <Switch/>
             <Label>Move project files to new location</Label>
@@ -87,6 +88,7 @@ function ServerFolder(props: ServerFolderProps) {
             </DialogFooter>
         </DialogContent>
     </Dialog>
+    */}
     </CardContent>
     <CardFooter className='flex flex-row space-x-4 items-center justify-end'>
         <Button variant={'outline'} disabled={!changeMade} onClick={cancelChanges}>Cancel Changes</Button>
