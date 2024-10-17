@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.6.3](https://github.com/glassypdm/glassypdm-client/compare/v0.6.2...v0.6.3) (2024-10-17)
+
+
+### Bug Fixes
+
+* changing the server folder will properly clear the file table ([9ed4ad0](https://github.com/glassypdm/glassypdm-client/commit/9ed4ad0a02fc93fd0765c7369327d24428594a19))
+
+
+### Miscellaneous
+
+* add os 'agnostic' way to open directories ([d8120d1](https://github.com/glassypdm/glassypdm-client/commit/d8120d16df013dfba307d8fd6da5669c3da349a9))
+
 ## [0.6.2](https://github.com/glassypdm/glassypdm-client/compare/v0.6.1...v0.6.2) (2024-10-06)
 
 
