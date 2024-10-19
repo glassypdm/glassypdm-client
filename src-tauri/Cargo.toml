@@ -1,6 +1,6 @@
 [package]
 name = "glassy_pdm_client"
-version = "0.6.3"
+version = "0.6.4"
 description = "glassyPDM"
 authors = ["Joshua Tenorio"]
 license = "GPL"
