@@ -46,11 +46,9 @@ pub async fn get_project_dir(pid: i32, pool: &Pool<Sqlite>) -> Result<String, ()
         .await;
     match db_call {
         Ok(row) => {
-            println!("query ok");
             let output = Path::new(&row.get::<String, &str>("local_dir"))
                 .join(row.get::<String, &str>("team_name"))
                 .join(row.get::<String, &str>("title"));
-            println!("output");
             Ok(output.display().to_string())
         }
         Err(err) => {

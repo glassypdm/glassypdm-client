@@ -244,6 +244,7 @@ pub async fn reset_files(
                     fs::create_dir_all(prefix).unwrap();
                     // assemble file from chunk(s)
                     let res = assemble_file(&cache_str, &proj_str).unwrap();
+                    let _ = app_handle.clone().emit("fileAction", 4);
                     if !res {
                         // failure
                         // how do we want to handle this? because we've already started copying files into project

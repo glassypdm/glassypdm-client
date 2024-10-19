@@ -11,6 +11,7 @@ mod util;
 
 use crate::config::*;
 use download::download_files;
+use log::{error, info, warn};
 use reset::reset_files;
 use sqlx::migrate::Migrator;
 use sqlx::{sqlite::SqliteConnectOptions, SqlitePool};
@@ -57,6 +58,8 @@ fn main() {
         ])
         .plugin(
             tauri_plugin_log::Builder::new()
+                //.filter(|metadata| metadata.target() != "sqlx::query")
+                .level(log::LevelFilter::Info)
                 .target(tauri_plugin_log::Target::new(
                     tauri_plugin_log::TargetKind::LogDir {
                         file_name: Some("glassy.log".to_string()),
@@ -94,7 +97,7 @@ fn main() {
                         match res {
                             Ok(()) => {}
                             Err(err) => {
-                                println!("{}", err);
+                                error!("{}", err);
                             }
                         }
                         app.manage(Mutex::new(db.clone()));
@@ -125,21 +128,21 @@ async fn update(app: tauri::AppHandle) -> tauri::Result<()> {
                     .download_and_install(
                         |chunk_length, content_length| {
                             downloaded += chunk_length;
-                            println!("downloaded {downloaded} from {content_length:?}");
+                            info!("downloaded {downloaded} from {content_length:?}");
                         },
                         || {
-                            println!("download finished");
+                            info!("download finished");
                         },
                     )
                     .await;
-                println!("updates installed");
+                info!("updates installed");
                 app.restart();
             } else {
-                println!("no update available");
+                info!("no update available");
             }
         }
         Err(err) => {
-            println!("error! {}", err);
+            warn!("error! {}", err);
             app.emit("update", 0).unwrap();
         }
     }

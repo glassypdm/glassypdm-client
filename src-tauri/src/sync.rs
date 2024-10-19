@@ -11,8 +11,8 @@ use tauri::State;
 use tokio::sync::Mutex;
 
 pub async fn hash_dir(pid: i32, dir_path: PathBuf, pool: &Pool<Sqlite>) {
-    log::debug!("starting hashing directory");
-    log::debug!("directory: {}", dir_path.display());
+    log::info!("starting hashing directory");
+    log::info!("directory: {}", dir_path.display());
 
     let _ = sqlx::query("UPDATE file SET in_fs = 0 WHERE pid = $1")
         .bind(pid)
@@ -25,7 +25,7 @@ pub async fn hash_dir(pid: i32, dir_path: PathBuf, pool: &Pool<Sqlite>) {
         .build()
         .unwrap();
 
-    log::debug!("merkle tree created");
+    log::info!("merkle tree created");
 
     for file in tree {
         // uwu
@@ -69,7 +69,7 @@ pub async fn hash_dir(pid: i32, dir_path: PathBuf, pool: &Pool<Sqlite>) {
             }
         }
     }
-    log::debug!("files parsed");
+    log::info!("files parsed");
     // no change - file was un-deleted (e.g., recovered from user's recycle bin)
     let _ = sqlx::query(
         "UPDATE file SET change_type = 0 WHERE in_fs = 1 AND change_type = 3 AND pid = $1",
@@ -110,7 +110,7 @@ pub async fn hash_dir(pid: i32, dir_path: PathBuf, pool: &Pool<Sqlite>) {
         .execute(pool)
         .await;
 
-    log::debug!("hashing directory complete");
+    log::info!("hashing directory complete");
 }
 
 // :clown:
@@ -136,7 +136,7 @@ pub async fn sync_changes(
     remote: Vec<RemoteFile>,
     state_mutex: State<'_, Mutex<Pool<Sqlite>>>,
 ) -> Result<bool, ()> {
-    log::debug!("syncing changes for project {}", pid);
+    log::info!("syncing changes for project {}", pid);
 
     let pool = state_mutex.lock().await;
     let project_dir = get_project_dir(pid, &pool).await.unwrap();
@@ -147,7 +147,7 @@ pub async fn sync_changes(
     // hash local files
     hash_dir(pid, project_dir.into(), &pool).await;
 
-    log::debug!("updating db with remote files...");
+    log::info!("updating db with remote files...");
     // update table with remote files
     for file in remote {
         // write to sqlite
@@ -174,7 +174,7 @@ pub async fn sync_changes(
             }
         }
     }
-    log::debug!("remote files updated");
+    log::info!("remote files updated");
     // TODO update last_synced in project table
     Ok(true)
 }
@@ -218,7 +218,7 @@ pub async fn get_uploads(
     pid: i32,
     state_mutex: State<'_, Mutex<Pool<Sqlite>>>,
 ) -> Result<Vec<FileChange>, ()> {
-    log::debug!("querying db for uploads");
+    log::info!("querying db for uploads");
     let pool = state_mutex.lock().await;
 
     let output: Vec<FileChange> = match sqlx::query_as("SELECT filepath, size, change_type, curr_hash as hash, base_commitid as commit_id FROM file WHERE pid = $1 AND change_type != 0")
@@ -230,7 +230,7 @@ pub async fn get_uploads(
             Vec::<FileChange>::new()
         }
     };
-    log::debug!("finished querying db for uploads");
+    log::info!("finished querying db for uploads");
     Ok(output)
 }
 
@@ -239,7 +239,7 @@ pub async fn get_downloads(
     pid: i32,
     state_mutex: State<'_, Mutex<Pool<Sqlite>>>,
 ) -> Result<Vec<FileChange>, ()> {
-    log::debug!("querying db for downloads");
+    log::info!("querying db for downloads");
     let pool = state_mutex.lock().await;
 
     let output: Vec<FileChange> = match sqlx::query_as(
@@ -259,7 +259,7 @@ pub async fn get_downloads(
         }
     };
 
-    log::debug!("finished querying db for downloads");
+    log::info!("finished querying db for downloads");
     Ok(output)
 }
 
@@ -268,7 +268,7 @@ pub async fn get_conflicts(
     pid: i32,
     state_mutex: State<'_, Mutex<Pool<Sqlite>>>,
 ) -> Result<Vec<FileChange>, ()> {
-    log::debug!("querying db for file conflicts in project {}", pid);
+    log::info!("querying db for file conflicts in project {}", pid);
     let pool = state_mutex.lock().await;
 
     let output: Vec<FileChange> = match sqlx::query_as(
