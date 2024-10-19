@@ -62,7 +62,7 @@ function Project() {
             </NavigationMenuItem>
             <NavigationMenuItem>
               <NavigationMenuLink className={cn(navigationMenuTriggerStyle(), 'text-md')} asChild>
-                <Link to='/projects/$pid/history' params={{ pid: pid }} search={{ offset: 0}}>Project History</Link>
+                <Link to='/projects/$pid/history' params={{ pid: pid }} search={{ offset: 0 }}>Project History</Link>
               </NavigationMenuLink>
             </NavigationMenuItem>
             <NavigationMenuItem>

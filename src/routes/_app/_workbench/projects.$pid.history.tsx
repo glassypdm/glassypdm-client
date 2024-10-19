@@ -2,17 +2,21 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useAuth } from '@clerk/clerk-react'
 import { useQuery } from '@tanstack/react-query'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { invoke } from '@tauri-apps/api/core'
 
+type HistorySearch = {
+  offset: number
+}
+
 export const Route = createFileRoute('/_app/_workbench/projects/$pid/history')({
-  validateSearch: (search: Record<string, unknown>): any => {
+  validateSearch: (search: Record<string, unknown>): HistorySearch => {
     // validate and parse the search params into a typed state
+    console.log(search)
     return {
-      offset: search.offset
+      offset: Number(search?.offset ?? 0)
     }
   },
   component: () => <History />,
@@ -55,7 +59,7 @@ interface Data {
   commits: CommitDescription[]
 }
 
-
+const DISABLED = 'pointer-events-none opacity-50'
 interface DescriptionCardProps {
   commitDesc: CommitDescription
 }
@@ -72,12 +76,7 @@ function DescriptionCard(props: DescriptionCardProps) {
           <CardDescription className='w-[400px]'>Project Update {commitdesc.commit_number} - {commitdesc.comment}</CardDescription>
         </CardHeader>
         <CardContent className='p-4 justify-self-end'>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger><Button disabled>View</Button></TooltipTrigger>
-              <TooltipContent>Feature coming soon</TooltipContent>
-            </Tooltip>
-            </TooltipProvider>
+              <Button disabled>View</Button>
           </CardContent>
       </div>
       <CardFooter className='p-2'>
@@ -92,8 +91,9 @@ function History() {
   const { url, pid } = Route.useLoaderData();
   const { offset } = Route.useSearch();
   const { isPending, isError, data, error } = useQuery({
-    queryKey: ["history", pid],
+    queryKey: ["history", pid, offset],
     queryFn: async () => {
+      console.log(offset)
       const endpoint = (url as string) + "/commit/select/by-project/" + pid + "?offset=" + offset;
       const response = await fetch(endpoint, {
         headers: { Authorization: `Bearer ${await getToken()}`},
@@ -110,14 +110,21 @@ function History() {
       <div>Loading</div>
     )
   }
+  else if(isError) {
+    console.log(error)
+    return (
+      <div>An error occurred while fetching data, check your Internet connection</div>
+    )
+  }
   console.log(data)
   if(data.response != "success") {
     return (
-      <div>An error occured</div>
+      <div>An error occured, open an issue on the GitHub repository</div>
     )
   }
 
   // TODO handle pagination
+  let pagination = <div></div>
   
   return (
     <div className='flex flex-col items-center'>
@@ -132,24 +139,28 @@ function History() {
           }
         </div>
       </ScrollArea>
-      {/*
       <Pagination>
         <PaginationContent>
+          <PaginationItem className={offset - 5 < 0 ? DISABLED : ""}>
+            <PaginationPrevious from={Route.fullPath} search={(prev) => ({ offset: Number(prev.offset ?? 0) - 5 })} params={{ pid: pid }}>
+            </PaginationPrevious>
+          </PaginationItem>
+          {/** 
           <PaginationItem>
-            <PaginationPrevious /> {/* className TODO set disabled if in-applicable*//*}
+            <PaginationLink from={Route.fullPath} search={{ offset: 0 }} params={{ pid: pid }}>1
+            </PaginationLink>
           </PaginationItem>
           <PaginationItem>
-            <PaginationLink href="#">1</PaginationLink>
+            <PaginationLink from={Route.fullPath} search={{ offset: 5 }} params={{ pid: pid }}>2
+            </PaginationLink>
           </PaginationItem>
-          <PaginationItem>
-            <PaginationLink href="#">2</PaginationLink>
-          </PaginationItem>
-          <PaginationItem>
-            <PaginationNext />
+          */}
+          <PaginationItem  className={offset + 5 > data.body.num_commits ? DISABLED : ""}>
+            <PaginationNext from={Route.fullPath} search={(prev) => ({ offset: Number(prev.offset ?? 0) + 5 })} params={{ pid: pid }}>
+            </PaginationNext>
           </PaginationItem>
         </PaginationContent>
       </Pagination>
-      */}
     </div>
   )
 }
