@@ -10,7 +10,7 @@ mod upload;
 mod util;
 
 use crate::config::*;
-use download::download_files;
+use download::{download_files, download_single_file};
 use log::{error, info, warn};
 use reset::reset_files;
 use sqlx::migrate::Migrator;
@@ -54,7 +54,8 @@ fn main() {
             delete_cache,
             get_cache_size,
             open_log_dir,
-            open_app_data_dir
+            open_app_data_dir,
+            download_single_file
         ])
         .plugin(
             tauri_plugin_log::Builder::new()

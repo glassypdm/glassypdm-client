@@ -2,24 +2,69 @@ import { useAuth } from "@clerk/clerk-react"
 import { Button } from "../ui/button"
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
+import { save } from "@tauri-apps/plugin-dialog";
+import { useToast } from "../ui/use-toast";
+import { invoke } from "@tauri-apps/api/core";
 
 interface DFRButtonProps {
     projectId: number
     path: string
     commitId: number
+    frno: number
 }
 
 function DownloadFileRevisionButton(props: DFRButtonProps) {
     const { userId } = useAuth();
     const [downloading, setDownloading] = useState(false)
+    const { toast } = useToast();
 
 
 
-    function hehez() {
+    async function hehez() {
         setDownloading(true)
+        const filename = props.path.split('\\')[props.path.split('\\').length - 1]
         // prompt user for download location, default to downloads folder
-        // download things to cache if needed
-        // assemble file to download location
+        console.log(filename)
+        let filters = []
+        if(filename.split('.').length > 1) {
+            filters.push({
+                name: "",
+                extensions: [ filename.split('.')[filename.split('.').length - 1] ]
+            })
+        }
+
+        const downloadPath = await save({
+            canCreateDirectories: true,
+            defaultPath: filename,
+            filters: filters
+        })
+        if(!downloadPath) {
+            setDownloading(false)
+            toast({
+                title: "File not downloaded",
+                description: "No path was selected."
+            })
+            return;
+        }
+        console.log(downloadPath)
+
+        let res = await invoke("download_single_file", {
+            pid: props.projectId,
+            path: props.path,
+            commitId: props.commitId,
+            userId: userId,
+            downloadPath: downloadPath
+        })
+        if(!res) {
+            toast({
+                title: "An error occurred"
+            });
+            return;
+        }
+        toast({
+            title: `Revision ${props.frno} of ${filename} successfully downloaded to ${downloadPath}`
+        });
+        setDownloading(false)
     }
 
     if(userId == null || userId == "") {

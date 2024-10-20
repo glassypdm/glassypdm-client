@@ -1,3 +1,4 @@
+use crate::reset;
 use crate::types::{
     DownloadInformation, DownloadRequest, DownloadRequestMessage, DownloadServerOutput, FileChunk,
     ReqwestError,
@@ -84,7 +85,7 @@ pub async fn download_files(
                             body: None,
                         }),
                     Err(err) => {
-                        println!("error: {}", err);
+                        log::error!("error: {}", err);
                         DownloadServerOutput {
                             response: "reqwest error".to_string(),
                             body: None,
@@ -114,7 +115,7 @@ pub async fn download_files(
                     }
                 } else {
                     *error = false;
-                    println!(
+                    log::error!(
                         "error TODO something L159 download.rs: response= {}",
                         output.response
                     );
@@ -124,12 +125,12 @@ pub async fn download_files(
         .await;
 
     if *error_flag.lock().await {
-        println!("issue getting download link");
+        log::error!("issue getting download link");
         return Ok(false);
     }
 
     let num_chunks = chunk_downloads.lock().await.len();
-    println!("s3 urls obtained, downloading {} chunks...", num_chunks);
+    log::info!("s3 urls obtained, downloading {} chunks...", num_chunks);
 
     // download chunks
     let copy = (*chunk_downloads).lock().await.clone();
@@ -150,7 +151,7 @@ pub async fn download_files(
                     }
                     Err(err) => {
                         *error = true;
-                        println!("error downloading file {}", err);
+                        log::error!("error downloading file {}", err);
                     }
                 };
             }
@@ -158,7 +159,7 @@ pub async fn download_files(
         .await;
 
     if *error_flag.lock().await {
-        println!("issue downloading file from s3");
+        log::error!("issue downloading file from s3");
         return Ok(false);
     }
 
@@ -167,7 +168,7 @@ pub async fn download_files(
         let cache_str = cache_dir.clone() + "\\" + file.hash.as_str();
         let res = verify_cache(&cache_str).unwrap();
         if !res {
-            println!("verifying cache failed: {}", file.hash);
+            log::error!("verifying cache failed: {}", file.hash);
             return Ok(false);
         }
     }
@@ -460,4 +461,115 @@ pub fn recover_file(trash_dir: &String, proj_dir: &String) -> Result<bool, ()> {
             Ok(false)
         }
     }
+}
+
+#[tauri::command]
+pub async fn download_single_file(pid: i64, path: String, commit_id: i64, user_id: String, download_path: String, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<bool, ()> {
+    let pool = state_mutex.lock().await;
+    let server_url = get_current_server(&pool).await.unwrap();
+    let cache_dir = get_cache_dir(&pool).await.unwrap();
+
+    // request download links from glassy server
+    let endpoint = server_url + "/store/download";
+    let glassy_client: Client = reqwest::Client::new();
+    let body: DownloadRequest = DownloadRequest {
+        project_id: pid,
+        path: path.clone(),
+        commit_id: commit_id,
+        user_id: user_id,
+    };
+    let response = glassy_client.post(endpoint).json(&body).send().await;
+
+    let server_output: DownloadServerOutput = match response {
+        Ok(res) => res
+            .json::<DownloadServerOutput>()
+            .await
+            .unwrap_or_else(|_| DownloadServerOutput {
+                response: "server error".to_string(),
+                body: None,
+            }),
+        Err(err) => {
+            log::warn!("couldn't fetch download information for {} at commit {} in project {}: {}", path, commit_id, pid, err);
+            DownloadServerOutput {
+                response: "reqwest error".to_string(),
+                body: None,
+            }
+        }
+    };
+
+    if server_output.response != "success" {
+        log::error!("couldn't download file {}", path);
+        return Ok(false);
+    }
+    let download_info = match server_output.body {
+        Some(a) => a,
+        None => {
+        log::error!("download information missing for {}", path);
+            return Ok(false);
+        }
+    };
+
+    // if file is cached, assemble file to download path
+    let hash_dir = cache_dir.clone() + "\\" + download_info.file_hash.as_str();
+    if verify_cache(&hash_dir).unwrap() {
+        log::info!("hash exists in cache");
+        let out = assemble_file(&hash_dir, &download_path).unwrap();
+        // just need to assemble path and return true
+        return Ok(out)
+    }
+
+    let _ = match save_filechunkmapping(&cache_dir, &download_info) {
+        Ok(res) => {
+            if !res {
+                log::warn!("couldn't save filechunk mapping for file hash {}", download_info.file_hash);
+            }
+        },
+        Err(err) => {
+            log::error!("encountered error when writing file chunk mapping for ifle hash {}", download_info.file_hash);
+        }
+    };
+
+    // otherwise we need to download the chunks and assemble them
+    let aws_client: Client = reqwest::Client::new();
+    let error_flag = Arc::new(Mutex::new(false));
+    let moved_error_flag = Arc::clone(&error_flag);
+    let cloned_cache = cache_dir.clone();
+    let _ = stream::iter(download_info.file_chunks.into_iter())
+        .for_each_concurrent(CONCURRENT_AWS_REQUESTS, |chunk_info| {
+            let cloned_error_flag = Arc::clone(&moved_error_flag);
+            let client = &aws_client;
+            // create cache_dir/file_hash directory
+            let filehash_dir = cloned_cache.clone() + "\\" + chunk_info.file_hash.as_str();
+            async move {
+                let res = download_with_client(&filehash_dir, chunk_info, client).await;
+                let mut error = cloned_error_flag.lock().await;
+                let _ = match res {
+                    Ok(_) => {
+                        log::info!("chunk downloaded successfully");
+                    }
+                    Err(err) => {
+                        *error = true;
+                        log::error!("error downloading chunk {}", err);
+                    }
+                };
+            }
+        })
+        .await;
+
+    if *error_flag.lock().await {
+        log::error!("issue downloading file from s3");
+        return Ok(false);
+    }
+
+    // verify the new downloaded chunks exist
+    let cache = cache_dir + "\\" + download_info.file_hash.as_str();
+    let res = verify_cache(&cache).unwrap();
+    if !res {
+        log::error!("verifying cache failed: {}", download_info.file_hash);
+        return Ok(false);
+    }
+
+    // assemble file
+    let out = assemble_file(&hash_dir, &download_path).unwrap();
+    Ok(out)
 }

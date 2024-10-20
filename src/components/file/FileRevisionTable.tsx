@@ -63,7 +63,7 @@ export function FileRevisionTable<TData, TValue>({
                     data-state={row.getIsSelected() && "selected"}
                 >
                     {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell key={cell.id} className="px-2 py-2">
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                     ))}
@@ -80,7 +80,7 @@ export function FileRevisionTable<TData, TValue>({
         </Table>
         </ScrollArea>
         <div className="flex items-center justify-end space-x-2 py-4">
-        <div>Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}</div>
+        <div className="text-sm">Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}</div>
         <Button
           variant="outline"
           size="sm"

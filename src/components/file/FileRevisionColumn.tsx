@@ -42,7 +42,7 @@ export const columns: ColumnDef<FileRevision>[] = [
             }
             return (
                 <div className="flex flex-row items-center space-x-2 w-[525px]">
-                    <Badge variant={'no_hover'}>v{fr.filerevision_number}</Badge>
+                    <Badge variant={'secondary_no_hover'}>v{fr.filerevision_number}</Badge>
                     <div className={cn(color, "text-xs  text-wrap break-words")}>{symbol} {fr.path}</div>
                 </div>
             )
@@ -77,7 +77,7 @@ export const columns: ColumnDef<FileRevision>[] = [
 
             return (
                 <div className="flex flex-row space-x-2 w-full justify-center">
-                    <DownloadFileRevisionButton projectId={fr.project_id} commitId={fr.commit_id} path={fr.path} />
+                    <DownloadFileRevisionButton projectId={fr.project_id} commitId={fr.commit_id} path={fr.path} frno={fr.filerevision_number}/>
                 </div>
             )
         }
