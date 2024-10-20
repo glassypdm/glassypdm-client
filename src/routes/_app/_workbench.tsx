@@ -54,7 +54,7 @@ function WorkbenchLayout() {
                 </DialogTrigger>
                 <DropdownMenuItem>Help</DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link to='/settings'>Settings</Link>
+                  <Link to='/settings' preload='intent'>Settings</Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className='mx-1'/>
                 <DropdownMenuItem onClick={() => signOut()}>Sign Out</DropdownMenuItem>

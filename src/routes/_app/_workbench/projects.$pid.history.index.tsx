@@ -29,7 +29,6 @@ export const Route = createFileRoute('/_app/_workbench/projects/$pid/history/')(
   {
     validateSearch: (search: Record<string, unknown>): HistorySearch => {
       // validate and parse the search params into a typed state
-      console.log(search)
       return {
         offset: Number(search?.offset ?? 0),
       }
@@ -45,21 +44,6 @@ export const Route = createFileRoute('/_app/_workbench/projects/$pid/history/')(
   },
 )
 
-/*
-type CommitDescription struct {
-	CommitId     int    `json:"commit_id"`
-	CommitNumber int    `json:"commit_number"`
-	NumFiles     int    `json:"num_files"`
-	Author       string `json:"author"`
-	Comment      string `json:"comment"`
-	Timestamp    int    `json:"timestamp"`
-}
-
-type CommitList struct {
-	NumCommit int                 `json:"num_commits"`
-	Commits   []CommitDescription `json:"commits"`
-}
-*/
 
 interface CommitDescription {
   commit_id: number
@@ -117,9 +101,11 @@ function History() {
   const { url, pid } = Route.useLoaderData()
   const { offset } = Route.useSearch()
   const { isPending, isError, data, error } = useQuery({
+    staleTime: 1000 * 600,
     queryKey: ['history', pid, offset],
     queryFn: async () => {
       console.log(offset)
+      console.log('fetching...')
       const endpoint =
         (url as string) +
         '/commit/select/by-project/' +
