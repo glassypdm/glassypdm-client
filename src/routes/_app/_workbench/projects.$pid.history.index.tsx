@@ -138,7 +138,15 @@ function History() {
   }
 
   // TODO handle pagination
-  let pagination = <div></div>
+  let pagination = []
+  // 5: number of commits to show per page
+  // determined by server
+  for( let i = offset - 2 * 5; i <= offset + 2 * 5; i += 5) {
+    if(i < 0) continue;
+    if(i > data.body.num_commits) continue;
+
+    pagination.push(i)
+  }
 
   return (
     <div className="flex flex-col items-center">
@@ -160,16 +168,13 @@ function History() {
               params={{ pid: pid }}
             ></PaginationPrevious>
           </PaginationItem>
-          {/** 
-          <PaginationItem>
-            <PaginationLink from={Route.fullPath} search={{ offset: 0 }} params={{ pid: pid }}>1
-            </PaginationLink>
-          </PaginationItem>
-          <PaginationItem>
-            <PaginationLink from={Route.fullPath} search={{ offset: 5 }} params={{ pid: pid }}>2
-            </PaginationLink>
-          </PaginationItem>
-          */}
+          {pagination.map((offset_val) => (
+                  <PaginationItem>
+                  <PaginationLink from={Route.fullPath} search={{ offset: offset_val }} params={{ pid: pid }} isActive={offset_val == offset}>
+                    {(offset_val / 5 + 1)}
+                  </PaginationLink>
+                </PaginationItem>
+          ))}
           <PaginationItem
             className={offset + 5 > data.body.num_commits ? DISABLED : ''}
           >
