@@ -20,9 +20,11 @@ export const Route = createFileRoute('/_app/_workbench/settings')({
     loader: async () => {
         const url: string = await invoke("get_server_url");
         const result = await invoke("init_settings_options");
+        const cache = await invoke("get_cache_size");
         const dir = (result as any).local_dir;
         const debug = (result as any).debug_active;
         return {
+            cache: cache,
             url: url,
             dir: dir,
             debug: debug == 1 ? true : false
@@ -53,10 +55,6 @@ function Settings() {
         await invoke("open_log_dir")
     }
 
-    async function deleteAppData() {
-        
-    }
-
     return (
         <Tabs className="flex flex-row space-x-4" defaultValue="folder">
             <TabsList className="flex flex-col justify-start">
@@ -69,7 +67,7 @@ function Settings() {
             </TabsList>
             <div className="w-full">
                 <TabsContent value="folder">
-                    <ServerFolder dir={loaderData.dir as string} />
+                    <ServerFolder dir={loaderData.dir as string} cache={loaderData.cache as number} />
                 </TabsContent>
                 <TabsContent value="appdata">
                     <Card>

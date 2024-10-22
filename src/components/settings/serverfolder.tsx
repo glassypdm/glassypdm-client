@@ -4,19 +4,25 @@ import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { open } from "@tauri-apps/plugin-dialog";
-import { toast } from "sonner";
 import { sep, join } from "@tauri-apps/api/path";
 import { mkdir, exists } from "@tauri-apps/plugin-fs"; 
 import { invoke } from "@tauri-apps/api/core";
 import { Switch } from "../ui/switch";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
+import { useToast } from "../ui/use-toast";
+import { Loader2 } from "lucide-react";
 
 interface ServerFolderProps {
     dir: string
+    cache: number
 }
 function ServerFolder(props: ServerFolderProps) {
     const [changeMade, setChangeMade] = useState(false)
     const [selectedFolder, setSelectedFolder] = useState(props.dir)
+    const [moveFiles, setMoveFiles] = useState(true)
+    const { toast } = useToast();
+    const [cacheSize, setCacheSize] = useState(props.cache)
+    const [clearing, setClearing] = useState(false)
 
     async function selectFolder() {
         const folder = await open({
@@ -37,12 +43,30 @@ function ServerFolder(props: ServerFolderProps) {
         setChangeMade(false);
     }
 
+    async function clearCache() {
+        setClearing(true)
+        let res = await invoke("delete_cache");
+        if(res) {
+            toast({
+                title: "Cache cleared successfully."
+            })
+        }
+        else {
+            toast({
+                title: "An error occured while clearing the cache.",
+                description: "Please create an issue on the GitHub repository."
+            })
+        }
+        setCacheSize(await invoke("get_cache_size"))
+        setClearing(false)
+    }
+
     async function confirmChanges() {
         // make folder, but check if it exists first
         const newFolder = await join(selectedFolder, "glassyPDM")
         const folderExists: boolean = await exists(newFolder);
         if(folderExists) {
-            toast("glassyPDM folder already exists; select a different location.");
+            toast({ title: "glassyPDM folder already exists; select a different location."});
             return;
         }
         
@@ -53,11 +77,28 @@ function ServerFolder(props: ServerFolderProps) {
         // update database
         // TODO handle error
         await invoke("set_local_dir", { dir: newFolder });
-        toast("glassyPDM folder location set.");
-
+        toast({ title: "glassyPDM folder location set."});
     }
 
+
+    let size = cacheSize / 1024 / 1024 / 1024;
+    let type = "GB"
+    if (size < 1) {
+        size = cacheSize / 1024 / 1024 // mb
+        type = "MB"
+      }
+    if (size < 1) {
+      size = cacheSize / 1024 // kb
+      type = "KB"
+    }
+    if (size < 1) {
+      size = cacheSize;
+      type = "bytes"
+    }
+    let cache_size = size.toFixed(1) + " " + type
+
   return (
+    <div className="flex flex-col space-y-4 w-full">
     <Card>
     <CardHeader>
         <CardTitle>Server Folder Location</CardTitle>
@@ -68,27 +109,10 @@ function ServerFolder(props: ServerFolderProps) {
             <Button onClick={selectFolder} variant={"outline"} type="button">Set Server Folder Location</Button>
             <Label>{ changeMade ? <p>{selectedFolder}<span className="text-gray-400">{sep()}glassyPDM</span></p> : <>{selectedFolder}</>}</Label>
         </div>
-        {/* POSTPONED 
         <div className="flex flex-row space-x-4 items-center">
-            <Switch/>
+            <Switch defaultChecked={moveFiles} onCheckedChange={(e) => setMoveFiles(e)}/>
             <Label>Move project files to new location</Label>
         </div>
-
-        <Dialog>
-        <DialogTrigger>
-            <Button variant={"outline"}>Delete Cache: 32 GB</Button>               
-        </DialogTrigger>
-        <DialogContent>
-            <DialogHeader>
-            <DialogTitle>Are you sure you want to delete the cache?</DialogTitle>
-            <DialogDescription>Resetting files may take longer.</DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-                <Button variant={'destructive'}>Delete Cache</Button>
-            </DialogFooter>
-        </DialogContent>
-    </Dialog>
-    */}
     </CardContent>
     <CardFooter className='flex flex-row space-x-4 items-center justify-end'>
         <Button variant={'outline'} disabled={!changeMade} onClick={cancelChanges}>Cancel Changes</Button>
@@ -109,6 +133,29 @@ function ServerFolder(props: ServerFolderProps) {
         </AlertDialog>
     </CardFooter>
 </Card>
+<Card>
+    <CardHeader>
+        <CardTitle>File Cache</CardTitle>
+        <CardDescription>Cache size: {cache_size}</CardDescription>
+    </CardHeader>
+    <CardContent>
+    <Dialog>
+        <DialogTrigger asChild>
+            <Button variant={"outline"} disabled={props.cache == 0}>Clear Cache</Button>               
+        </DialogTrigger>
+        <DialogContent>
+            <DialogHeader>
+            <DialogTitle>Are you sure you want to clear the cache?</DialogTitle>
+            <DialogDescription>Resetting files may take longer.</DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+                <Button variant={'destructive'} onClick={clearCache} disabled={clearing}>{clearing ? <Loader2 className="w-4 h-4 animate-spin" /> : "Clear Cache"}</Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
+    </CardContent>
+</Card>
+</div>
   )
 }
 

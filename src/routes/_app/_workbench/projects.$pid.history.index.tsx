@@ -108,7 +108,6 @@ function History() {
   const { url, pid } = Route.useLoaderData();
   const { offset } = Route.useSearch();
   const { isPending, isError, data, error } = useQuery({
-    staleTime: 1000 * 600,
     queryKey: ["history", pid, offset],
     queryFn: async () => {
       console.log(offset);
