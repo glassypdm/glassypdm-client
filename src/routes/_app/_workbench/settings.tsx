@@ -11,6 +11,8 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { invoke } from "@tauri-apps/api/core";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { UserProfile } from "@clerk/clerk-react";
 
 export const Route = createFileRoute('/_app/_workbench/settings')({
     component: Settings,
@@ -56,83 +58,97 @@ function Settings() {
     }
 
     return (
-        <div className="flex flex-row space-x-4">
-            <div className="flex flex-col">
+        <Tabs className="flex flex-row space-x-4" defaultValue="folder">
+            <TabsList className="flex flex-col justify-start">
                 <h1 className="text-2xl font-semibold p-4">Settings</h1>
-            </div>
-            <ScrollArea className="rounded-lg border bg-card p-2">
-            <div className="flex flex-col space-y-4 px-2 max-h-[480px] w-[560px]">
-                <ServerFolder dir={loaderData.dir as string} />
-                <Card>
-                    <CardHeader>
-                        <CardTitle>App Data</CardTitle>
-                        <CardDescription>Manage your local app data.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                    <div>
-                        {/** TODO configure delete cache post downloads */}
-                    </div>
-                    <div className="grid-cols-3 space-x-4 space-y-2">
-                        <Button onClick={openAppData}>View App Data</Button>
-                        <Button onClick={openLogs}>View App Logs</Button>
-                        {/* POSTPONED 
-                        <Dialog>
-                            <DialogTrigger>
-                                <Button variant={"outline"}>Delete App Data</Button>               
-                            </DialogTrigger>
-                            <DialogContent>
-                                <DialogHeader>
-                                <DialogTitle>Are you sure you want to delete the app's data?</DialogTitle>
-                                <DialogDescription>You will need to go through server setup again.</DialogDescription>
-                                </DialogHeader>
-                                <DialogFooter>
-                                    <Button variant={'destructive'}>Delete App Data</Button>
-                                </DialogFooter>
-                            </DialogContent>
-                        </Dialog>
-                        */}
-                    </div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Appearance</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <RadioGroup defaultValue={theme}>
-                            <div className="items-center space-x-4">
-                                <RadioGroupItem value="light" id="light" onClick={() => setTheme("light")} />
-                                <Label htmlFor="light">Light Mode</Label>
-                            </div>
-                            <div className="items-center space-x-4">
-                                <RadioGroupItem value="dark" id="dark" onClick={() => setTheme("dark")} />
-                                <Label htmlFor="dark">Dark Mode</Label>
-                            </div>
-                            <div className="items-center space-x-4">
-                                <RadioGroupItem value="system" id="system" onClick={() => setTheme("system")} />
-                                <Label htmlFor="system">System</Label>
-                            </div>
-                        </RadioGroup>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Developer Settings</CardTitle>
-                        <CardDescription>Trick silicon into thinking.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex flex-row space-x-4 items-center">
-                        <Label>Use Development Server</Label>
-                        <Switch defaultChecked={debug} onCheckedChange={(checked) => setDebug(checked)}/>
+                <TabsTrigger value="folder">Server Folder</TabsTrigger>
+                <TabsTrigger value="appdata">App Data</TabsTrigger>
+                <TabsTrigger value="appearance">Appearance</TabsTrigger>
+                <TabsTrigger value="account">Account</TabsTrigger>
+                <TabsTrigger value="dev">Developer Settings</TabsTrigger>
+            </TabsList>
+            <div className="w-full">
+                <TabsContent value="folder">
+                    <ServerFolder dir={loaderData.dir as string} />
+                </TabsContent>
+                <TabsContent value="appdata">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>App Data</CardTitle>
+                            <CardDescription>Manage your local app data.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                        <div>
+                            {/** TODO configure delete cache post downloads */}
                         </div>
-                        <p>Server used: {server}</p>
-                    </CardContent>
-                    <CardFooter>
-                        <Button onClick={saveDevSettings}>Save</Button>
-                    </CardFooter>
-                </Card>
+                        <div className="grid-cols-3 space-x-4 space-y-2">
+                            <Button onClick={openAppData}>View App Data</Button>
+                            <Button onClick={openLogs}>View App Logs</Button>
+                            {/* POSTPONED 
+                            <Dialog>
+                                <DialogTrigger>
+                                    <Button variant={"outline"}>Delete App Data</Button>               
+                                </DialogTrigger>
+                                <DialogContent>
+                                    <DialogHeader>
+                                    <DialogTitle>Are you sure you want to delete the app's data?</DialogTitle>
+                                    <DialogDescription>You will need to go through server setup again.</DialogDescription>
+                                    </DialogHeader>
+                                    <DialogFooter>
+                                        <Button variant={'destructive'}>Delete App Data</Button>
+                                    </DialogFooter>
+                                </DialogContent>
+                            </Dialog>
+                            */}
+                        </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                <TabsContent value="appearance">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Appearance</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <RadioGroup defaultValue={theme}>
+                                <div className="items-center space-x-4">
+                                    <RadioGroupItem value="light" id="light" onClick={() => setTheme("light")} />
+                                    <Label htmlFor="light">Light Mode</Label>
+                                </div>
+                                <div className="items-center space-x-4">
+                                    <RadioGroupItem value="dark" id="dark" onClick={() => setTheme("dark")} />
+                                    <Label htmlFor="dark">Dark Mode</Label>
+                                </div>
+                                <div className="items-center space-x-4">
+                                    <RadioGroupItem value="system" id="system" onClick={() => setTheme("system")} />
+                                    <Label htmlFor="system">System</Label>
+                                </div>
+                            </RadioGroup>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                <TabsContent value="account">
+                                <UserProfile />
+                </TabsContent>
+                <TabsContent value="dev">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Developer Settings</CardTitle>
+                            <CardDescription>Trick silicon into thinking.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex flex-row space-x-4 items-center">
+                            <Label>Use Development Server</Label>
+                            <Switch defaultChecked={debug} onCheckedChange={(checked) => setDebug(checked)}/>
+                            </div>
+                            <p>Server used: {server}</p>
+                        </CardContent>
+                        <CardFooter>
+                            <Button onClick={saveDevSettings}>Save</Button>
+                        </CardFooter>
+                    </Card>
+                </TabsContent>
             </div>
-            </ScrollArea>
-        </div>
+        </Tabs>
     )
 }
