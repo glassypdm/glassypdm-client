@@ -22,10 +22,12 @@ function ServerFolder(props: ServerFolderProps) {
     const [moveFiles, setMoveFiles] = useState(true)
     const { toast } = useToast();
     const [cacheSize, setCacheSize] = useState(props.cache)
-    const [clearing, setClearing] = useState(false)
+    const [progressing, setProgressing] = useState(false)
+    const [completed, setCompleted] = useState(false)
 
     async function selectFolder() {
         const folder = await open({
+            canCreateDirectories: true,
             multiple: false,
             directory: true,
         });
@@ -44,7 +46,7 @@ function ServerFolder(props: ServerFolderProps) {
     }
 
     async function clearCache() {
-        setClearing(true)
+        setProgressing(true)
         let res = await invoke("delete_cache");
         if(res) {
             toast({
@@ -58,7 +60,7 @@ function ServerFolder(props: ServerFolderProps) {
             })
         }
         setCacheSize(await invoke("get_cache_size"))
-        setClearing(false)
+        setProgressing(false)
     }
 
     async function confirmChanges() {
@@ -69,15 +71,22 @@ function ServerFolder(props: ServerFolderProps) {
             toast({ title: "glassyPDM folder already exists; select a different location."});
             return;
         }
-        
         await mkdir(newFolder);
-        setSelectedFolder(newFolder);
-        setChangeMade(false);
 
-        // update database
-        // TODO handle error
-        await invoke("set_local_dir", { dir: newFolder });
-        toast({ title: "glassyPDM folder location set."});
+        // update database and move files if applicable
+        setProgressing(true)
+        const res = await invoke("set_local_dir", { parentDir: selectedFolder, dir: newFolder, moveFiles: moveFiles });
+        if(res) {
+            setSelectedFolder(newFolder);
+            toast({ title: "glassyPDM folder location set."});
+            setChangeMade(true);
+        }
+        else {
+            toast({ title: "An error occurred while setting the new folder location."})
+            setChangeMade(false);
+        }
+        setProgressing(false)
+        setCompleted(true)
     }
 
 
@@ -116,21 +125,20 @@ function ServerFolder(props: ServerFolderProps) {
     </CardContent>
     <CardFooter className='flex flex-row space-x-4 items-center justify-end'>
         <Button variant={'outline'} disabled={!changeMade} onClick={cancelChanges}>Cancel Changes</Button>
-        <AlertDialog>
-            <AlertDialogTrigger asChild>
+        <Dialog>
+            <DialogTrigger asChild>
                 <Button disabled={!changeMade}>Save Changes</Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                    <AlertDialogDescription>You will likely need to redownload your project files.</AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel onClick={cancelChanges}>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={confirmChanges}>Set Folder Location</AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Are you sure?</DialogTitle>
+                    <DialogDescription>{ moveFiles ? "" : "You will need to redownload your project files."}</DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                    <Button onClick={confirmChanges} disabled={progressing || completed}>{progressing ? <Loader2 className="h-4 w-4 animate-spin"/> : completed ? "Done" : "Set Folder Location"}</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     </CardFooter>
 </Card>
 <Card>
@@ -149,7 +157,7 @@ function ServerFolder(props: ServerFolderProps) {
             <DialogDescription>Resetting files may take longer.</DialogDescription>
             </DialogHeader>
             <DialogFooter>
-                <Button variant={'destructive'} onClick={clearCache} disabled={clearing}>{clearing ? <Loader2 className="w-4 h-4 animate-spin" /> : "Clear Cache"}</Button>
+                <Button variant={'destructive'} onClick={clearCache} disabled={progressing}>{progressing ? <Loader2 className="w-4 h-4 animate-spin" /> : "Clear Cache"}</Button>
             </DialogFooter>
         </DialogContent>
     </Dialog>

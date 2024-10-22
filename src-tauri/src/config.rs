@@ -1,4 +1,5 @@
 use crate::{types::SettingsOptions, util::get_active_server};
+use fs_extra::dir::{move_dir, CopyOptions};
 use sqlx::{Pool, Row, Sqlite};
 use tauri::State;
 use tokio::sync::Mutex;
@@ -128,18 +129,38 @@ pub async fn init_settings_options(
 
 #[tauri::command]
 pub async fn set_local_dir(
+    parent_dir: String,
     dir: String,
+    move_files: bool,
     state_mutex: State<'_, Mutex<Pool<Sqlite>>>,
-) -> Result<(), ()> {
+) -> Result<bool, ()> {
+    log::info!("setting local directory to {}", dir);
+    log::info!("parent dir: {}", parent_dir);
     let pool = state_mutex.lock().await;
-
+    let old_server_dir = get_server_dir(&pool).await.unwrap();
     let _ = sqlx::query("UPDATE server SET local_dir = ? WHERE active = 1")
-        .bind(dir)
+        .bind(dir.clone())
         .execute(&*pool)
         .await;
 
-    // TODO error handling
+    if move_files {
+        log::info!("moving files...");
+        // TODO linux testing
+        let options = CopyOptions::new();
+        match move_dir(old_server_dir.clone(), parent_dir.clone(), &options) {
+            Ok(_) => return Ok(true),
+            Err(e) => {
+                log::error!("encountered error moving files from {} to {}: {}", old_server_dir, parent_dir, e);
+                // TODO test to see if the files are partially moved
+                return Ok(false);
+            }
+        }
+    }
     let url = get_active_server(&pool).await.unwrap();
+    if url == "" {
+        log::warn!("could not obtain active server url");
+        return Ok(false);
+    }
 
     // clear file and project table
     let _ = sqlx::query("delete from project WHERE url = $1")
@@ -149,7 +170,8 @@ pub async fn set_local_dir(
 
     let _ = sqlx::query("delete from file")
         .execute(&*pool)
-        .await;
+        .await;       
+    Ok(true)
 
-    Ok(())
+
 }

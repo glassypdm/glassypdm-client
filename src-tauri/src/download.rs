@@ -342,7 +342,7 @@ pub fn assemble_file(cache_dir: &String, proj_path: &String) -> Result<bool, ()>
     } else if mapping.len() == 0 {
         println!("assemble file: empty mapping for {}", cache_dir);
         return Ok(false);
-    } else {
+    } else { // TODO this can be un-nested
         // otherwise we need to assemble the file
         let proj_file = match File::create(proj_path) {
             Ok(file) => file,
