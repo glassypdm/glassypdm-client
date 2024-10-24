@@ -34,6 +34,7 @@ function ServerFolder(props: ServerFolderProps) {
 
         if(folder) {
             setChangeMade(true);
+            setCompleted(false)
             setSelectedFolder(folder)
         }
         else if (!folder){
@@ -79,14 +80,13 @@ function ServerFolder(props: ServerFolderProps) {
         if(res) {
             setSelectedFolder(newFolder);
             toast({ title: "glassyPDM folder location set."});
-            setChangeMade(true);
         }
         else {
             toast({ title: "An error occurred while setting the new folder location."})
-            setChangeMade(false);
         }
         setProgressing(false)
         setCompleted(true)
+        setChangeMade(false);
     }
 
 
@@ -116,7 +116,7 @@ function ServerFolder(props: ServerFolderProps) {
     <CardContent className="space-y-4">
         <div className="flex flex-row space-x-4 items-center">
             <Button onClick={selectFolder} variant={"outline"} type="button">Set Server Folder Location</Button>
-            <Label>{ changeMade ? <p>{selectedFolder}<span className="text-gray-400">{sep()}glassyPDM</span></p> : <>{selectedFolder}</>}</Label>
+            <Label>{ changeMade ? <p>{selectedFolder}<span className="text-gray-400">{selectedFolder.charAt(selectFolder.length - 1) == sep() ? sep() : ""}glassyPDM</span></p> : <>{selectedFolder}</>}</Label>
         </div>
         <div className="flex flex-row space-x-4 items-center">
             <Switch defaultChecked={moveFiles} onCheckedChange={(e) => setMoveFiles(e)}/>
