@@ -28,7 +28,7 @@ function ServerFolder(props: ServerFolderProps) {
     const [progressing, setProgressing] = useState(false)
     const [completed, setCompleted] = useState(false)
     const [useCache, setUseCache] = useState(props.saveCache)
-    const [cacheChangeMade, setCacheChangeMade] = useState(props.saveCache)
+    const [cacheChangeMade, setCacheChangeMade] = useState(false)
 
     async function selectFolder() {
         const folder = await open({
@@ -173,7 +173,7 @@ function ServerFolder(props: ServerFolderProps) {
     </div>
     </CardContent>
     <CardFooter className="flex flex-row space-x-4 items-center justify-end">
-    <Button className="justify-self-end" disabled={cacheChangeMade}>Save Changes</Button>
+    <Button className="justify-self-end" disabled={!cacheChangeMade}>Save Changes</Button>
     </CardFooter>
 </Card>
 </div>
