@@ -55,7 +55,9 @@ fn main() {
             get_cache_size,
             open_log_dir,
             open_app_data_dir,
-            download_single_file
+            download_single_file,
+            cmd_get_cache_setting,
+            cmd_set_cache_setting
         ])
         .plugin(
             tauri_plugin_log::Builder::new()

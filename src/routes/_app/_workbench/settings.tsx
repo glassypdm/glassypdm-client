@@ -21,12 +21,14 @@ export const Route = createFileRoute('/_app/_workbench/settings')({
         const url: string = await invoke("get_server_url");
         const result = await invoke("init_settings_options");
         const cache = await invoke("get_cache_size");
+        const cacheSetting = await invoke("cmd_get_cache_setting");
         const dir = (result as any).local_dir;
         const debug = (result as any).debug_active;
         return {
             cache: cache,
             url: url,
             dir: dir,
+            cacheSetting: cacheSetting,
             debug: debug == 1 ? true : false
         }
     }
@@ -67,7 +69,7 @@ function Settings() {
             </TabsList>
             <div className="w-full">
                 <TabsContent value="folder">
-                    <ServerFolder dir={loaderData.dir as string} cache={loaderData.cache as number} />
+                    <ServerFolder dir={loaderData.dir as string} cache={loaderData.cache as number} saveCache={loaderData.cacheSetting as boolean}/>
                 </TabsContent>
                 <TabsContent value="appdata">
                     <Card>

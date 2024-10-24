@@ -2,7 +2,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { open } from "@tauri-apps/plugin-dialog";
 import { sep, join } from "@tauri-apps/api/path";
 import { mkdir, exists } from "@tauri-apps/plugin-fs"; 
@@ -11,19 +10,25 @@ import { Switch } from "../ui/switch";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "../ui/dialog";
 import { useToast } from "../ui/use-toast";
 import { Loader2 } from "lucide-react";
+import { ScrollArea } from "../ui/scroll-area";
 
 interface ServerFolderProps {
     dir: string
     cache: number
+    saveCache: boolean
 }
 function ServerFolder(props: ServerFolderProps) {
-    const [changeMade, setChangeMade] = useState(false)
+    // TODO refactor these LMAO
+    // form ???
+    const [folderChangeMade, setFolderChangeMade] = useState(false)
     const [selectedFolder, setSelectedFolder] = useState(props.dir)
     const [moveFiles, setMoveFiles] = useState(true)
     const { toast } = useToast();
     const [cacheSize, setCacheSize] = useState(props.cache)
     const [progressing, setProgressing] = useState(false)
     const [completed, setCompleted] = useState(false)
+    const [useCache, setUseCache] = useState(props.saveCache)
+    const [cacheChangeMade, setCacheChangeMade] = useState(props.saveCache)
 
     async function selectFolder() {
         const folder = await open({
@@ -33,7 +38,7 @@ function ServerFolder(props: ServerFolderProps) {
         });
 
         if(folder) {
-            setChangeMade(true);
+            setFolderChangeMade(true);
             setCompleted(false)
             setSelectedFolder(folder)
         }
@@ -43,7 +48,7 @@ function ServerFolder(props: ServerFolderProps) {
 
     function cancelChanges() {
         setSelectedFolder(props.dir)
-        setChangeMade(false);
+        setFolderChangeMade(false);
     }
 
     async function clearCache() {
@@ -86,10 +91,10 @@ function ServerFolder(props: ServerFolderProps) {
         }
         setProgressing(false)
         setCompleted(true)
-        setChangeMade(false);
+        setFolderChangeMade(false);
     }
 
-
+    // TODO refactor this out into a reusable function
     let size = cacheSize / 1024 / 1024 / 1024;
     let type = "GB"
     if (size < 1) {
@@ -104,9 +109,10 @@ function ServerFolder(props: ServerFolderProps) {
       size = cacheSize;
       type = "bytes"
     }
-    let cache_size = size.toFixed(1) + " " + type
+    let cache_size = (type != "bytes" ? size.toFixed(1) : size) + " " + type
 
   return (
+    <ScrollArea className="h-[500px]">
     <div className="flex flex-col space-y-4 w-full">
     <Card>
     <CardHeader>
@@ -116,7 +122,7 @@ function ServerFolder(props: ServerFolderProps) {
     <CardContent className="space-y-4">
         <div className="flex flex-row space-x-4 items-center">
             <Button onClick={selectFolder} variant={"outline"} type="button">Set Server Folder Location</Button>
-            <Label>{ changeMade ? <p>{selectedFolder}<span className="text-gray-400">{selectedFolder.charAt(selectFolder.length - 1) == sep() ? sep() : ""}glassyPDM</span></p> : <>{selectedFolder}</>}</Label>
+            <Label>{ folderChangeMade ? <p>{selectedFolder}<span className="text-gray-400">{selectedFolder.charAt(selectFolder.length - 1) == sep() ? sep() : ""}glassyPDM</span></p> : <>{selectedFolder}</>}</Label>
         </div>
         <div className="flex flex-row space-x-4 items-center">
             <Switch defaultChecked={moveFiles} onCheckedChange={(e) => setMoveFiles(e)}/>
@@ -124,10 +130,10 @@ function ServerFolder(props: ServerFolderProps) {
         </div>
     </CardContent>
     <CardFooter className='flex flex-row space-x-4 items-center justify-end'>
-        <Button variant={'outline'} disabled={!changeMade} onClick={cancelChanges}>Cancel Changes</Button>
+        <Button variant={'outline'} disabled={!folderChangeMade} onClick={cancelChanges}>Cancel Changes</Button>
         <Dialog>
             <DialogTrigger asChild>
-                <Button disabled={!changeMade}>Save Changes</Button>
+                <Button disabled={!folderChangeMade}>Save Changes</Button>
             </DialogTrigger>
             <DialogContent>
                 <DialogHeader>
@@ -149,7 +155,7 @@ function ServerFolder(props: ServerFolderProps) {
     <CardContent>
     <Dialog>
         <DialogTrigger asChild>
-            <Button variant={"outline"} disabled={props.cache == 0}>Clear Cache</Button>               
+            <Button variant={"outline"} disabled={props.cache == 0}>Clear Cache Now</Button>               
         </DialogTrigger>
         <DialogContent>
             <DialogHeader>
@@ -161,10 +167,19 @@ function ServerFolder(props: ServerFolderProps) {
             </DialogFooter>
         </DialogContent>
     </Dialog>
+    <div className="flex flex-row space-x-4 place-items-center flex-grow py-2">
+        <Switch defaultChecked={useCache} onCheckedChange={(e) => {setUseCache(e); setCacheChangeMade(cacheChangeMade => !cacheChangeMade)}}/>
+        <Label>Clear cache after downloading</Label>
+    </div>
     </CardContent>
+    <CardFooter className="flex flex-row space-x-4 items-center justify-end">
+    <Button className="justify-self-end" disabled={cacheChangeMade}>Save Changes</Button>
+    </CardFooter>
 </Card>
 </div>
+</ScrollArea>
   )
 }
+
 
 export default ServerFolder

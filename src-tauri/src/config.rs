@@ -151,7 +151,6 @@ pub async fn set_local_dir(
             Ok(_) => return Ok(true),
             Err(e) => {
                 log::error!("encountered error moving files from {} to {}: {}", old_server_dir, parent_dir, e);
-                // TODO test to see if the files are partially moved
                 return Ok(false);
             }
         }
@@ -172,6 +171,47 @@ pub async fn set_local_dir(
         .execute(&*pool)
         .await;       
     Ok(true)
+}
 
+#[tauri::command]
+pub async fn cmd_get_cache_setting(state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<bool, ()> {
+    let pool = state_mutex.lock().await;
+    return get_cache_setting(&pool).await;
+}
 
+#[tauri::command]
+pub async fn cmd_set_cache_setting(new_cache: bool, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<bool, ()> {
+    let pool = state_mutex.lock().await;
+    let url = get_active_server(&pool).await.unwrap();
+
+    match sqlx::query("UPDATE server SET cache_setting = $1 WHERE url = $2")
+        .bind(if new_cache { 1 } else { 0 })
+        .bind(url)
+        .execute(&*pool)
+        .await {
+            Ok(_o) => {
+                Ok(true)
+            },
+            Err(err) => {
+                log::error!("could not set cache setting due to db error: {}", err);
+                Ok(false)
+            }
+    }
+}
+
+pub async fn get_cache_setting(pool: &Pool<Sqlite>) -> Result<bool, ()> {
+    let url = get_active_server(pool).await.unwrap();
+    match sqlx::query("SELECT cache_setting FROM server WHERE url = $1")
+        .bind(url)
+        .fetch_one(pool)
+        .await {
+            Ok(row) => {
+                let setting = row.get::<u32, &str>("cache_setting");
+                Ok(if setting == 1 { true } else { false })
+            },
+            Err(err) => {
+                log::error!("could not retrieve cache setting due to db error: {}", err);
+                Ok(false)
+            }
+    }
 }
