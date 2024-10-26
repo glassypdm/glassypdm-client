@@ -17,7 +17,7 @@ pub async fn get_current_server(pool: &Pool<Sqlite>) -> Result<String, ()> {
     match output {
         Ok(row) => Ok(row.get::<String, &str>("url")),
         Err(err) => {
-            println!("asdfasdf {}", err);
+            log::error!("couldn't get the current server url: {}", err);
             Ok("".to_string())
         }
     }
@@ -31,7 +31,7 @@ pub async fn get_active_server(pool: &Pool<Sqlite>) -> Result<String, ()> {
     match output {
         Ok(row) => Ok(row.get::<String, &str>("url")),
         Err(err) => {
-            println!("asdfasdf {}", err);
+            log::error!("couldn't get the active server url: {}", err);
             Ok("".to_string())
         }
     }
@@ -52,7 +52,7 @@ pub async fn get_project_dir(pid: i32, pool: &Pool<Sqlite>) -> Result<String, ()
             Ok(output.display().to_string())
         }
         Err(err) => {
-            println!("asdfasdf {}", err);
+            log::error!("couldn't get the project directory for pid {}: {}", pid, err);
             Ok("".to_string())
         }
     }
@@ -85,7 +85,7 @@ pub async fn get_file_info(pid: i32, path: String, pool: &Pool<Sqlite>) -> Resul
             Ok(owo)
         }
         Err(err) => {
-            println!("error getting file info: {}", err);
+            log::error!("couldn't get the file information for {} in project {}: {}", path, pid, err);
 
             Ok(UpdatedFile {
                 path: "".to_string(),
@@ -97,16 +97,6 @@ pub async fn get_file_info(pid: i32, path: String, pool: &Pool<Sqlite>) -> Resul
     }
 }
 
-pub fn get_file_as_byte_vec(abs_filepath: &String) -> Vec<u8> {
-    println!("get file as byte vec: {}", abs_filepath);
-    let mut f = File::open(&abs_filepath).expect("no file found");
-    let metadata = fs::metadata(&abs_filepath).expect("unable to read metadata");
-    let mut buffer = vec![0; metadata.len() as usize];
-    f.read(&mut buffer).expect("buffer overflow");
-
-    buffer
-}
-
 pub async fn get_cache_dir(pool: &Pool<Sqlite>) -> Result<String, ()> {
     let server_dir = get_server_dir(pool).await;
     match server_dir {
@@ -116,7 +106,7 @@ pub async fn get_cache_dir(pool: &Pool<Sqlite>) -> Result<String, ()> {
             Ok(output)
         }
         Err(_err) => {
-            println!("error getting cache dir");
+            log::error!("could not retrieve cache directory");
             Ok("".to_string())
         }
     }
@@ -132,7 +122,7 @@ pub async fn get_trash_dir(pool: &Pool<Sqlite>) -> Result<String, ()> {
             Ok(output)
         }
         Err(_err) => {
-            println!("error getting trash dir");
+            log::error!("could not retrieve trash directory");
             Ok("".to_string())
         }
     }
@@ -152,7 +142,7 @@ pub async fn get_basehash(pid: i32, path: String, pool: &Pool<Sqlite>) -> Result
     match result {
         Ok(row) => Ok(row.get::<String, &str>("base_hash")),
         Err(err) => {
-            println!("error getting base_hash: {}", err);
+            log::error!("could not get base_hash: {}", err);
             Err(())
         }
     }
@@ -164,7 +154,7 @@ pub async fn delete_trash(pool: &Pool<Sqlite>) -> Result<bool, ()> {
     match remove_dir_all(Path::new(&trash_dir)) {
         Ok(_res) => Ok(true),
         Err(err) => {
-            println!("error deleting trash: {}", err);
+            log::error!("could not delete the trash: {}", err);
             Ok(false)
         }
     }
@@ -172,13 +162,21 @@ pub async fn delete_trash(pool: &Pool<Sqlite>) -> Result<bool, ()> {
 
 // clear cache
 #[tauri::command]
-pub async fn delete_cache(state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<bool, ()> {
+pub async fn cmd_delete_cache(state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<bool, ()> {
     let pool = state_mutex.lock().await;
-    let cache_dir = get_cache_dir(&pool).await.unwrap();
+    return delete_cache(&pool).await;
+}
+
+pub async fn delete_cache(pool: &Pool<Sqlite>) -> Result<bool, ()> {
+    log::info!("deleting the cache...");
+    let cache_dir = get_cache_dir(pool).await.unwrap();
     match remove_dir_all(Path::new(&cache_dir)) {
-        Ok(_res) => Ok(true),
+        Ok(_res) => {
+            log::info!("cache successfully deleted");
+            Ok(true)
+        },
         Err(err) => {
-            println!("error deleting trash: {}", err);
+            log::error!("could not delete the cache: {}", err);
             Ok(false)
         }
     }

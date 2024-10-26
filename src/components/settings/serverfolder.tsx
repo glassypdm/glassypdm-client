@@ -53,7 +53,7 @@ function ServerFolder(props: ServerFolderProps) {
 
     async function clearCache() {
         setProgressing(true)
-        let res = await invoke("delete_cache");
+        let res = await invoke("cmd_delete_cache");
         if(res) {
             toast({
                 title: "Cache cleared successfully."
@@ -69,7 +69,7 @@ function ServerFolder(props: ServerFolderProps) {
         setProgressing(false)
     }
 
-    async function confirmChanges() {
+    async function confirmFolderChanges() {
         // make folder, but check if it exists first
         const newFolder = await join(selectedFolder, "glassyPDM")
         const folderExists: boolean = await exists(newFolder);
@@ -92,6 +92,14 @@ function ServerFolder(props: ServerFolderProps) {
         setProgressing(false)
         setCompleted(true)
         setFolderChangeMade(false);
+    }
+
+    async function confirmCacheChange() {
+        setCacheChangeMade(false);
+        const res = await invoke("cmd_set_cache_setting", {  newCache: useCache })
+        toast({
+            title: "Cache settings updated."
+        })
     }
 
     // TODO refactor this out into a reusable function
@@ -141,7 +149,7 @@ function ServerFolder(props: ServerFolderProps) {
                     <DialogDescription>{ moveFiles ? "" : "You will need to redownload your project files."}</DialogDescription>
                 </DialogHeader>
                 <DialogFooter>
-                    <Button onClick={confirmChanges} disabled={progressing || completed}>{progressing ? <Loader2 className="h-4 w-4 animate-spin"/> : completed ? "Done" : "Set Folder Location"}</Button>
+                    <Button onClick={confirmFolderChanges} disabled={progressing || completed}>{progressing ? <Loader2 className="h-4 w-4 animate-spin"/> : completed ? "Done" : "Set Folder Location"}</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -173,7 +181,7 @@ function ServerFolder(props: ServerFolderProps) {
     </div>
     </CardContent>
     <CardFooter className="flex flex-row space-x-4 items-center justify-end">
-    <Button className="justify-self-end" disabled={!cacheChangeMade}>Save Changes</Button>
+    <Button className="justify-self-end" disabled={!cacheChangeMade} onClick={confirmCacheChange}>Save Changes</Button>
     </CardFooter>
 </Card>
 </div>

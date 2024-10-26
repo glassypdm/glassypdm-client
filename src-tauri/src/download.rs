@@ -1,9 +1,9 @@
-use crate::reset;
+use crate::config::get_cache_setting;
 use crate::types::{
     DownloadInformation, DownloadRequest, DownloadRequestMessage, DownloadServerOutput, FileChunk,
     ReqwestError,
 };
-use crate::util::{delete_trash, get_cache_dir, get_trash_dir};
+use crate::util::{delete_cache, delete_trash, get_cache_dir, get_trash_dir};
 use crate::util::{get_current_server, get_project_dir};
 use futures::{stream, StreamExt};
 use reqwest::Client;
@@ -265,6 +265,13 @@ pub async fn download_files(
             .await;
         }
     }
+
+    // if configured, delete cache
+    let should_delete_cache = get_cache_setting(&pool).await.unwrap();
+    if should_delete_cache {
+        let _ = delete_cache(&pool).await;
+    }
+
     Ok(true)
 }
 
@@ -571,5 +578,12 @@ pub async fn download_single_file(pid: i64, path: String, commit_id: i64, user_i
 
     // assemble file
     let out = assemble_file(&hash_dir, &download_path).unwrap();
+
+    // if configured, delete cache
+    let should_delete_cache = get_cache_setting(&pool).await.unwrap();
+    if should_delete_cache {
+        let _ = delete_cache(&pool).await;
+    }
+
     Ok(out)
 }
