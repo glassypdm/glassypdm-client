@@ -11,7 +11,7 @@ mod util;
 
 use crate::config::*;
 use download::{download_files, download_single_file};
-use log::{error, info, warn};
+use log::{debug, error, info, warn};
 use reset::reset_files;
 use sqlx::migrate::Migrator;
 use sqlx::{sqlite::SqliteConnectOptions, SqlitePool};
@@ -61,7 +61,6 @@ fn main() {
         ])
         .plugin(
             tauri_plugin_log::Builder::new()
-                //.filter(|metadata| metadata.target() != "sqlx::query")
                 .level(log::LevelFilter::Info)
                 .target(tauri_plugin_log::Target::new(
                     tauri_plugin_log::TargetKind::LogDir {
@@ -141,7 +140,7 @@ async fn update(app: tauri::AppHandle) -> tauri::Result<()> {
                 info!("updates installed");
                 app.restart();
             } else {
-                info!("no update available");
+                debug!("no update available");
             }
         }
         Err(err) => {
