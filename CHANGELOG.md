@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.7.0](https://github.com/glassypdm/glassypdm-client/compare/v0.6.3...v0.7.0) (2024-10-29)
+
+
+### Features
+
+* Added page to view project update information ([75194b1](https://github.com/glassypdm/glassypdm-client/commit/75194b1c963b8a05a60fe1d0fa7e4c1b971bada5))
+* project history pagination - view older project updates ([54b35fe](https://github.com/glassypdm/glassypdm-client/commit/54b35fe47397f37394a2f540dc9f501b7e54ea76))
+
+
+### Bug Fixes
+
+* the client will correctly say resetting files when the user is resetting files ([198a17a](https://github.com/glassypdm/glassypdm-client/commit/198a17a9da715dd6a8e80812006514bb62cec225))
+
+
+### Miscellaneous
+
+* added settings for disabling/enabling the cache ([cdf9c00](https://github.com/glassypdm/glassypdm-client/commit/cdf9c0054d038564822436b757df8a24269e6ce4))
+* Added settings option to clear the cache ([a22d940](https://github.com/glassypdm/glassypdm-client/commit/a22d94041a891e4057153fe5fc56ae9400f0108f))
+* disable upload/download buttons when syncing changes ([43f9a41](https://github.com/glassypdm/glassypdm-client/commit/43f9a417fb6365eeb0ed76e4122c46a880203817))
+* improved project history loading UX ([918a71d](https://github.com/glassypdm/glassypdm-client/commit/918a71da11bfcef71a20c632a957dddb46b1b34b))
+* redesigned settings page, added account settings ([c04e7ef](https://github.com/glassypdm/glassypdm-client/commit/c04e7ef37c1747fb4b39b6586f089ea8d825c546))
+
 ## [0.6.3](https://github.com/glassypdm/glassypdm-client/compare/v0.6.2...v0.6.3) (2024-10-17)
 
 
