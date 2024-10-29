@@ -187,7 +187,7 @@ function History() {
           >
             <PaginationPrevious
               from={Route.fullPath}
-              search={(prev) => ({ offset: Number(prev.offset ?? 0) - 5 })}
+              search={(prev: any) => ({ offset: Number(prev.offset ?? 0) - 5 })}
               params={{ pid: pid }}
             ></PaginationPrevious>
           </PaginationItem>
@@ -216,7 +216,7 @@ function History() {
           >
             <PaginationNext
               from={Route.fullPath}
-              search={(prev) => ({ offset: Number(prev.offset ?? 0) + 5 })}
+              search={(prev: any) => ({ offset: Number(prev.offset ?? 0) + 5 })}
               params={{ pid: pid }}
             ></PaginationNext>
           </PaginationItem>
