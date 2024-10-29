@@ -53,7 +53,7 @@ export const columns: ColumnDef<FileRevision>[] = [
         header: "File size",
         cell: ({ row }) => {
             const fr = row.original;
-            let size = fr.filesize >> 20;
+            let size = Math.round(fr.filesize / 1024 / 1024); // mb
             let unit = "MB"
             if (size < 1) {
               size = Math.round(fr.filesize / 1024) // kb

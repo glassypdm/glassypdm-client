@@ -66,10 +66,10 @@ export const columns: ColumnDef<File>[] = [
         header: "File size",
         cell: ({ row }) => {
           const file: File = row.original;
-          let size = file.size >> 20;
+          let size = Math.round(file.size / 1024 / 1024); // mb
           let type = "MB"
           if (size < 1) {
-            size = file.size / 1024 // kb
+            size = Math.round(file.size / 1024) // kb
             type = "KB"
           }
           if (size < 1) {
