@@ -37,6 +37,7 @@ import { Route as AppWorkbenchProjectsPidHistoryCommitImport } from './routes/_a
 // Create/Update Routes
 
 const ServersetupRoute = ServersetupImport.update({
+  id: '/serversetup',
   path: '/serversetup',
   getParentRoute: () => rootRoute,
 } as any)
@@ -47,26 +48,31 @@ const AppRoute = AppImport.update({
 } as any)
 
 const IndexRoute = IndexImport.update({
+  id: '/',
   path: '/',
   getParentRoute: () => rootRoute,
 } as any)
 
 const AppUploadRoute = AppUploadImport.update({
+  id: '/upload',
   path: '/upload',
   getParentRoute: () => AppRoute,
 } as any)
 
 const AppSignupRoute = AppSignupImport.update({
+  id: '/signup',
   path: '/signup',
   getParentRoute: () => AppRoute,
 } as any)
 
 const AppSigninRoute = AppSigninImport.update({
+  id: '/signin',
   path: '/signin',
   getParentRoute: () => AppRoute,
 } as any)
 
 const AppDownloadRoute = AppDownloadImport.update({
+  id: '/download',
   path: '/download',
   getParentRoute: () => AppRoute,
 } as any)
@@ -77,79 +83,93 @@ const AppWorkbenchRoute = AppWorkbenchImport.update({
 } as any)
 
 const AppWorkbenchTeamsRoute = AppWorkbenchTeamsImport.update({
+  id: '/teams',
   path: '/teams',
   getParentRoute: () => AppWorkbenchRoute,
 } as any)
 
 const AppWorkbenchSettingsRoute = AppWorkbenchSettingsImport.update({
+  id: '/settings',
   path: '/settings',
   getParentRoute: () => AppWorkbenchRoute,
 } as any)
 
 const AppWorkbenchDashboardRoute = AppWorkbenchDashboardImport.update({
+  id: '/dashboard',
   path: '/dashboard',
   getParentRoute: () => AppWorkbenchRoute,
 } as any)
 
 const AppWorkbenchProjectsIndexRoute = AppWorkbenchProjectsIndexImport.update({
+  id: '/projects/',
   path: '/projects/',
   getParentRoute: () => AppWorkbenchRoute,
 } as any)
 
 const AppWorkbenchTeamsTeamidRoute = AppWorkbenchTeamsTeamidImport.update({
+  id: '/$teamid',
   path: '/$teamid',
   getParentRoute: () => AppWorkbenchTeamsRoute,
 } as any)
 
 const AppWorkbenchProjectsPidRoute = AppWorkbenchProjectsPidImport.update({
+  id: '/projects/$pid',
   path: '/projects/$pid',
   getParentRoute: () => AppWorkbenchRoute,
 } as any)
 
 const AppWorkbenchTeamsTeamidPgroupsRoute =
   AppWorkbenchTeamsTeamidPgroupsImport.update({
+    id: '/pgroups',
     path: '/pgroups',
     getParentRoute: () => AppWorkbenchTeamsTeamidRoute,
   } as any)
 
 const AppWorkbenchTeamsTeamidMembersRoute =
   AppWorkbenchTeamsTeamidMembersImport.update({
+    id: '/members',
     path: '/members',
     getParentRoute: () => AppWorkbenchTeamsTeamidRoute,
   } as any)
 
 const AppWorkbenchTeamsTeamidManageRoute =
   AppWorkbenchTeamsTeamidManageImport.update({
+    id: '/manage',
     path: '/manage',
     getParentRoute: () => AppWorkbenchTeamsTeamidRoute,
   } as any)
 
 const AppWorkbenchProjectsPidSyncRoute =
   AppWorkbenchProjectsPidSyncImport.update({
+    id: '/sync',
     path: '/sync',
     getParentRoute: () => AppWorkbenchProjectsPidRoute,
   } as any)
 
 const AppWorkbenchProjectsPidSettingsRoute =
   AppWorkbenchProjectsPidSettingsImport.update({
+    id: '/settings',
     path: '/settings',
     getParentRoute: () => AppWorkbenchProjectsPidRoute,
   } as any)
 
 const AppWorkbenchProjectsPidFilesRoute =
   AppWorkbenchProjectsPidFilesImport.update({
+    id: '/files',
     path: '/files',
     getParentRoute: () => AppWorkbenchProjectsPidRoute,
   } as any)
 
 const AppWorkbenchProjectsPidHistoryIndexRoute =
   AppWorkbenchProjectsPidHistoryIndexImport.update({
+    id: '/history/',
     path: '/history/',
     getParentRoute: () => AppWorkbenchProjectsPidRoute,
   } as any)
 
 const AppWorkbenchProjectsPidHistoryCommitRoute =
   AppWorkbenchProjectsPidHistoryCommitImport.update({
+    id: '/history/$commit',
     path: '/history/$commit',
     getParentRoute: () => AppWorkbenchProjectsPidRoute,
   } as any)

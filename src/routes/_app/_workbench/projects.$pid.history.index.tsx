@@ -21,6 +21,7 @@ import { useAuth } from "@clerk/clerk-react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { invoke } from "@tauri-apps/api/core";
+import { ChevronLeft } from "lucide-react";
 
 export type HistorySearch = {
   offset: number;
