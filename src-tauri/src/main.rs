@@ -10,12 +10,13 @@ mod upload;
 mod util;
 
 use crate::config::*;
-use download::download_files;
+use download::{download_files, download_single_file};
+use log::{debug, error, info, warn};
 use reset::reset_files;
 use sqlx::migrate::Migrator;
 use sqlx::{sqlite::SqliteConnectOptions, SqlitePool};
 use std::fs;
-use util::{delete_cache, get_cache_size, open_log_dir, open_app_data_dir};
+use util::{cmd_delete_cache, get_cache_size, open_log_dir, open_app_data_dir};
 use sync::{
     get_conflicts, get_downloads, get_local_projects, get_project_name, get_uploads,
     open_project_dir, sync_changes, update_project_info,
@@ -50,13 +51,17 @@ fn main() {
             reset_files,
             check_update,
             restart,
-            delete_cache,
+            cmd_delete_cache,
             get_cache_size,
             open_log_dir,
-            open_app_data_dir
+            open_app_data_dir,
+            download_single_file,
+            cmd_get_cache_setting,
+            cmd_set_cache_setting
         ])
         .plugin(
             tauri_plugin_log::Builder::new()
+                .level(log::LevelFilter::Info)
                 .target(tauri_plugin_log::Target::new(
                     tauri_plugin_log::TargetKind::LogDir {
                         file_name: Some("glassy.log".to_string()),
@@ -94,7 +99,7 @@ fn main() {
                         match res {
                             Ok(()) => {}
                             Err(err) => {
-                                println!("{}", err);
+                                error!("{}", err);
                             }
                         }
                         app.manage(Mutex::new(db.clone()));
@@ -125,21 +130,21 @@ async fn update(app: tauri::AppHandle) -> tauri::Result<()> {
                     .download_and_install(
                         |chunk_length, content_length| {
                             downloaded += chunk_length;
-                            println!("downloaded {downloaded} from {content_length:?}");
+                            info!("downloaded {downloaded} from {content_length:?}");
                         },
                         || {
-                            println!("download finished");
+                            info!("download finished");
                         },
                     )
                     .await;
-                println!("updates installed");
+                info!("updates installed");
                 app.restart();
             } else {
-                println!("no update available");
+                debug!("no update available");
             }
         }
         Err(err) => {
-            println!("error! {}", err);
+            warn!("error! {}", err);
             app.emit("update", 0).unwrap();
         }
     }

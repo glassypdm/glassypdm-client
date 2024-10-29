@@ -76,6 +76,7 @@ pub async fn upload_files(
                 let copied_filehash = file_hash.clone();
                 async move {
                     let Chunk { hash, data, idx } = chunk;
+                    println!("block hash: {}\tfile hash: {}", hash, copied_filehash);
                     let form: Form = reqwest::multipart::Form::new()
                         .part("chunk", Part::bytes(data).file_name(hash.clone()))
                         .text("file_hash", copied_filehash)

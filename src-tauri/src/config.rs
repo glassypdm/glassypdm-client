@@ -1,4 +1,5 @@
 use crate::{types::SettingsOptions, util::get_active_server};
+use fs_extra::dir::{move_dir, CopyOptions};
 use sqlx::{Pool, Row, Sqlite};
 use tauri::State;
 use tokio::sync::Mutex;
@@ -128,18 +129,37 @@ pub async fn init_settings_options(
 
 #[tauri::command]
 pub async fn set_local_dir(
+    parent_dir: String,
     dir: String,
+    move_files: bool,
     state_mutex: State<'_, Mutex<Pool<Sqlite>>>,
-) -> Result<(), ()> {
+) -> Result<bool, ()> {
+    log::info!("setting local directory to {}", dir);
+    log::info!("parent dir: {}", parent_dir);
     let pool = state_mutex.lock().await;
-
+    let old_server_dir = get_server_dir(&pool).await.unwrap();
     let _ = sqlx::query("UPDATE server SET local_dir = ? WHERE active = 1")
-        .bind(dir)
+        .bind(dir.clone())
         .execute(&*pool)
         .await;
 
-    // TODO error handling
+    if move_files {
+        log::info!("moving files...");
+        // TODO linux testing
+        let options = CopyOptions::new();
+        match move_dir(old_server_dir.clone(), parent_dir.clone(), &options) {
+            Ok(_) => return Ok(true),
+            Err(e) => {
+                log::error!("encountered error moving files from {} to {}: {}", old_server_dir, parent_dir, e);
+                return Ok(false);
+            }
+        }
+    }
     let url = get_active_server(&pool).await.unwrap();
+    if url == "" {
+        log::warn!("could not obtain active server url");
+        return Ok(false);
+    }
 
     // clear file and project table
     let _ = sqlx::query("delete from project WHERE url = $1")
@@ -149,7 +169,49 @@ pub async fn set_local_dir(
 
     let _ = sqlx::query("delete from file")
         .execute(&*pool)
-        .await;
+        .await;       
+    Ok(true)
+}
 
-    Ok(())
+#[tauri::command]
+pub async fn cmd_get_cache_setting(state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<bool, ()> {
+    let pool = state_mutex.lock().await;
+    return get_cache_setting(&pool).await;
+}
+
+#[tauri::command]
+pub async fn cmd_set_cache_setting(new_cache: bool, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<bool, ()> {
+    let pool = state_mutex.lock().await;
+    let url = get_active_server(&pool).await.unwrap();
+
+    match sqlx::query("UPDATE server SET cache_setting = $1 WHERE url = $2")
+        .bind(if new_cache { 1 } else { 0 })
+        .bind(url)
+        .execute(&*pool)
+        .await {
+            Ok(_o) => {
+                Ok(true)
+            },
+            Err(err) => {
+                log::error!("could not set cache setting due to db error: {}", err);
+                Ok(false)
+            }
+    }
+}
+
+pub async fn get_cache_setting(pool: &Pool<Sqlite>) -> Result<bool, ()> {
+    let url = get_active_server(pool).await.unwrap();
+    match sqlx::query("SELECT cache_setting FROM server WHERE url = $1")
+        .bind(url)
+        .fetch_one(pool)
+        .await {
+            Ok(row) => {
+                let setting = row.get::<u32, &str>("cache_setting");
+                Ok(if setting == 1 { true } else { false })
+            },
+            Err(err) => {
+                log::error!("could not retrieve cache setting due to db error: {}", err);
+                Ok(false)
+            }
+    }
 }

@@ -88,14 +88,14 @@ function UploadPage() {
 
     const selectedLength = selectedFiles.length;
     let actionedFiles = 0;
-    setStatus(`0 of ${selectedLength} files uploaded...`);
+    let verb = "uploaded";
+    if (action == "Reset") {
+      verb = "reset";
+    }
+    setStatus(`0 of ${selectedLength} files ${verb}...`);
     const unlisten = await listen("fileAction", (event: any) => {
       console.log(event);
       setProgress(100 * (++actionedFiles) / selectedLength);
-      let verb = "uploaded";
-      if (action == "Reset") {
-        verb = "reset";
-      }
       setStatus(`${actionedFiles} of ${selectedLength} files ${verb}...`);
     });
     if (action == "Upload") {

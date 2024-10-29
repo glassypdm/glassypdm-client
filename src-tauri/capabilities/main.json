@@ -15,6 +15,7 @@
     "core:tray:default",
     "shell:allow-open",
     "dialog:allow-open",
+    "dialog:allow-save",
     "fs:allow-exists",
     "fs:allow-mkdir",
     "log:default"

@@ -180,7 +180,7 @@ function SyncPage() {
         <Button
           className="grow text-wrap"
           onClick={navigateDownload}
-          disabled={downloadSize == 0 ? true : false}
+          disabled={downloadSize == 0 ? true : false || syncInProgress}
         >
           {downloadSize == 0
             ? "Up to date"
@@ -206,7 +206,7 @@ function SyncPage() {
         <Button
           className="grow text-wrap"
           onClick={navigateUpload}
-          disabled={uploadSize == 0 ? true : false}
+          disabled={uploadSize == 0 ? true : false || syncInProgress}
         >
           {uploadSize == 0
             ? "Up to date"

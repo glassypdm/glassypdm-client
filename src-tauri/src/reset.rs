@@ -2,10 +2,11 @@ use crate::download::{
     assemble_file, download_with_client, recover_file, save_filechunkmapping, trash_file,
     verify_cache,
 };
+use crate::config::get_cache_setting;
 use crate::sync::hash_dir;
 use crate::types::{DownloadRequest, DownloadRequestMessage, DownloadServerOutput, FileChunk};
 use crate::util::{
-    delete_trash, get_cache_dir, get_current_server, get_project_dir, get_trash_dir,
+    delete_cache, delete_trash, get_cache_dir, get_current_server, get_project_dir, get_trash_dir
 };
 use futures::{stream, StreamExt};
 use reqwest::Client;
@@ -244,6 +245,7 @@ pub async fn reset_files(
                     fs::create_dir_all(prefix).unwrap();
                     // assemble file from chunk(s)
                     let res = assemble_file(&cache_str, &proj_str).unwrap();
+                    let _ = app_handle.clone().emit("fileAction", 4);
                     if !res {
                         // failure
                         // how do we want to handle this? because we've already started copying files into project
@@ -266,6 +268,12 @@ pub async fn reset_files(
 
     // sync project directory
     hash_dir(pid as i32, project_dir.into(), &pool).await;
+
+    // if configured, delete cache
+    let should_delete_cache = get_cache_setting(&pool).await.unwrap();
+    if should_delete_cache {
+        let _ = delete_cache(&pool).await;
+    }
 
     Ok(true)
 }

@@ -53,7 +53,7 @@ function Project() {
 
   return (
     <div className='grid row-auto content-center justify-items-center'>
-        <NavigationMenu className='mt-2 mb-6'>
+        <NavigationMenu className='mb-2'>
           <NavigationMenuList className='space-x-4'>
             <NavigationMenuItem>
             <NavigationMenuLink className={cn(navigationMenuTriggerStyle(), 'text-4xl font-semibold')} asChild>
@@ -62,7 +62,7 @@ function Project() {
             </NavigationMenuItem>
             <NavigationMenuItem>
               <NavigationMenuLink className={cn(navigationMenuTriggerStyle(), 'text-md')} asChild>
-                <Link to='/projects/$pid/history' params={{ pid: pid }} search={{ offset: 0}}>Project History</Link>
+                <Link to='/projects/$pid/history' params={{ pid: pid }} search={{ offset: 0 }}>Project History</Link>
               </NavigationMenuLink>
             </NavigationMenuItem>
             <NavigationMenuItem>
