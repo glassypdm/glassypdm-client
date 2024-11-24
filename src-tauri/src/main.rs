@@ -3,6 +3,7 @@
 
 mod config;
 mod download;
+mod file;
 mod reset;
 mod sync;
 mod types;
@@ -21,6 +22,7 @@ use sync::{
     get_conflicts, get_downloads, get_local_projects, get_project_name, get_uploads,
     open_project_dir, sync_changes, update_project_info,
 };
+use file::get_files;
 use tauri::path::BaseDirectory;
 use tauri::{Emitter, Manager};
 use tauri_plugin_updater::UpdaterExt;
@@ -57,7 +59,8 @@ fn main() {
             open_app_data_dir,
             download_single_file,
             cmd_get_cache_setting,
-            cmd_set_cache_setting
+            cmd_set_cache_setting,
+            get_files
         ])
         .plugin(
             tauri_plugin_log::Builder::new()

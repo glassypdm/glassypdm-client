@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query'
 import { FileRevisionTable } from '@/components/file/FileRevisionTable'
 import { columns } from '@/components/file/FileRevisionColumn'
 import { Undo2 } from 'lucide-react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 
 
 
@@ -81,6 +82,17 @@ function Commit() {
                 </Link>
             </Button>
             <div className='font-semibold text-xl'>Project Update {data.body.description.commit_number} at {d.toLocaleString()}</div>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant={'outline'}>Revert</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Revert project to Project Update {data.body.description.commit_number}?</DialogTitle>
+                </DialogHeader>
+                <Button variant={'destructive'}>Yes</Button>
+              </DialogContent>
+            </Dialog>
             </div>
             <div className='flex flex-row grow border p-2 rounded-md w-full text-sm'>
               {data.body.description.comment.length == 0 ? "No comment provided" : data.body.description.comment}

@@ -19,9 +19,9 @@ import { Route as AppSignupImport } from './routes/_app/signup'
 import { Route as AppSigninImport } from './routes/_app/signin'
 import { Route as AppDownloadImport } from './routes/_app/download'
 import { Route as AppWorkbenchImport } from './routes/_app/_workbench'
-import { Route as AppWorkbenchTeamsImport } from './routes/_app/_workbench/teams'
 import { Route as AppWorkbenchSettingsImport } from './routes/_app/_workbench/settings'
 import { Route as AppWorkbenchDashboardImport } from './routes/_app/_workbench/dashboard'
+import { Route as AppWorkbenchTeamsIndexImport } from './routes/_app/_workbench/teams.index'
 import { Route as AppWorkbenchProjectsIndexImport } from './routes/_app/_workbench/projects.index'
 import { Route as AppWorkbenchTeamsTeamidImport } from './routes/_app/_workbench/teams.$teamid'
 import { Route as AppWorkbenchProjectsPidImport } from './routes/_app/_workbench/projects.$pid'
@@ -31,7 +31,9 @@ import { Route as AppWorkbenchTeamsTeamidManageImport } from './routes/_app/_wor
 import { Route as AppWorkbenchProjectsPidSyncImport } from './routes/_app/_workbench/projects.$pid.sync'
 import { Route as AppWorkbenchProjectsPidSettingsImport } from './routes/_app/_workbench/projects.$pid.settings'
 import { Route as AppWorkbenchProjectsPidFilesImport } from './routes/_app/_workbench/projects.$pid.files'
+import { Route as AppWorkbenchTeamsTeamidOrdersIndexImport } from './routes/_app/_workbench/teams.$teamid.orders.index'
 import { Route as AppWorkbenchProjectsPidHistoryIndexImport } from './routes/_app/_workbench/projects.$pid.history.index'
+import { Route as AppWorkbenchTeamsTeamidOrdersOptionsImport } from './routes/_app/_workbench/teams.$teamid.orders.options'
 import { Route as AppWorkbenchProjectsPidHistoryCommitImport } from './routes/_app/_workbench/projects.$pid.history.$commit'
 
 // Create/Update Routes
@@ -82,12 +84,6 @@ const AppWorkbenchRoute = AppWorkbenchImport.update({
   getParentRoute: () => AppRoute,
 } as any)
 
-const AppWorkbenchTeamsRoute = AppWorkbenchTeamsImport.update({
-  id: '/teams',
-  path: '/teams',
-  getParentRoute: () => AppWorkbenchRoute,
-} as any)
-
 const AppWorkbenchSettingsRoute = AppWorkbenchSettingsImport.update({
   id: '/settings',
   path: '/settings',
@@ -100,6 +96,12 @@ const AppWorkbenchDashboardRoute = AppWorkbenchDashboardImport.update({
   getParentRoute: () => AppWorkbenchRoute,
 } as any)
 
+const AppWorkbenchTeamsIndexRoute = AppWorkbenchTeamsIndexImport.update({
+  id: '/teams/',
+  path: '/teams/',
+  getParentRoute: () => AppWorkbenchRoute,
+} as any)
+
 const AppWorkbenchProjectsIndexRoute = AppWorkbenchProjectsIndexImport.update({
   id: '/projects/',
   path: '/projects/',
@@ -107,9 +109,9 @@ const AppWorkbenchProjectsIndexRoute = AppWorkbenchProjectsIndexImport.update({
 } as any)
 
 const AppWorkbenchTeamsTeamidRoute = AppWorkbenchTeamsTeamidImport.update({
-  id: '/$teamid',
-  path: '/$teamid',
-  getParentRoute: () => AppWorkbenchTeamsRoute,
+  id: '/teams/$teamid',
+  path: '/teams/$teamid',
+  getParentRoute: () => AppWorkbenchRoute,
 } as any)
 
 const AppWorkbenchProjectsPidRoute = AppWorkbenchProjectsPidImport.update({
@@ -160,11 +162,25 @@ const AppWorkbenchProjectsPidFilesRoute =
     getParentRoute: () => AppWorkbenchProjectsPidRoute,
   } as any)
 
+const AppWorkbenchTeamsTeamidOrdersIndexRoute =
+  AppWorkbenchTeamsTeamidOrdersIndexImport.update({
+    id: '/orders/',
+    path: '/orders/',
+    getParentRoute: () => AppWorkbenchTeamsTeamidRoute,
+  } as any)
+
 const AppWorkbenchProjectsPidHistoryIndexRoute =
   AppWorkbenchProjectsPidHistoryIndexImport.update({
     id: '/history/',
     path: '/history/',
     getParentRoute: () => AppWorkbenchProjectsPidRoute,
+  } as any)
+
+const AppWorkbenchTeamsTeamidOrdersOptionsRoute =
+  AppWorkbenchTeamsTeamidOrdersOptionsImport.update({
+    id: '/orders/options',
+    path: '/orders/options',
+    getParentRoute: () => AppWorkbenchTeamsTeamidRoute,
   } as any)
 
 const AppWorkbenchProjectsPidHistoryCommitRoute =
@@ -248,13 +264,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppWorkbenchSettingsImport
       parentRoute: typeof AppWorkbenchImport
     }
-    '/_app/_workbench/teams': {
-      id: '/_app/_workbench/teams'
-      path: '/teams'
-      fullPath: '/teams'
-      preLoaderRoute: typeof AppWorkbenchTeamsImport
-      parentRoute: typeof AppWorkbenchImport
-    }
     '/_app/_workbench/projects/$pid': {
       id: '/_app/_workbench/projects/$pid'
       path: '/projects/$pid'
@@ -264,16 +273,23 @@ declare module '@tanstack/react-router' {
     }
     '/_app/_workbench/teams/$teamid': {
       id: '/_app/_workbench/teams/$teamid'
-      path: '/$teamid'
+      path: '/teams/$teamid'
       fullPath: '/teams/$teamid'
       preLoaderRoute: typeof AppWorkbenchTeamsTeamidImport
-      parentRoute: typeof AppWorkbenchTeamsImport
+      parentRoute: typeof AppWorkbenchImport
     }
     '/_app/_workbench/projects/': {
       id: '/_app/_workbench/projects/'
       path: '/projects'
       fullPath: '/projects'
       preLoaderRoute: typeof AppWorkbenchProjectsIndexImport
+      parentRoute: typeof AppWorkbenchImport
+    }
+    '/_app/_workbench/teams/': {
+      id: '/_app/_workbench/teams/'
+      path: '/teams'
+      fullPath: '/teams'
+      preLoaderRoute: typeof AppWorkbenchTeamsIndexImport
       parentRoute: typeof AppWorkbenchImport
     }
     '/_app/_workbench/projects/$pid/files': {
@@ -325,6 +341,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppWorkbenchProjectsPidHistoryCommitImport
       parentRoute: typeof AppWorkbenchProjectsPidImport
     }
+    '/_app/_workbench/teams/$teamid/orders/options': {
+      id: '/_app/_workbench/teams/$teamid/orders/options'
+      path: '/orders/options'
+      fullPath: '/teams/$teamid/orders/options'
+      preLoaderRoute: typeof AppWorkbenchTeamsTeamidOrdersOptionsImport
+      parentRoute: typeof AppWorkbenchTeamsTeamidImport
+    }
     '/_app/_workbench/projects/$pid/history/': {
       id: '/_app/_workbench/projects/$pid/history/'
       path: '/history'
@@ -332,39 +355,17 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppWorkbenchProjectsPidHistoryIndexImport
       parentRoute: typeof AppWorkbenchProjectsPidImport
     }
+    '/_app/_workbench/teams/$teamid/orders/': {
+      id: '/_app/_workbench/teams/$teamid/orders/'
+      path: '/orders'
+      fullPath: '/teams/$teamid/orders'
+      preLoaderRoute: typeof AppWorkbenchTeamsTeamidOrdersIndexImport
+      parentRoute: typeof AppWorkbenchTeamsTeamidImport
+    }
   }
 }
 
 // Create and export the route tree
-
-interface AppWorkbenchTeamsTeamidRouteChildren {
-  AppWorkbenchTeamsTeamidManageRoute: typeof AppWorkbenchTeamsTeamidManageRoute
-  AppWorkbenchTeamsTeamidMembersRoute: typeof AppWorkbenchTeamsTeamidMembersRoute
-  AppWorkbenchTeamsTeamidPgroupsRoute: typeof AppWorkbenchTeamsTeamidPgroupsRoute
-}
-
-const AppWorkbenchTeamsTeamidRouteChildren: AppWorkbenchTeamsTeamidRouteChildren =
-  {
-    AppWorkbenchTeamsTeamidManageRoute: AppWorkbenchTeamsTeamidManageRoute,
-    AppWorkbenchTeamsTeamidMembersRoute: AppWorkbenchTeamsTeamidMembersRoute,
-    AppWorkbenchTeamsTeamidPgroupsRoute: AppWorkbenchTeamsTeamidPgroupsRoute,
-  }
-
-const AppWorkbenchTeamsTeamidRouteWithChildren =
-  AppWorkbenchTeamsTeamidRoute._addFileChildren(
-    AppWorkbenchTeamsTeamidRouteChildren,
-  )
-
-interface AppWorkbenchTeamsRouteChildren {
-  AppWorkbenchTeamsTeamidRoute: typeof AppWorkbenchTeamsTeamidRouteWithChildren
-}
-
-const AppWorkbenchTeamsRouteChildren: AppWorkbenchTeamsRouteChildren = {
-  AppWorkbenchTeamsTeamidRoute: AppWorkbenchTeamsTeamidRouteWithChildren,
-}
-
-const AppWorkbenchTeamsRouteWithChildren =
-  AppWorkbenchTeamsRoute._addFileChildren(AppWorkbenchTeamsRouteChildren)
 
 interface AppWorkbenchProjectsPidRouteChildren {
   AppWorkbenchProjectsPidFilesRoute: typeof AppWorkbenchProjectsPidFilesRoute
@@ -390,20 +391,46 @@ const AppWorkbenchProjectsPidRouteWithChildren =
     AppWorkbenchProjectsPidRouteChildren,
   )
 
+interface AppWorkbenchTeamsTeamidRouteChildren {
+  AppWorkbenchTeamsTeamidManageRoute: typeof AppWorkbenchTeamsTeamidManageRoute
+  AppWorkbenchTeamsTeamidMembersRoute: typeof AppWorkbenchTeamsTeamidMembersRoute
+  AppWorkbenchTeamsTeamidPgroupsRoute: typeof AppWorkbenchTeamsTeamidPgroupsRoute
+  AppWorkbenchTeamsTeamidOrdersOptionsRoute: typeof AppWorkbenchTeamsTeamidOrdersOptionsRoute
+  AppWorkbenchTeamsTeamidOrdersIndexRoute: typeof AppWorkbenchTeamsTeamidOrdersIndexRoute
+}
+
+const AppWorkbenchTeamsTeamidRouteChildren: AppWorkbenchTeamsTeamidRouteChildren =
+  {
+    AppWorkbenchTeamsTeamidManageRoute: AppWorkbenchTeamsTeamidManageRoute,
+    AppWorkbenchTeamsTeamidMembersRoute: AppWorkbenchTeamsTeamidMembersRoute,
+    AppWorkbenchTeamsTeamidPgroupsRoute: AppWorkbenchTeamsTeamidPgroupsRoute,
+    AppWorkbenchTeamsTeamidOrdersOptionsRoute:
+      AppWorkbenchTeamsTeamidOrdersOptionsRoute,
+    AppWorkbenchTeamsTeamidOrdersIndexRoute:
+      AppWorkbenchTeamsTeamidOrdersIndexRoute,
+  }
+
+const AppWorkbenchTeamsTeamidRouteWithChildren =
+  AppWorkbenchTeamsTeamidRoute._addFileChildren(
+    AppWorkbenchTeamsTeamidRouteChildren,
+  )
+
 interface AppWorkbenchRouteChildren {
   AppWorkbenchDashboardRoute: typeof AppWorkbenchDashboardRoute
   AppWorkbenchSettingsRoute: typeof AppWorkbenchSettingsRoute
-  AppWorkbenchTeamsRoute: typeof AppWorkbenchTeamsRouteWithChildren
   AppWorkbenchProjectsPidRoute: typeof AppWorkbenchProjectsPidRouteWithChildren
+  AppWorkbenchTeamsTeamidRoute: typeof AppWorkbenchTeamsTeamidRouteWithChildren
   AppWorkbenchProjectsIndexRoute: typeof AppWorkbenchProjectsIndexRoute
+  AppWorkbenchTeamsIndexRoute: typeof AppWorkbenchTeamsIndexRoute
 }
 
 const AppWorkbenchRouteChildren: AppWorkbenchRouteChildren = {
   AppWorkbenchDashboardRoute: AppWorkbenchDashboardRoute,
   AppWorkbenchSettingsRoute: AppWorkbenchSettingsRoute,
-  AppWorkbenchTeamsRoute: AppWorkbenchTeamsRouteWithChildren,
   AppWorkbenchProjectsPidRoute: AppWorkbenchProjectsPidRouteWithChildren,
+  AppWorkbenchTeamsTeamidRoute: AppWorkbenchTeamsTeamidRouteWithChildren,
   AppWorkbenchProjectsIndexRoute: AppWorkbenchProjectsIndexRoute,
+  AppWorkbenchTeamsIndexRoute: AppWorkbenchTeamsIndexRoute,
 }
 
 const AppWorkbenchRouteWithChildren = AppWorkbenchRoute._addFileChildren(
@@ -438,10 +465,10 @@ export interface FileRoutesByFullPath {
   '/upload': typeof AppUploadRoute
   '/dashboard': typeof AppWorkbenchDashboardRoute
   '/settings': typeof AppWorkbenchSettingsRoute
-  '/teams': typeof AppWorkbenchTeamsRouteWithChildren
   '/projects/$pid': typeof AppWorkbenchProjectsPidRouteWithChildren
   '/teams/$teamid': typeof AppWorkbenchTeamsTeamidRouteWithChildren
   '/projects': typeof AppWorkbenchProjectsIndexRoute
+  '/teams': typeof AppWorkbenchTeamsIndexRoute
   '/projects/$pid/files': typeof AppWorkbenchProjectsPidFilesRoute
   '/projects/$pid/settings': typeof AppWorkbenchProjectsPidSettingsRoute
   '/projects/$pid/sync': typeof AppWorkbenchProjectsPidSyncRoute
@@ -449,7 +476,9 @@ export interface FileRoutesByFullPath {
   '/teams/$teamid/members': typeof AppWorkbenchTeamsTeamidMembersRoute
   '/teams/$teamid/pgroups': typeof AppWorkbenchTeamsTeamidPgroupsRoute
   '/projects/$pid/history/$commit': typeof AppWorkbenchProjectsPidHistoryCommitRoute
+  '/teams/$teamid/orders/options': typeof AppWorkbenchTeamsTeamidOrdersOptionsRoute
   '/projects/$pid/history': typeof AppWorkbenchProjectsPidHistoryIndexRoute
+  '/teams/$teamid/orders': typeof AppWorkbenchTeamsTeamidOrdersIndexRoute
 }
 
 export interface FileRoutesByTo {
@@ -462,10 +491,10 @@ export interface FileRoutesByTo {
   '/upload': typeof AppUploadRoute
   '/dashboard': typeof AppWorkbenchDashboardRoute
   '/settings': typeof AppWorkbenchSettingsRoute
-  '/teams': typeof AppWorkbenchTeamsRouteWithChildren
   '/projects/$pid': typeof AppWorkbenchProjectsPidRouteWithChildren
   '/teams/$teamid': typeof AppWorkbenchTeamsTeamidRouteWithChildren
   '/projects': typeof AppWorkbenchProjectsIndexRoute
+  '/teams': typeof AppWorkbenchTeamsIndexRoute
   '/projects/$pid/files': typeof AppWorkbenchProjectsPidFilesRoute
   '/projects/$pid/settings': typeof AppWorkbenchProjectsPidSettingsRoute
   '/projects/$pid/sync': typeof AppWorkbenchProjectsPidSyncRoute
@@ -473,7 +502,9 @@ export interface FileRoutesByTo {
   '/teams/$teamid/members': typeof AppWorkbenchTeamsTeamidMembersRoute
   '/teams/$teamid/pgroups': typeof AppWorkbenchTeamsTeamidPgroupsRoute
   '/projects/$pid/history/$commit': typeof AppWorkbenchProjectsPidHistoryCommitRoute
+  '/teams/$teamid/orders/options': typeof AppWorkbenchTeamsTeamidOrdersOptionsRoute
   '/projects/$pid/history': typeof AppWorkbenchProjectsPidHistoryIndexRoute
+  '/teams/$teamid/orders': typeof AppWorkbenchTeamsTeamidOrdersIndexRoute
 }
 
 export interface FileRoutesById {
@@ -488,10 +519,10 @@ export interface FileRoutesById {
   '/_app/upload': typeof AppUploadRoute
   '/_app/_workbench/dashboard': typeof AppWorkbenchDashboardRoute
   '/_app/_workbench/settings': typeof AppWorkbenchSettingsRoute
-  '/_app/_workbench/teams': typeof AppWorkbenchTeamsRouteWithChildren
   '/_app/_workbench/projects/$pid': typeof AppWorkbenchProjectsPidRouteWithChildren
   '/_app/_workbench/teams/$teamid': typeof AppWorkbenchTeamsTeamidRouteWithChildren
   '/_app/_workbench/projects/': typeof AppWorkbenchProjectsIndexRoute
+  '/_app/_workbench/teams/': typeof AppWorkbenchTeamsIndexRoute
   '/_app/_workbench/projects/$pid/files': typeof AppWorkbenchProjectsPidFilesRoute
   '/_app/_workbench/projects/$pid/settings': typeof AppWorkbenchProjectsPidSettingsRoute
   '/_app/_workbench/projects/$pid/sync': typeof AppWorkbenchProjectsPidSyncRoute
@@ -499,7 +530,9 @@ export interface FileRoutesById {
   '/_app/_workbench/teams/$teamid/members': typeof AppWorkbenchTeamsTeamidMembersRoute
   '/_app/_workbench/teams/$teamid/pgroups': typeof AppWorkbenchTeamsTeamidPgroupsRoute
   '/_app/_workbench/projects/$pid/history/$commit': typeof AppWorkbenchProjectsPidHistoryCommitRoute
+  '/_app/_workbench/teams/$teamid/orders/options': typeof AppWorkbenchTeamsTeamidOrdersOptionsRoute
   '/_app/_workbench/projects/$pid/history/': typeof AppWorkbenchProjectsPidHistoryIndexRoute
+  '/_app/_workbench/teams/$teamid/orders/': typeof AppWorkbenchTeamsTeamidOrdersIndexRoute
 }
 
 export interface FileRouteTypes {
@@ -514,10 +547,10 @@ export interface FileRouteTypes {
     | '/upload'
     | '/dashboard'
     | '/settings'
-    | '/teams'
     | '/projects/$pid'
     | '/teams/$teamid'
     | '/projects'
+    | '/teams'
     | '/projects/$pid/files'
     | '/projects/$pid/settings'
     | '/projects/$pid/sync'
@@ -525,7 +558,9 @@ export interface FileRouteTypes {
     | '/teams/$teamid/members'
     | '/teams/$teamid/pgroups'
     | '/projects/$pid/history/$commit'
+    | '/teams/$teamid/orders/options'
     | '/projects/$pid/history'
+    | '/teams/$teamid/orders'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -537,10 +572,10 @@ export interface FileRouteTypes {
     | '/upload'
     | '/dashboard'
     | '/settings'
-    | '/teams'
     | '/projects/$pid'
     | '/teams/$teamid'
     | '/projects'
+    | '/teams'
     | '/projects/$pid/files'
     | '/projects/$pid/settings'
     | '/projects/$pid/sync'
@@ -548,7 +583,9 @@ export interface FileRouteTypes {
     | '/teams/$teamid/members'
     | '/teams/$teamid/pgroups'
     | '/projects/$pid/history/$commit'
+    | '/teams/$teamid/orders/options'
     | '/projects/$pid/history'
+    | '/teams/$teamid/orders'
   id:
     | '__root__'
     | '/'
@@ -561,10 +598,10 @@ export interface FileRouteTypes {
     | '/_app/upload'
     | '/_app/_workbench/dashboard'
     | '/_app/_workbench/settings'
-    | '/_app/_workbench/teams'
     | '/_app/_workbench/projects/$pid'
     | '/_app/_workbench/teams/$teamid'
     | '/_app/_workbench/projects/'
+    | '/_app/_workbench/teams/'
     | '/_app/_workbench/projects/$pid/files'
     | '/_app/_workbench/projects/$pid/settings'
     | '/_app/_workbench/projects/$pid/sync'
@@ -572,7 +609,9 @@ export interface FileRouteTypes {
     | '/_app/_workbench/teams/$teamid/members'
     | '/_app/_workbench/teams/$teamid/pgroups'
     | '/_app/_workbench/projects/$pid/history/$commit'
+    | '/_app/_workbench/teams/$teamid/orders/options'
     | '/_app/_workbench/projects/$pid/history/'
+    | '/_app/_workbench/teams/$teamid/orders/'
   fileRoutesById: FileRoutesById
 }
 
@@ -627,9 +666,10 @@ export const routeTree = rootRoute
       "children": [
         "/_app/_workbench/dashboard",
         "/_app/_workbench/settings",
-        "/_app/_workbench/teams",
         "/_app/_workbench/projects/$pid",
-        "/_app/_workbench/projects/"
+        "/_app/_workbench/teams/$teamid",
+        "/_app/_workbench/projects/",
+        "/_app/_workbench/teams/"
       ]
     },
     "/_app/download": {
@@ -656,13 +696,6 @@ export const routeTree = rootRoute
       "filePath": "_app/_workbench/settings.tsx",
       "parent": "/_app/_workbench"
     },
-    "/_app/_workbench/teams": {
-      "filePath": "_app/_workbench/teams.tsx",
-      "parent": "/_app/_workbench",
-      "children": [
-        "/_app/_workbench/teams/$teamid"
-      ]
-    },
     "/_app/_workbench/projects/$pid": {
       "filePath": "_app/_workbench/projects.$pid.tsx",
       "parent": "/_app/_workbench",
@@ -676,15 +709,21 @@ export const routeTree = rootRoute
     },
     "/_app/_workbench/teams/$teamid": {
       "filePath": "_app/_workbench/teams.$teamid.tsx",
-      "parent": "/_app/_workbench/teams",
+      "parent": "/_app/_workbench",
       "children": [
         "/_app/_workbench/teams/$teamid/manage",
         "/_app/_workbench/teams/$teamid/members",
-        "/_app/_workbench/teams/$teamid/pgroups"
+        "/_app/_workbench/teams/$teamid/pgroups",
+        "/_app/_workbench/teams/$teamid/orders/options",
+        "/_app/_workbench/teams/$teamid/orders/"
       ]
     },
     "/_app/_workbench/projects/": {
       "filePath": "_app/_workbench/projects.index.tsx",
+      "parent": "/_app/_workbench"
+    },
+    "/_app/_workbench/teams/": {
+      "filePath": "_app/_workbench/teams.index.tsx",
       "parent": "/_app/_workbench"
     },
     "/_app/_workbench/projects/$pid/files": {
@@ -715,9 +754,17 @@ export const routeTree = rootRoute
       "filePath": "_app/_workbench/projects.$pid.history.$commit.tsx",
       "parent": "/_app/_workbench/projects/$pid"
     },
+    "/_app/_workbench/teams/$teamid/orders/options": {
+      "filePath": "_app/_workbench/teams.$teamid.orders.options.tsx",
+      "parent": "/_app/_workbench/teams/$teamid"
+    },
     "/_app/_workbench/projects/$pid/history/": {
       "filePath": "_app/_workbench/projects.$pid.history.index.tsx",
       "parent": "/_app/_workbench/projects/$pid"
+    },
+    "/_app/_workbench/teams/$teamid/orders/": {
+      "filePath": "_app/_workbench/teams.$teamid.orders.index.tsx",
+      "parent": "/_app/_workbench/teams/$teamid"
     }
   }
 }
