@@ -7,7 +7,8 @@ use std::fs::{self, create_dir_all, remove_dir_all, File};
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::result::Result::Ok;
-
+use std::alloc;
+use cap::Cap;
 use crate::get_server_dir;
 use crate::types::{ChangeType, UpdatedFile};
 
@@ -38,6 +39,7 @@ pub async fn get_active_server(pool: &Pool<Sqlite>) -> Result<String, ()> {
 }
 
 pub async fn get_project_dir(pid: i32, pool: &Pool<Sqlite>) -> Result<String, ()> {
+    println!("current allocating {}B", get_allocated());
     let server = get_active_server(pool).await.unwrap();
     let db_call = sqlx::query("SELECT server.local_dir, project.title, project.team_name FROM server, project WHERE server.active = 1 AND project.url = ? AND project.pid = ?")
         .bind(server)
@@ -244,4 +246,11 @@ pub fn open_directory(pb: PathBuf) -> bool {
         // TODO
     }
     return true;
+}
+
+#[global_allocator]
+static ALLOCATOR: Cap<alloc::System> = Cap::new(alloc::System, usize::max_value());
+
+pub fn get_allocated() -> usize {
+    ALLOCATOR.allocated()
 }
