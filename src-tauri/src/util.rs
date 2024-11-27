@@ -1,9 +1,11 @@
 use std::process::Command;
 use fs_extra::dir::get_size;
+use log::error;
 use tokio::sync::Mutex;
 use tauri::{Manager, State};
 use sqlx::{Pool, Row, Sqlite};
 use std::fs::{self, create_dir_all, remove_dir_all, File};
+use merkle_hash::{bytes_to_hex, Algorithm, MerkleTree};
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::result::Result::Ok;
@@ -62,7 +64,7 @@ pub async fn get_project_dir(pid: i32, pool: &Pool<Sqlite>) -> Result<String, ()
 
 pub async fn get_file_info(pid: i32, path: String, pool: &Pool<Sqlite>) -> Result<UpdatedFile, ()> {
     let output = sqlx::query(
-        "SELECT curr_hash, size, change_type FROM file WHERE filepath = $1 AND pid = $2",
+        "SELECT curr_hash, size, change_type, in_fs FROM file WHERE filepath = $1 AND pid = $2",
     )
     .bind(path.clone())
     .bind(pid)
@@ -77,24 +79,20 @@ pub async fn get_file_info(pid: i32, path: String, pool: &Pool<Sqlite>) -> Resul
                 3 => ChangeType::Delete,
                 _ => ChangeType::NoChange,
             };
+            let in_fs = if row.get::<i32, &str>("in_fs") > 0 { true } else { false };
             let owo: UpdatedFile = UpdatedFile {
                 path: path,
                 hash: row.get::<String, &str>("curr_hash").to_string(),
-                size: row.get::<i32, &str>("size"),
+                size: row.get::<i64, &str>("size"),
                 change: change,
+                in_fs: in_fs
             };
 
             Ok(owo)
         }
         Err(err) => {
             log::error!("couldn't get the file information for {} in project {}: {}", path, pid, err);
-
-            Ok(UpdatedFile {
-                path: "".to_string(),
-                hash: "".to_string(),
-                size: 0,
-                change: ChangeType::NoChange,
-            })
+            Err(())
         }
     }
 }
@@ -253,4 +251,37 @@ static ALLOCATOR: Cap<alloc::System> = Cap::new(alloc::System, usize::max_value(
 
 pub fn get_allocated() -> usize {
     ALLOCATOR.allocated()
+}
+
+pub async fn verify_file(rel_path: &String, pid: i32, pool: &Pool<Sqlite>) -> Result<bool, ()> {
+    let project_dir = get_project_dir(pid, pool).await.unwrap();
+    let absolute_path = project_dir + "\\" + rel_path; // TODO linux support
+    let abs_path = Path::new(&absolute_path);
+    // get current file info
+    let file_info = get_file_info(pid, rel_path.to_string(), pool).await.unwrap();
+
+    // check file existence before any sort of hashing
+    if !abs_path.exists() && !file_info.in_fs {
+        // valid
+        return Ok(true);
+    } else if (!abs_path.exists() && file_info.in_fs) || (abs_path.exists() && !file_info.in_fs)  {
+        // invalid
+        error!("path {} does not match up: current {}, stored {}", rel_path, abs_path.exists(), file_info.in_fs);
+        return Ok(false);
+    }
+
+
+    let tree = MerkleTree::builder(&absolute_path)
+        .algorithm(Algorithm::Blake3)
+        .hash_names(false)
+        .build().unwrap();
+
+    let curr_hash = bytes_to_hex(tree.root.item.hash);
+    //let metadata = std::fs::metadata(&absolute_path).unwrap();
+
+    if file_info.hash != curr_hash {
+        error!("path {} does not match: current {}, stored {}", rel_path, curr_hash, file_info.hash);
+        return Ok(false)
+    }
+    Ok(true)
 }

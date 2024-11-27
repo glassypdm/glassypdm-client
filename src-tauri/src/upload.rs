@@ -1,9 +1,10 @@
 use std::sync::Arc;
 
 use crate::types::{ChangeType, ReqwestError, UpdatedFile};
-use crate::util::{get_current_server, get_file_info, get_project_dir};
+use crate::util::{get_current_server, get_file_info, get_project_dir, verify_file};
 use fs_chunker::Chunk;
 use futures::{stream, StreamExt};
+use log::error;
 use reqwest::multipart::*;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -17,13 +18,27 @@ const CONCURRENT_UPLOAD_REQUESTS: usize = 2;
 #[derive(Serialize, Deserialize)]
 pub struct UploadResponse {
     pub response: String,
-    pub body: Option<ServerDefualtSuccessBody>,
+    pub body: Option<ServerDefaultSuccessBody>,
     pub error: Option<String>,
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct ServerDefualtSuccessBody {
+pub struct ServerDefaultSuccessBody {
     pub message: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub enum UploadChunkError {
+    ErrOk = 0,
+    ErrGeneric,
+    ErrInvalidFile,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct UploadChunkResponse {
+    pub success: bool,
+    pub error: UploadChunkError,
+    pub message: Option<String>
 }
 
 #[tauri::command]
@@ -32,7 +47,7 @@ pub async fn upload_files(
     filepaths: Vec<String>,
     user: String,
     app_handle: AppHandle,
-) -> Result<bool, ReqwestError> {
+) -> Result<UploadChunkResponse, ReqwestError> {
     let state_mutex = app_handle.state::<Mutex<Pool<Sqlite>>>();
     let pool = state_mutex.lock().await;
     let project_dir = get_project_dir(pid, &pool).await.unwrap();
@@ -45,6 +60,17 @@ pub async fn upload_files(
     let mut uploaded: u32 = 0;
     for filepath in filepaths {
         let file: UpdatedFile = get_file_info(pid, filepath.clone(), &pool).await.unwrap();
+
+        // verify file information
+        if !verify_file(&filepath, pid, &pool).await.unwrap() {
+            return Ok(UploadChunkResponse {
+                success: false,
+                error: UploadChunkError::ErrInvalidFile,
+                message: Some(filepath)
+            });
+        }
+
+        // figure out which files actually need to be uploaded
         if file.change == ChangeType::Delete || file.size == 0 {
             uploaded += 1;
             let _ = app_handle.emit("fileAction", uploaded);
@@ -137,13 +163,13 @@ pub async fn upload_files(
             .await;
 
         if *error_flag.lock().await {
-            return Ok(false);
+            return Ok(UploadChunkResponse { success: false, error: UploadChunkError::ErrGeneric, message: None });
         }
         let _ = cloned_app.emit("fileAction", 6030);
     }
 
     log::debug!("files uploaded!");
-    Ok(true)
+    Ok(UploadChunkResponse { success: true, error: UploadChunkError::ErrOk, message: None })
 }
 
 #[derive(Serialize, Deserialize)]

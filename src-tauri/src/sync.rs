@@ -5,8 +5,8 @@ use crate::{
 use merkle_hash::{bytes_to_hex, Algorithm, MerkleTree};
 use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Row, Sqlite};
-use std::path::{Path, PathBuf};
-use std::{fs, process::Command};
+use std::path::PathBuf;
+use std::fs;
 use tauri::State;
 use tokio::sync::Mutex;
 
