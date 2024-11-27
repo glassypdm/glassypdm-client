@@ -277,12 +277,12 @@ export function PermissionGroupConfig(props: PermissionGroupConfigProps) {
               {props.group.pg_membership &&
               props.group.pg_membership.length > 0 ? (
                 props.group.pg_membership.map((user: string) => (
-                  <TableRow className="flex flex-row items-center">
-                    <TableCell>
+                  <TableRow className="flex flex-row items-center ">
+                    <TableCell className="p-1">
                       {getUserFullName(user, props.team_members)}
                     </TableCell>
-                    <TableCell className="flex-grow"></TableCell>
-                    <TableCell className="place-self-end">
+                    <TableCell className="flex-grow p-1"></TableCell>
+                    <TableCell className="place-self-end p-1">
                       <AlertDialog>
                         <AlertDialogTrigger>
                           <Button variant={"outline"}>Remove User</Button>
