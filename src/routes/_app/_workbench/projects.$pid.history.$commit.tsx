@@ -84,11 +84,11 @@ function Commit() {
             <div className='font-semibold text-xl'>Project Update {data.body.description.commit_number} at {d.toLocaleString()}</div>
             <Dialog>
               <DialogTrigger asChild>
-                <Button variant={'outline'}>Revert</Button>
+                <Button variant={'outline'}>Restore</Button>
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>Revert project to Project Update {data.body.description.commit_number}?</DialogTitle>
+                  <DialogTitle>Restore project to Project Update {data.body.description.commit_number}?</DialogTitle>
                 </DialogHeader>
                 <Button variant={'destructive'}>Yes</Button>
               </DialogContent>
