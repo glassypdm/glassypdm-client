@@ -17,7 +17,8 @@ use reset::reset_files;
 use sqlx::migrate::Migrator;
 use sqlx::{sqlite::SqliteConnectOptions, SqlitePool};
 use std::fs;
-use util::{cmd_delete_cache, get_cache_size, open_log_dir, open_app_data_dir};
+use std::path::PathBuf;
+use util::{cmd_delete_cache, get_allocated, get_cache_size, get_max_allocated, open_app_data_dir, open_log_dir};
 use sync::{
     get_conflicts, get_downloads, get_local_projects, get_project_name, get_uploads,
     open_project_dir, sync_changes, update_project_info,
@@ -60,7 +61,8 @@ fn main() {
             download_single_file,
             cmd_get_cache_setting,
             cmd_set_cache_setting,
-            get_files
+            get_files,
+            get_mem
         ])
         .plugin(
             tauri_plugin_log::Builder::new()
@@ -164,4 +166,16 @@ async fn check_update(app: tauri::AppHandle) -> Result<bool, ()> {
 #[tauri::command]
 async fn restart(app: tauri::AppHandle) -> tauri::Result<()> {
     Ok(())
+}
+
+#[tauri::command]
+fn get_mem() {
+    println!("allocated/total: {} {}", get_allocated(), get_max_allocated());
+    let emptybuf = PathBuf::from("D:\\glassyPDM\\Off Axis Robotics\\Accendio\\empty");
+    let emptyparent = PathBuf::from("D:\\glassyPDM\\Off Axis Robotics\\Accendio\\parent");
+    let emptychild = PathBuf::from("D:\\glassyPDM\\Off Axis Robotics\\Accendio\\parent\\child");
+
+    println!("emptybuf {}", emptybuf.read_dir().unwrap().next().is_none());         // true
+    println!("emptyparent {}", emptyparent.read_dir().unwrap().next().is_none());   // false
+    println!("emptychild {}", emptychild.read_dir().unwrap().next().is_none());     //true
 }

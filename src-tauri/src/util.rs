@@ -253,6 +253,10 @@ pub fn get_allocated() -> usize {
     ALLOCATOR.allocated()
 }
 
+pub fn get_max_allocated() -> usize {
+    ALLOCATOR.max_allocated()
+}
+
 pub async fn verify_file(rel_path: &String, pid: i32, pool: &Pool<Sqlite>) -> Result<bool, ()> {
     let project_dir = get_project_dir(pid, pool).await.unwrap();
     let absolute_path = project_dir + "\\" + rel_path; // TODO linux support
