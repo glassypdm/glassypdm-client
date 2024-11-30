@@ -50,6 +50,22 @@ function Commit() {
     })
     const { offset } = Route.useSearch();
 
+    async function restore() {
+      const endpoint = (url as string) + '/project/restore'
+      // TODO refactor to use mutation
+      const response = await fetch(endpoint, {
+        headers: { Authorization: `Bearer ${await getToken()}` },
+        method: 'POST',
+        mode: 'cors',
+        body: JSON.stringify({
+          commit_id: parseInt(commit_id),
+          project_id: parseInt(pid)
+        })
+      })
+      const data = await response.json()
+      console.log(data)
+    }
+
     if(isPending) {
       return (
         <div>Loading...</div>
@@ -90,7 +106,7 @@ function Commit() {
                 <DialogHeader>
                   <DialogTitle>Restore project to Project Update {data.body.description.commit_number}?</DialogTitle>
                 </DialogHeader>
-                <Button variant={'destructive'}>Yes</Button>
+                <Button variant={'destructive'} onClick={restore}>Yes</Button>
               </DialogContent>
             </Dialog>
             </div>
