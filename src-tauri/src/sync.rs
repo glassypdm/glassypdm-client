@@ -279,7 +279,7 @@ pub async fn get_conflicts(
         "SELECT filepath, size, change_type, curr_hash as hash, base_commitid as commit_id FROM file WHERE pid = $1 AND
         change_type != 0 AND
         (
-            (base_hash != tracked_hash AND base_hash != '' AND tracked_changetype = 3) OR
+            (in_fs = 1 AND tracked_changetype = 3) OR
             (base_hash != tracked_hash AND tracked_changetype != 3)
         )
         "
