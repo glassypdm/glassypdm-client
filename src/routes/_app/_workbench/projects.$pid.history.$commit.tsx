@@ -53,6 +53,7 @@ function Commit() {
     async function restore() {
       const endpoint = (url as string) + '/project/restore'
       // TODO refactor to use mutation
+      /*
       const response = await fetch(endpoint, {
         headers: { Authorization: `Bearer ${await getToken()}` },
         method: 'POST',
@@ -64,6 +65,7 @@ function Commit() {
       })
       const data = await response.json()
       console.log(data)
+      */
     }
 
     if(isPending) {
@@ -98,6 +100,7 @@ function Commit() {
                 </Link>
             </Button>
             <div className='font-semibold text-xl'>Project Update {data.body.description.commit_number} at {d.toLocaleString()}</div>
+            {/*
             <Dialog>
               <DialogTrigger asChild>
                 <Button variant={'outline'}>Restore</Button>
@@ -109,6 +112,7 @@ function Commit() {
                 <Button variant={'destructive'} onClick={restore}>Yes</Button>
               </DialogContent>
             </Dialog>
+            */}
             </div>
             <div className='flex flex-row grow border p-2 rounded-md w-full text-sm'>
               {data.body.description.comment.length == 0 ? "No comment provided" : data.body.description.comment}

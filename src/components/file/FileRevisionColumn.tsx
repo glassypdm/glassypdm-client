@@ -43,7 +43,7 @@ export const columns: ColumnDef<FileRevision>[] = [
             return (
                 <div className="flex flex-row items-center space-x-2 w-[525px]">
                     <Badge variant={'secondary_no_hover'}>v{fr.filerevision_number}</Badge>
-                    <div className={cn(color, "text-xs  text-wrap break-words")}>{symbol} {fr.path}</div>
+                    <div className={cn(color, "text-xs  text-wrap break-all w-full")}>{symbol} {fr.path}</div>
                 </div>
             )
         }
