@@ -6,11 +6,11 @@ use tauri::{Manager, State};
 use sqlx::{Pool, Row, Sqlite};
 use std::fs::{self, create_dir_all, remove_dir_all, File};
 use merkle_hash::{bytes_to_hex, Algorithm, MerkleTree};
-use std::io::Read;
+//use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::result::Result::Ok;
-use std::alloc;
-use cap::Cap;
+//use std::alloc;
+//use cap::Cap;
 use crate::get_server_dir;
 use crate::types::{ChangeType, UpdatedFile};
 
@@ -41,7 +41,7 @@ pub async fn get_active_server(pool: &Pool<Sqlite>) -> Result<String, ()> {
 }
 
 pub async fn get_project_dir(pid: i32, pool: &Pool<Sqlite>) -> Result<String, ()> {
-    println!("current allocating {}B", get_allocated());
+    //println!("current allocating {}B", get_allocated());
     let server = get_active_server(pool).await.unwrap();
     let db_call = sqlx::query("SELECT server.local_dir, project.title, project.team_name FROM server, project WHERE server.active = 1 AND project.url = ? AND project.pid = ?")
         .bind(server)
@@ -245,7 +245,7 @@ pub fn open_directory(pb: PathBuf) -> bool {
     }
     return true;
 }
-
+/*
 #[global_allocator]
 static ALLOCATOR: Cap<alloc::System> = Cap::new(alloc::System, usize::max_value());
 
@@ -256,6 +256,7 @@ pub fn get_allocated() -> usize {
 pub fn get_max_allocated() -> usize {
     ALLOCATOR.max_allocated()
 }
+     */
 
 pub async fn verify_file(rel_path: &String, pid: i32, pool: &Pool<Sqlite>) -> Result<bool, ()> {
     let project_dir = get_project_dir(pid, pool).await.unwrap();
