@@ -88,6 +88,7 @@ function TeamDashboard() {
                   </Link>
                 </NavigationMenuLink>
               </NavigationMenuItem>
+                  {/*
               <NavigationMenuItem>
                 <NavigationMenuLink
                   className={cn(navigationMenuTriggerStyle(), "")}
@@ -99,6 +100,7 @@ function TeamDashboard() {
                   </Link>
                 </NavigationMenuLink>
               </NavigationMenuItem>
+                  */}
               {data.body.role === "Owner" || data.body.role === "Manager" ? (
                 <NavigationMenuItem>
                   <NavigationMenuLink
