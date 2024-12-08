@@ -114,10 +114,10 @@ function ServerFolder(props: ServerFolderProps) {
       type = "KB"
     }
     if (size < 1) {
-      size = cacheSize;
-      type = "bytes"
+        size = cacheSize;
+        type = size > 1 ? "bytes" : "byte"
     }
-    let cache_size = (type != "bytes" ? size.toFixed(1) : size) + " " + type
+    let cache_size = (type != "bytes" && type != "byte" ? size.toFixed(2) : size) + " " + type
 
   return (
     <ScrollArea className="h-[500px]">

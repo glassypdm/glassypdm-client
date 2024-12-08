@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
@@ -6,25 +6,25 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Link, Outlet, createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { invoke } from "@tauri-apps/api/core";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Input } from "@/components/ui/input";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { z } from "zod";
-import { useAuth } from "@clerk/clerk-react";
+} from '@/components/ui/dialog'
+import { Link, Outlet, createFileRoute } from '@tanstack/react-router'
+import { useState } from 'react'
+import { invoke } from '@tauri-apps/api/core'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Input } from '@/components/ui/input'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { z } from 'zod'
+import { useAuth } from '@clerk/clerk-react'
 import {
   NavigationMenu,
   NavigationMenuItem,
   NavigationMenuLink,
   NavigationMenuList,
   navigationMenuTriggerStyle,
-} from "@/components/ui/navigation-menu";
-import { cn } from "@/lib/utils";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+} from '@/components/ui/navigation-menu'
+import { cn } from '@/lib/utils'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import {
   Form,
   FormControl,
@@ -33,109 +33,111 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { message } from "@tauri-apps/plugin-dialog";
-import { useToast } from "@/components/ui/use-toast";
+} from '@/components/ui/form'
+import { message } from '@tauri-apps/plugin-dialog'
+import { useToast } from '@/components/ui/use-toast'
 
-export const Route = createFileRoute("/_app/_workbench/teams")({
+export const Route = createFileRoute('/_app/_workbench/teams/')({
   component: Teams,
 
   loader: async () => {
-    const url = await invoke("get_server_url");
+    const url = await invoke('get_server_url')
     return {
       url: url,
-    };
+    }
   },
-});
+})
 
 const createTeamFormSchema = z.object({
-  name: z.string({
-    required_error: "Name is required"
-  }).regex(new RegExp("^[a-zA-Z0-9 -]+$"), "Invalid team name.").trim(),
-});
+  name: z
+    .string({
+      required_error: 'Name is required',
+    })
+    .regex(new RegExp('^[a-zA-Z0-9 -]+$'), 'Invalid team name.')
+    .trim(),
+})
 
 interface Team {
-  id: number;
-  name: string;
+  id: number
+  name: string
 }
 
 function Teams() {
-  const { url } = Route.useLoaderData();
-  const [created, setCreated] = useState(false);
-  const { getToken } = useAuth();
+  const { url } = Route.useLoaderData()
+  const [created, setCreated] = useState(false)
+  const { getToken } = useAuth()
   const { isPending, isError, data, error } = useQuery({
-    queryKey: ["teams"],
+    queryKey: ['teams'],
     queryFn: async () => {
-      const endpoint = (url as string) + "/team";
+      const endpoint = (url as string) + '/team'
       const response = await fetch(endpoint, {
         headers: {
           Authorization: `Bearer ${await getToken()}`,
         },
-        method: "GET",
-        mode: "cors",
-      });
-      return response.json();
+        method: 'GET',
+        mode: 'cors',
+      })
+      return response.json()
     },
-  });
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
+  })
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
   const form = useForm<z.infer<typeof createTeamFormSchema>>({
     resolver: zodResolver(createTeamFormSchema),
     defaultValues: {
-      name: "",
+      name: '',
     },
-  });
+  })
 
   const mutation = useMutation({
     mutationFn: async (hehez: string) => {
-      const endpoint = (url as string) + "/team";
+      const endpoint = (url as string) + '/team'
       return await fetch(endpoint, {
-        method: "POST",
-        mode: "cors",
+        method: 'POST',
+        mode: 'cors',
         body: JSON.stringify({
           name: hehez,
         }),
         headers: { Authorization: `Bearer ${await getToken()}` },
-      });
+      })
     },
     onError: (error) => {
       console.log(error)
-        toast({
-            title: "An error ocurred while creating a team.",
-            description: "Try again soon."
-        })        
+      toast({
+        title: 'An error ocurred while creating a team.',
+        description: 'Try again soon.',
+      })
     },
     onSuccess: async (res) => {
-      const data = await res.json();
-      if (data.response === "success") {
-        setCreated(true);
+      const data = await res.json()
+      if (data.response === 'success') {
+        setCreated(true)
         toast({
-            title: "Team created successfully."
+          title: 'Team created successfully.',
         })
-      }
-      else {
+      } else {
         toast({
-            title: "An error ocurred while creating a team.",
-            description: "Create an issue on the GitHub repository."
-        })     
+          title: 'An error ocurred while creating a team.',
+          description: 'Create an issue on the GitHub repository.',
+        })
       }
 
       queryClient.invalidateQueries({
-        queryKey: ["teams", "projects"],
-      });
+        queryKey: ['teams', 'projects'],
+      })
     },
-  });
+  })
 
   function createTeam(values: z.infer<typeof createTeamFormSchema>) {
     mutation.mutate(values.name)
   }
 
   if (isPending) {
-    return <div>Loading...</div>;
+    return <div>Loading...</div>
   } else if (isError) {
-    return <div>an error occured while fetching data :c</div>;
-  } else if (data.response != "success") {
-    return <div>an error occured while fetching data :c</div>;
+    return <div>an error occured while fetching data :c</div>
+  } else if (data.response != 'success') {
+    return <div>an error occured while fetching data :c</div>
   }
 
   return (
@@ -152,7 +154,7 @@ function Teams() {
                     key={team.id}
                   >
                     <NavigationMenuLink
-                      className={cn(navigationMenuTriggerStyle(), "min-w-full")}
+                      className={cn(navigationMenuTriggerStyle(), 'min-w-full')}
                       asChild
                     >
                       <Link
@@ -172,12 +174,12 @@ function Teams() {
         </NavigationMenu>
         <Dialog
           onOpenChange={() => {
-            setCreated(false);
+            setCreated(false)
           }}
         >
           <DialogTrigger asChild>
             <Button
-              variant={"outline"}
+              variant={'outline'}
               className="w-full"
               disabled={!data.body.open}
             >
@@ -189,7 +191,10 @@ function Teams() {
               <DialogHeader>
                 <DialogTitle>Create a new Team</DialogTitle>
               </DialogHeader>
-              <form onSubmit={form.handleSubmit(createTeam)} className="space-y-2">
+              <form
+                onSubmit={form.handleSubmit(createTeam)}
+                className="space-y-2"
+              >
                 <FormField
                   control={form.control}
                   name="name"
@@ -197,7 +202,10 @@ function Teams() {
                     <FormItem>
                       <FormLabel>Team Name</FormLabel>
                       <FormControl>
-                        <Input {...field} disabled={mutation.isPending || created} />
+                        <Input
+                          {...field}
+                          disabled={mutation.isPending || created}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -216,7 +224,6 @@ function Teams() {
           </DialogContent>
         </Dialog>
       </div>
-      <Outlet />
     </div>
-  );
+  )
 }

@@ -43,7 +43,7 @@ export const columns: ColumnDef<FileRevision>[] = [
             return (
                 <div className="flex flex-row items-center space-x-2 w-[525px]">
                     <Badge variant={'secondary_no_hover'}>v{fr.filerevision_number}</Badge>
-                    <div className={cn(color, "text-xs  text-wrap break-words")}>{symbol} {fr.path}</div>
+                    <div className={cn(color, "text-xs  text-wrap break-all w-full")}>{symbol} {fr.path}</div>
                 </div>
             )
         }
@@ -53,19 +53,19 @@ export const columns: ColumnDef<FileRevision>[] = [
         header: "File size",
         cell: ({ row }) => {
             const fr = row.original;
-            let size = Math.round(fr.filesize / 1024 / 1024); // mb
+            let size = fr.filesize / 1024 / 1024; // mb
             let unit = "MB"
             if (size < 1) {
-              size = Math.round(fr.filesize / 1024) // kb
+              size = fr.filesize / 1024; // kb
               unit = "KB"
             }
             if (size < 1) {
               size = fr.filesize;
-              unit = "bytes"
+              unit = size > 1 ? "bytes" : "byte"
             }
             return (
               <p>
-                {size} {unit}
+                {unit == "bytes" || unit == "byte" ? size : size.toFixed(2)} {unit}
               </p>
             );
           },

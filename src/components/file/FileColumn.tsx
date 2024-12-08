@@ -66,19 +66,19 @@ export const columns: ColumnDef<File>[] = [
         header: "File size",
         cell: ({ row }) => {
           const file: File = row.original;
-          let size = Math.round(file.size / 1024 / 1024); // mb
+          let size = file.size / 1024 / 1024; // mb
           let type = "MB"
           if (size < 1) {
-            size = Math.round(file.size / 1024) // kb
+            size = file.size / 1024 // kb
             type = "KB"
           }
           if (size < 1) {
             size = file.size;
-            type = "bytes"
+            type = size > 1 ? "bytes" : "byte"
           }
           return (
             <p>
-              {size} {type}
+              {type == "bytes" || type == "byte" ? size : size.toFixed(2)} {type}
             </p>
           );
         },

@@ -99,19 +99,30 @@ function UploadPage() {
       setStatus(`${actionedFiles} of ${selectedLength} files ${verb}...`);
     });
     if (action == "Upload") {
-      // upload files
-      let res = await invoke("upload_files", {
+
+      // upload files (as chunks)
+      let res: any = await invoke("upload_files", {
         pid: parseInt(pid),
         filepaths: selectedFiles,
         user: userId,
       });
-      if (!res) {
-        console.log("upload failed");
-        toast({
-          title: "Upload failed",
-          description:
-            "Check your permissions and Internet connection, and try again.",
-        });
+      if (!res.success) {
+        console.log(res)
+        if(res.error == "ErrInvalidFile") { // TODO specta or enum
+          toast({
+            title: "Upload failed",
+            description:
+              "A file was detected to be different from its synced state. Re-sync and try uploading again.",
+          });
+        }
+        else {
+          toast({
+            title: "Upload failed",
+            description:
+              "Check your permissions and Internet connection, and try again.",
+          });
+        }
+
         setStatus("Upload failed");
         unlisten();
         setDisabled(false);

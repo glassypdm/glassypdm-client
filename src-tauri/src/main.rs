@@ -3,6 +3,7 @@
 
 mod config;
 mod download;
+mod file;
 mod reset;
 mod sync;
 mod types;
@@ -16,11 +17,12 @@ use reset::reset_files;
 use sqlx::migrate::Migrator;
 use sqlx::{sqlite::SqliteConnectOptions, SqlitePool};
 use std::fs;
-use util::{cmd_delete_cache, get_cache_size, open_log_dir, open_app_data_dir};
+use util::{cmd_delete_cache, get_cache_size, open_app_data_dir, open_log_dir};
 use sync::{
     get_conflicts, get_downloads, get_local_projects, get_project_name, get_uploads,
     open_project_dir, sync_changes, update_project_info,
 };
+use file::get_files;
 use tauri::path::BaseDirectory;
 use tauri::{Emitter, Manager};
 use tauri_plugin_updater::UpdaterExt;
@@ -57,7 +59,9 @@ fn main() {
             open_app_data_dir,
             download_single_file,
             cmd_get_cache_setting,
-            cmd_set_cache_setting
+            cmd_set_cache_setting,
+            get_files,
+            //get_mem
         ])
         .plugin(
             tauri_plugin_log::Builder::new()
@@ -162,3 +166,10 @@ async fn check_update(app: tauri::AppHandle) -> Result<bool, ()> {
 async fn restart(app: tauri::AppHandle) -> tauri::Result<()> {
     Ok(())
 }
+
+/* 
+#[tauri::command]
+fn get_mem() {
+    println!("allocated/total: {} {}", get_allocated(), get_max_allocated());
+}
+*/

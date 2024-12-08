@@ -68,7 +68,7 @@ import {
                     data-state={row.getIsSelected() && "selected"}
                   >
                     {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
+                      <TableCell key={cell.id} className="p-1">
                         {flexRender(
                           cell.column.columnDef.cell,
                           cell.getContext(),

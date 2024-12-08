@@ -13,6 +13,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UserProfile } from "@clerk/clerk-react";
+import { Separator } from "@/components/ui/separator";
 
 export const Route = createFileRoute('/_app/_workbench/settings')({
     component: Settings,
@@ -55,6 +56,10 @@ function Settings() {
 
     async function openLogs() {
         await invoke("open_log_dir")
+    }
+
+    async function getMemory() {
+        await invoke("get_mem")
     }
 
     return (
@@ -137,6 +142,10 @@ function Settings() {
                             <CardDescription>Trick silicon into thinking.</CardDescription>
                         </CardHeader>
                         <CardContent>
+                            {/** 
+                            <Button onClick={getMemory}>memory</Button>
+                            <Separator className="my-2"/>
+                            */}
                             <div className="flex flex-row space-x-4 items-center">
                             <Label>Use Development Server</Label>
                             <Switch defaultChecked={debug} onCheckedChange={(checked) => setDebug(checked)}/>

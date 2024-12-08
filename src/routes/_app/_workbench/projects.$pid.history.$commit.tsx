@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query'
 import { FileRevisionTable } from '@/components/file/FileRevisionTable'
 import { columns } from '@/components/file/FileRevisionColumn'
 import { Undo2 } from 'lucide-react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 
 
 
@@ -49,6 +50,24 @@ function Commit() {
     })
     const { offset } = Route.useSearch();
 
+    async function restore() {
+      const endpoint = (url as string) + '/project/restore'
+      // TODO refactor to use mutation
+      /*
+      const response = await fetch(endpoint, {
+        headers: { Authorization: `Bearer ${await getToken()}` },
+        method: 'POST',
+        mode: 'cors',
+        body: JSON.stringify({
+          commit_id: parseInt(commit_id),
+          project_id: parseInt(pid)
+        })
+      })
+      const data = await response.json()
+      console.log(data)
+      */
+    }
+
     if(isPending) {
       return (
         <div>Loading...</div>
@@ -81,6 +100,19 @@ function Commit() {
                 </Link>
             </Button>
             <div className='font-semibold text-xl'>Project Update {data.body.description.commit_number} at {d.toLocaleString()}</div>
+            {/*
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant={'outline'}>Restore</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Restore project to Project Update {data.body.description.commit_number}?</DialogTitle>
+                </DialogHeader>
+                <Button variant={'destructive'} onClick={restore}>Yes</Button>
+              </DialogContent>
+            </Dialog>
+            */}
             </div>
             <div className='flex flex-row grow border p-2 rounded-md w-full text-sm'>
               {data.body.description.comment.length == 0 ? "No comment provided" : data.body.description.comment}

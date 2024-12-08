@@ -31,6 +31,7 @@ import {
   AccordionTrigger,
 } from "../ui/accordion";
 import { PermissionGroupConfig } from "./pgroupconfig";
+import { Loader2 } from "lucide-react";
 
 const createPGFormSchema = z.object({
   pgroupName: z.string().regex(new RegExp("^[a-zA-Z0-9 -]+$")).trim(),
@@ -46,7 +47,7 @@ function PermissionGroupDashboard(props: PermissionGroupDashboardProps) {
   const [submitting, setSubmitting] = useState(false);
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { data, isPending, isError, error } = useQuery({
+  const { data, isPending, isError, error, isRefetching } = useQuery({
     queryKey: ["pgroup", props.teamId],
     queryFn: async () => {
       const endpoint =
@@ -165,6 +166,14 @@ function PermissionGroupDashboard(props: PermissionGroupDashboardProps) {
 
   return (
     <div className="flex flex-col py-2 space-y-2">
+      {isRefetching ? (
+        <div className="flex flex-row items-center space-x-2">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          <div>Loading...</div>
+        </div>
+      ) : (
+        <></>
+      )}
       <Dialog>
         <DialogTrigger asChild>
           <Button variant={"outline"} className="flex-0 max-w-48">

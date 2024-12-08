@@ -1,6 +1,5 @@
 use crate::download::{
-    assemble_file, download_with_client, recover_file, save_filechunkmapping, trash_file,
-    verify_cache,
+    assemble_file, compare_directory_deep, download_with_client, get_directories, recover_file, save_filechunkmapping, trash_file, verify_cache
 };
 use crate::config::get_cache_setting;
 use crate::sync::hash_dir;
@@ -9,10 +8,11 @@ use crate::util::{
     delete_cache, delete_trash, get_cache_dir, get_current_server, get_project_dir, get_trash_dir
 };
 use futures::{stream, StreamExt};
+use log::{info, warn};
 use reqwest::Client;
 use sqlx::{Pool, Row, Sqlite};
-use std::fs;
-use std::path::Path;
+use std::fs::{self, remove_dir};
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use tauri::{AppHandle, Emitter, Manager};
 use tokio::sync::Mutex;
@@ -211,7 +211,7 @@ pub async fn reset_files(
 
     let mut deleted = Vec::<DownloadRequestMessage>::new();
     let mut error_flag = false;
-    for file in to_delete {
+    for file in to_delete.clone() {
         let proj_path = project_dir.clone() + "\\" + file.rel_path.as_str();
         if !trash_file(&proj_path, &trash_dir, file.clone().hash).unwrap() {
             error_flag = true;
@@ -229,6 +229,21 @@ pub async fn reset_files(
         }
         return Ok(false);
     } else {
+        let mut directories = Vec::from_iter(get_directories(&to_delete));
+        directories.sort_by(|a, b| compare_directory_deep(a, b) );
+        info!("deleting directories");
+        
+        for folder in directories {
+            info!("{}", folder);
+            let proj_dir = project_dir.clone() + &folder;
+            let path = PathBuf::from(proj_dir);
+            // if file's folder is empty, delete it (ie use remove_dir() which will delete only if it is empty)
+            match remove_dir(path) {
+                Ok(()) => info!("successful delete"),
+                Err(_e) => warn!("no delete")
+            };
+        }
+        
         let _ = delete_trash(&pool).await.unwrap();
     }
 

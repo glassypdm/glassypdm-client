@@ -12,6 +12,7 @@ import { useAuth } from "@clerk/clerk-react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { invoke } from "@tauri-apps/api/core";
+import { Loader2 } from "lucide-react";
 
 export const Route = createFileRoute("/_app/_workbench/teams/$teamid/members")({
   component: () => <TeamMembers />,
@@ -33,7 +34,7 @@ interface Member {
 function TeamMembers() {
   const { teamid, url } = Route.useLoaderData();
   const { getToken } = useAuth();
-  const { isPending, isError, data, error, isFetching } = useQuery({
+  const { isPending, isError, data, error, isRefetching } = useQuery({
     queryKey: ["members", teamid],
     queryFn: async () => {
       const endpoint = (url as string) + "/team/by-id/" + teamid;
@@ -59,6 +60,14 @@ function TeamMembers() {
   console.log(data);
   return (
     <div>
+      {isRefetching ? (
+        <div className="flex flex-row items-center space-x-2">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          <div>Loading...</div>
+        </div>
+      ) : (
+        <></>
+      )}
       <ScrollArea className="h-96">
         <TableCaption>
           {data.body.members.length} member
