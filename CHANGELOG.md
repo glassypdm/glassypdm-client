@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.7.1](https://github.com/glassypdm/glassypdm-client/compare/v0.7.0...v0.7.1) (2024-12-08)
+
+
+### Bug Fixes
+
+* break long filepaths in project update page's table ([ef174b8](https://github.com/glassypdm/glassypdm-client/commit/ef174b8609be016904a9cf39577249643b2e5366))
+* file conflict detection is fixed ([029d111](https://github.com/glassypdm/glassypdm-client/commit/029d11113ff578e0bfb76bca5a22b01b8ab01d95))
+* on download/reset, delete folders whose children have all been deleted ([95980c2](https://github.com/glassypdm/glassypdm-client/commit/95980c218d3cefad7108c6ee39ea867e42508201))
+* verify files before uploading ([49acf5e](https://github.com/glassypdm/glassypdm-client/commit/49acf5eeda6bfebff62160216e48f635e46a14ba))
+
+
+### Miscellaneous
+
+* Add allocator for tracking memory usage ([568eaf6](https://github.com/glassypdm/glassypdm-client/commit/568eaf63b3935fddd5e607dfd4415e6b0234a4a7))
+* Add indication a loaded page is re-fetching data ([eed2bd0](https://github.com/glassypdm/glassypdm-client/commit/eed2bd02eae73f445c9dd44937b42da2ba984e09))
+* permission group membership list is more compact ([b6fa373](https://github.com/glassypdm/glassypdm-client/commit/b6fa3731780ddde9a8c57f2b42f9a7aaaded22e6))
+* show file sizes to hundredths place when applicable ([8a45e27](https://github.com/glassypdm/glassypdm-client/commit/8a45e27881d09dba5581a79f18fddec225cda65f))
+
 ## [0.7.0](https://github.com/glassypdm/glassypdm-client/compare/v0.6.3...v0.7.0) (2024-10-29)
 
 
