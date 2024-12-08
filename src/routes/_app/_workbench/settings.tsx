@@ -142,8 +142,10 @@ function Settings() {
                             <CardDescription>Trick silicon into thinking.</CardDescription>
                         </CardHeader>
                         <CardContent>
+                            {/** 
                             <Button onClick={getMemory}>memory</Button>
                             <Separator className="my-2"/>
+                            */}
                             <div className="flex flex-row space-x-4 items-center">
                             <Label>Use Development Server</Label>
                             <Switch defaultChecked={debug} onCheckedChange={(checked) => setDebug(checked)}/>
