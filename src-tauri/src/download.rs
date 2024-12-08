@@ -202,6 +202,7 @@ pub async fn download_files(
         // sort to_delete by # of directories in path, descending
         let mut directories = Vec::from_iter(get_directories(&to_delete));
         directories.sort_by(|a, b| compare_directory_deep(a, b) );
+        info!("deleting directories");
         
         for folder in directories {
             info!("{}", folder);

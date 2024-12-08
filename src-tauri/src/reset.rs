@@ -236,7 +236,6 @@ pub async fn reset_files(
         for folder in directories {
             info!("{}", folder);
             let proj_dir = project_dir.clone() + &folder;
-            info!("{}", proj_dir);
             let path = PathBuf::from(proj_dir);
             // if file's folder is empty, delete it (ie use remove_dir() which will delete only if it is empty)
             match remove_dir(path) {

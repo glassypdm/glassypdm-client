@@ -21,7 +21,7 @@ import { useAuth } from "@clerk/clerk-react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { invoke } from "@tauri-apps/api/core";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, Loader2 } from "lucide-react";
 
 export type HistorySearch = {
   offset: number;
@@ -108,7 +108,7 @@ function History() {
   const { getToken } = useAuth();
   const { url, pid } = Route.useLoaderData();
   const { offset } = Route.useSearch();
-  const { isPending, isError, data, error } = useQuery({
+  const { isPending, isError, data, error, isRefetching } = useQuery({
     queryKey: ["history", pid, offset],
     queryFn: async () => {
       console.log(offset);
@@ -180,6 +180,14 @@ function History() {
 
   return (
     <div className="flex flex-col items-center">
+      {isRefetching ? (
+        <div className="flex flex-row items-center space-x-2">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          <div>Loading...</div>
+        </div>
+      ) : (
+        <></>
+      )}
       {history}
       <Pagination>
         <PaginationContent>

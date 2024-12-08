@@ -39,6 +39,7 @@ function Files() {
   const parentDirectory = directory.substring(0, directory.lastIndexOf('\\'))
   return (
     <div className='flex flex-col'>
+      {/*
       <div>breadcrumb todo</div>
             <Link from={Route.fullPath} search={{directory: parentDirectory}} className='underline'>..</Link>
             { data.folders.map((folder) => {
@@ -46,6 +47,8 @@ function Files() {
             <Link from={Route.fullPath} search={{directory: directory + folder}} className='underline' key={folder}>{folder}</Link>
         )
       })}
+      */}
+      Coming soon
     </div>
   )
 }
