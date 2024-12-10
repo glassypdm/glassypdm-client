@@ -12,9 +12,8 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions-rs/toolchain@v1
         with:
-          working-directory: ./src-tauri
           toolchain: stable
       - uses: actions-rs/cargo@v1
         with:
           command: test
-          working-directory: ./src-tauri
+          cwd: ./src-tauri
