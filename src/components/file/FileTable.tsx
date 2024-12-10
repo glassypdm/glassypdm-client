@@ -14,12 +14,14 @@ import {
     TableRow,
   } from "@/components/ui/table";
   import { ScrollArea } from "../ui/scroll-area";
+import { cn } from "@/lib/utils";
   
   interface DataTableProps<TData, TValue> {
     columns: ColumnDef<TData, TValue>[];
     data: TData[];
     selection: RowSelectionState;
     setSelection: any;
+    height: string;
   }
   
   export function FileTable<TData, TValue>({
@@ -27,6 +29,7 @@ import {
     data,
     selection,
     setSelection,
+    height
   }: DataTableProps<TData, TValue>) {
     const table = useReactTable({
       data,
@@ -40,7 +43,7 @@ import {
   
     return (
       <div className="rounded-md border">
-      <ScrollArea className="flex h-[65vh]">
+      <ScrollArea className={cn("flex", height)}>
           <Table>
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (

@@ -255,6 +255,7 @@ function UploadPage() {
         data={uploads}
         selection={selection}
         setSelection={setSelection}
+        height='h-[50vh]'
       />
     </div>
   );
