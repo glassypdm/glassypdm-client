@@ -3,16 +3,20 @@ on:
     branches:
       - dev
 
-name: Tests
+env: 
+  CARGO_TERM_COLOR: always
+
 jobs:
-  test:
-    name: glassyPDM Rust unit tests
+  build_and_test:
+    name: Rust project - latest
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        toolchain:
+          - stable
+          - beta
+          - nightly
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-      - name: run test with cli
-        working-directory: src-tauri
-        run: cargo test
+      - uses: actions/checkout@v4
+      - run: rustup update ${{ matrix.toolchain }} && rustup default ${{ matrix.toolchain }}
+      - run: cargo test --verbose
