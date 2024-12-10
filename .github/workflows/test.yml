@@ -14,5 +14,5 @@ jobs:
         with:
           toolchain: stable
       - name: run test with cli
-          working-directory: src-tauri
-          run: cargo test
+        working-directory: src-tauri
+        run: cargo test
