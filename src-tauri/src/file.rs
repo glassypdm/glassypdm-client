@@ -54,3 +54,75 @@ pub async fn get_files(project_id: i32, directory: String, state_mutex: State<'_
     }
     return Ok(DirectorySummary{ folders, files})
 }
+
+pub async fn add_ignore_list_entry(project_id: i32, server_url: String, path: String, pool: &Pool<Sqlite>) -> Result<bool, ()> {
+    match sqlx::query("INSERT INTO projectignorelist(pid, url, path) VALUES ($1, $2, $3);")
+        .bind(project_id)
+        .bind(server_url)
+        .bind(path)
+        .execute(pool)
+        .await {
+            Ok(res) => {
+                // TODO check res, lmao
+                Ok(true)
+            },
+            Err(err) => {
+                // TODO
+                Ok(false)
+            }
+    }
+}
+
+pub async fn remove_ignore_list_entry(project_id: i32, server_url: String, path: String, pool: &Pool<Sqlite>) -> Result<bool, ()> {
+    match sqlx::query("DELETE FROM projectignorelist WHERE pid = $1 AND url = $2 AND path = $3;")
+        .bind(project_id)
+        .bind(server_url)
+        .bind(path)
+        .execute(pool)
+        .await {
+            Ok(res) => {
+                // TODO check res, lmao
+                Ok(true)
+            },
+            Err(err) => {
+                // TODO
+                Ok(false)
+            }
+    }
+}
+
+/* */
+pub async fn get_ignore_list(project_id: i32, server_url: String, pool: &Pool<Sqlite>) -> Result<Vec<String>, ()> {
+    let output: Vec<String> = match sqlx::query_scalar("SELECT path FROM projectignorelist WHERE pid = $1 AND url = $2;")
+        .bind(project_id)
+        .bind(server_url)
+        .fetch_all(pool)
+        .await {
+            Ok(res) => res,
+            Err(err) => {
+                // TODO print and return error, not empty list
+                Vec::<String>::new()
+            }
+    };
+    Ok(output)
+}
+
+// check if file is in the ignore list for a given project
+pub async fn should_file_be_ignored(project_id: i32, server_url: String, file: String, pool: &Pool<Sqlite>) -> Result<bool, ()> {
+    let ignore_list = get_ignore_list(project_id, server_url, pool).await.unwrap();
+    // TODO get the parent path from the file (basically the path of its containing folder)
+    
+    // TODO check if the parent path is a substring of any of the paths in the ignore list
+    // break this into a function so that can be unit tested
+    Ok(true)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    
+    #[test]
+    fn owo() {
+        assert_eq!(2, 2);
+    }
+}
