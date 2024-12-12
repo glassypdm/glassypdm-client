@@ -52,7 +52,9 @@ function WorkbenchLayout() {
                 <DialogTrigger asChild>
                 <DropdownMenuItem>About</DropdownMenuItem>
                 </DialogTrigger>
-                <DropdownMenuItem>Help</DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                <a target='_blank' href='https://wiki.glassypdm.org'>Help</a>
+                </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link to='/settings' preload='intent'>Settings</Link>
                 </DropdownMenuItem>
