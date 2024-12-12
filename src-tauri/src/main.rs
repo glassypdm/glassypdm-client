@@ -61,6 +61,7 @@ fn main() {
             cmd_get_cache_setting,
             cmd_set_cache_setting,
             get_files,
+            is_dev_mode
             //get_mem
         ])
         .plugin(

@@ -23,6 +23,7 @@ export const Route = createFileRoute('/_app/_workbench/settings')({
         const result = await invoke("init_settings_options");
         const cache = await invoke("get_cache_size");
         const cacheSetting = await invoke("cmd_get_cache_setting");
+        const devMode = await invoke("is_dev_mode");
         const dir = (result as any).local_dir;
         const debug = (result as any).debug_active;
         return {
@@ -30,7 +31,8 @@ export const Route = createFileRoute('/_app/_workbench/settings')({
             url: url,
             dir: dir,
             cacheSetting: cacheSetting,
-            debug: debug == 1 ? true : false
+            debug: debug == 1 ? true : false,
+            devMode: devMode
         }
     }
 })
@@ -70,7 +72,9 @@ function Settings() {
                 <TabsTrigger value="appdata">App Data</TabsTrigger>
                 <TabsTrigger value="appearance">Appearance</TabsTrigger>
                 <TabsTrigger value="account">Account</TabsTrigger>
-                <TabsTrigger value="dev">Developer Settings</TabsTrigger>
+                {
+                    loaderData.devMode ? <TabsTrigger value="dev">Developer Settings</TabsTrigger> : <></>
+                }
             </TabsList>
             <div className="w-full">
                 <TabsContent value="folder">

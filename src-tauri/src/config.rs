@@ -215,3 +215,8 @@ pub async fn get_cache_setting(pool: &Pool<Sqlite>) -> Result<bool, ()> {
             }
     }
 }
+
+#[tauri::command]
+pub fn is_dev_mode() -> bool {
+    return tauri::is_dev();
+}
