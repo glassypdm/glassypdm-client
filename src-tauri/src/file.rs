@@ -117,12 +117,65 @@ pub async fn should_file_be_ignored(project_id: i32, server_url: String, file: S
     Ok(true)
 }
 
+// convert forward slashes to backward slashes or vice versa
+pub fn translate_filepath(path: &String, to_unix: bool) -> String {
+    let out;
+    if to_unix { // backward slashes to forwards
+        out = path.replace('\\', "/");
+    } else { // forward slashes to backwards
+        out = path.replace("/", "\\");
+    }
+    out
+}
+
+pub fn sep() -> String {
+    #[cfg(target_os = "windows")]
+    {
+        "\\".to_string()
+    }
+    #[cfg(target_os = "linux")]
+    {
+        "/".to_string()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     
+    struct TestCaseTranslateFilePath {
+        set_path: String,
+        set_to_unix: bool,
+        exp_path: String
+    }
+
     #[test]
-    fn owo() {
-        assert_eq!(2, 2);
+    fn test_translate_filepath() {
+        // initialize test cases
+        let test_cases: Vec<TestCaseTranslateFilePath> = vec![
+            TestCaseTranslateFilePath { set_path: "path/to/file".to_string(), set_to_unix: false, exp_path: "path\\to\\file".to_string()},
+            TestCaseTranslateFilePath { set_path: "path/to/file".to_string(), set_to_unix: true, exp_path: "path/to/file".to_string()},
+            TestCaseTranslateFilePath { set_path: "path\\to\\file".to_string(), set_to_unix: true, exp_path: "path/to/file".to_string()},
+            TestCaseTranslateFilePath { set_path: "path\\to\\file".to_string(), set_to_unix: false, exp_path: "path\\to\\file".to_string()}
+        ];
+        
+        // run function under test and validate results
+        for case in test_cases {
+            let ret = translate_filepath(&case.set_path, case.set_to_unix);
+            assert_eq!(ret, case.exp_path);
+        }
+    }
+
+    #[test]
+    fn test_sep() {
+        #[cfg(target_os = "windows")]
+        {
+            assert_eq!("\\".to_string(), sep());
+        }
+
+        #[cfg(target_os = "linux")]
+        {
+            assert_eq!("/".to_string(), sep());
+        }
     }
 }
