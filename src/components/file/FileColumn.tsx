@@ -55,8 +55,10 @@ export const columns: ColumnDef<File>[] = [
               break;
           }
           return (
-            <div className={cn(color, "w-96")}>
-              {symbol} {file.filepath}
+            <div className="flex flex-row items-center space-x-2 w-[525px]">
+              <div className={cn(color, "text-xs text-wrap break-all w-full")}>
+                {symbol} {file.filepath}
+              </div>
             </div>
           );
         },
