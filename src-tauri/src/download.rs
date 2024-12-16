@@ -474,19 +474,22 @@ fn read_mapping(hash_dir: &String) -> Result<Vec<FileChunk>, ()> {
 // assumes trash dir exists
 pub fn trash_file(proj_dir: &String, trash_dir: &String, hash: String) -> Result<bool, ()> {
     let trash_path;
+    let proj_path;
     #[cfg(target_os = "windows")]
     {
         trash_path = trash_dir.to_owned() + &(sep().to_string()) + hash.as_str();
+        proj_path = proj_dir.to_owned();
     }
     #[cfg(target_os = "linux")]
     {
         trash_path = translate_filepath(&(trash_dir.to_owned() + &(sep().to_string()) + hash.as_str()), true);
+        proj_path = translate_filepath(proj_dir, true);
     }
 
-    match fs::rename(proj_dir, trash_path) {
+    match fs::rename(proj_path, trash_path) {
         Ok(_) => Ok(true),
         Err(err) => {
-            println!("trash_file error: {}", err);
+            log::error!("trash_file error: {}", err);
             Ok(false)
         }
     }
@@ -494,10 +497,22 @@ pub fn trash_file(proj_dir: &String, trash_dir: &String, hash: String) -> Result
 
 // trash dir should be the path to the hash in the trash
 pub fn recover_file(trash_dir: &String, proj_dir: &String) -> Result<bool, ()> {
-    match fs::rename(trash_dir, proj_dir) {
+    let trash_path;
+    let proj_path;
+    #[cfg(target_os = "windows")]
+    {
+        trash_path = trash_dir.to_owned();
+        proj_path = proj_dir.to_owned();
+    }
+    #[cfg(target_os = "linux")]
+    {
+        trash_path = translate_filepath(&(trash_dir.to_owned()), true);
+        proj_path = translate_filepath(proj_dir, true);
+    }
+    match fs::rename(trash_path, proj_path) {
         Ok(_) => Ok(true),
         Err(err) => {
-            println!("recover_file error: {}", err);
+            log::error!("recover_file error: {}", err);
             Ok(false)
         }
     }

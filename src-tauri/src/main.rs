@@ -10,6 +10,7 @@ mod types;
 mod upload;
 mod util;
 mod dal;
+mod commands;
 
 use crate::config::*;
 use download::{download_files, download_single_file};
@@ -20,9 +21,9 @@ use sqlx::{sqlite::SqliteConnectOptions, SqlitePool};
 use std::fs;
 use util::{cmd_delete_cache, get_cache_size, open_app_data_dir, open_log_dir};
 use sync::{
-    get_conflicts, get_downloads, get_local_projects, get_project_name, get_uploads,
-    open_project_dir, sync_changes, update_project_info,
+    get_conflicts, get_downloads, get_project_name, get_uploads, sync_changes, update_project_info,
 };
+use commands::project::{open_project_dir, get_local_projects};
 use file::get_files;
 use tauri::path::BaseDirectory;
 use tauri::{Emitter, Manager};
@@ -43,8 +44,8 @@ fn main() {
             get_server_name,
             update_project_info,
             get_uploads,
-            open_project_dir,
             get_project_name,
+            open_project_dir,
             upload_files,
             update_uploaded,
             get_local_projects,

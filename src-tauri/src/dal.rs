@@ -133,7 +133,7 @@ impl<'a> DataAccessLayer<'a> {
     }
     
     // TODO necessary to have in dal?
-    pub async fn update_file_entry(&self, pid: i32, path: String) -> Result<bool, ()> {
+    pub async fn update_downloaded_file_entry(&self, pid: i32, path: String) -> Result<bool, ()> {
             let _ = sqlx::query(
             "
             UPDATE file SET
@@ -152,5 +152,146 @@ impl<'a> DataAccessLayer<'a> {
         .await;
         Ok(true)
     }
+
+    pub async fn update_cache_setting(&self, new_cache: bool) -> Result<bool, ()> {
+        let url = self.get_active_server().await.unwrap();
+        match sqlx::query("UPDATE server SET cache_setting = $1 WHERE url = $2")
+        .bind(if new_cache { 1 } else { 0 })
+        .bind(url)
+        .execute(self.pool)
+        .await {
+            Ok(_o) => {
+                Ok(true)
+            },
+            Err(err) => {
+                log::error!("could not set cache setting due to db error: {}", err);
+                Ok(false)
+            }
+        }
+    }
+
+    pub async fn get_cache_setting(&self) -> Result<bool, ()> {
+        let url = self.get_active_server().await.unwrap();
+        match sqlx::query("SELECT cache_setting FROM server WHERE url = $1")
+            .bind(url)
+            .fetch_one(self.pool)
+            .await {
+                Ok(row) => {
+                    let setting = row.get::<u32, &str>("cache_setting");
+                    Ok(if setting == 1 { true } else { false })
+                },
+                Err(err) => {
+                    log::error!("could not retrieve cache setting due to db error: {}", err);
+                    Ok(false)
+                }
+        }
+    }
+
+    pub async fn clear_project_table(&self, url: String) -> Result<(), ()> {
+        let _ = sqlx::query("DELETE from project WHERE url = $1")
+            .bind(url.clone())
+            .execute(self.pool)
+            .await;
+        Ok(())
+    }
+
+    pub async fn clear_file_table(&self) -> Result<(), ()> {
+        let _ = sqlx::query("DELETE from file")
+            .execute(self.pool)
+            .await;
+        Ok(())
+    }
+
+    pub async fn get_server_name(&self) -> Result<String, ()> {
+        let output = sqlx::query("SELECT name FROM server WHERE active = 1")
+        .fetch_one(self.pool)
+        .await;
+
+        match output {
+            Ok(row) => Ok(row.get::<String, &str>("name")),
+            Err(err) => {
+                println!("couldnt get server name {}", err);
+                Ok("glassyPDM".to_string())
+            }
+        }
+    }
+
+    pub async fn add_server(&self, url: String, clerk_pub_key: String, local_dir: String, name: String) -> Result<(), ()> {
+        sqlx::query(
+            "INSERT INTO server (url, clerk_publickey, local_dir, name, active, debug_url, debug_active) VALUES (?, ?, ?, ?, ?, ?, ?);"
+        )
+        .bind(url)
+        .bind(clerk_pub_key)
+        .bind(local_dir)
+        .bind(name)
+        .bind(1)
+        .bind("http://localhost:5000")
+        .bind(0)
+        .execute(self.pool)
+        .await.unwrap();
+
+        Ok(())
+    }
+
+    pub async fn add_project(&self, pid: i32, title: String, team_name: String, init_commit: i32) -> Result<(), ()> {
+        let server = self.get_active_server().await.unwrap();
+
+        let _output = sqlx::query("INSERT INTO project(pid, url, title, team_name, base_commitid, remote_title) VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT(pid, url) DO UPDATE SET remote_title = excluded.title")
+            .bind(pid)
+            .bind(server)
+            .bind(title.clone())
+            .bind(team_name)
+            .bind(init_commit)
+            .bind(title.clone())
+            .execute(self.pool)
+            .await;
+
+        Ok(())
+    }
 } // end impl DataAcessLayer<'_>
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sqlx::SqlitePool;
+
+    /// initialize a db with a server and some projects
+    async fn init_db(pool: &SqlitePool) {
+        let dal = DataAccessLayer::new(&pool);
+
+        // create server entry
+        let _ = dal.add_server("url".to_string(), "key".to_string(), "owo/location".to_string(), "test server".to_string()).await;
+
+        // create project entries
+        let _ = dal.add_project(0, "project name".to_string(), "team name".to_string(), 0).await;
+        let _ = dal.add_project(1, "project 2".to_string(), "team name".to_string(), 41).await;
+        let _ = dal.add_project(14, "another project".to_string(), "team 2".to_string(), 2).await;
+
+    }
+
+    #[sqlx::test]
+    async fn test_cache_setting(pool: SqlitePool) {
+        let dal = DataAccessLayer::new(&pool);
+        init_db(&pool).await;
+
+        // verify initial settings
+        let res = dal.get_cache_setting().await.unwrap();
+        assert_eq!(res, false);
+
+        // update settings
+        let _ = dal.update_cache_setting(true).await.unwrap();
+
+        // verify cache setting was updated
+        let res = dal.get_cache_setting().await.unwrap();
+        assert_eq!(res, true);
+    }
+
+    #[sqlx::test]
+    async fn test_owo(pool: SqlitePool) {
+        let dal = DataAccessLayer::new(&pool);
+        init_db(&pool).await;
+
+        
+    }
+}

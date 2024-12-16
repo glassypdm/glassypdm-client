@@ -88,3 +88,10 @@ pub struct DownloadRequest {
     pub commit_id: i64,
     pub user_id: String,
 }
+
+#[derive(Serialize, Deserialize)]
+pub struct LocalProject {
+    pub pid: i32,
+    pub title: String,
+    pub team_name: String,
+}

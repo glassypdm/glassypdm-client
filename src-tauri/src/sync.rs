@@ -118,23 +118,6 @@ pub async fn hash_dir(pid: i32, dir_path: PathBuf, pool: &Pool<Sqlite>) {
     log::info!("hashing directory complete");
 }
 
-// :clown:
-#[tauri::command]
-pub async fn open_project_dir(
-    pid: i32,
-    state_mutex: State<'_, Mutex<Pool<Sqlite>>>,
-) -> Result<(), ()> {
-    let pool = state_mutex.lock().await;
-    let dal = DataAccessLayer::new(&pool);
-    let project_dir = dal.get_project_dir(pid).await.unwrap();
-    let _ = fs::create_dir_all(&project_dir);
-    let mut pb = PathBuf::new();
-    pb.push(project_dir);
-
-    open_directory(pb);
-
-    return Ok(());
-}
 // precondition: we have a server_url
 #[tauri::command]
 pub async fn sync_changes(
@@ -196,18 +179,7 @@ pub async fn update_project_info(
 ) -> Result<(), ()> {
     let pool = state_mutex.lock().await;
     let dal = DataAccessLayer::new(&pool);
-    let server = dal.get_active_server().await.unwrap();
-
-    let _output = sqlx::query("INSERT INTO project(pid, url, title, team_name, base_commitid, remote_title) VALUES (?, ?, ?, ?, ?, ?)
-        ON CONFLICT(pid, url) DO UPDATE SET remote_title = excluded.title")
-        .bind(pid)
-        .bind(server)
-        .bind(title.clone())
-        .bind(team_name)
-        .bind(init_commit)
-        .bind(title.clone())
-        .execute(&*pool)
-        .await;
+    let _ = dal.add_project(pid, title, team_name, init_commit).await;
 
     Ok(())
 }
@@ -332,51 +304,6 @@ pub async fn get_project_name(
     }
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct LocalProject {
-    pid: i32,
-    title: String,
-    team_name: String,
-}
+impl<'a> DataAccessLayer<'a> {
 
-#[tauri::command]
-pub async fn get_local_projects(
-    state_mutex: State<'_, Mutex<Pool<Sqlite>>>,
-) -> Result<Vec<LocalProject>, ()> {
-    let pool = state_mutex.lock().await;
-    let dal = DataAccessLayer::new(&pool);
-    let server = dal.get_active_server().await.unwrap();
-
-    let pid_query = sqlx::query("SELECT DISTINCT pid FROM file")
-        .fetch_all(&*pool)
-        .await;
-    let mut output: Vec<LocalProject> = vec![];
-    match pid_query {
-        Ok(rows) => {
-            for row in rows {
-                let pid = row.get::<i32, &str>("pid");
-                let query =
-                    sqlx::query("SELECT title, team_name FROM project WHERE url = $1 AND pid = $2")
-                        .bind(server.clone())
-                        .bind(pid)
-                        .fetch_one(&*pool)
-                        .await;
-
-                match query {
-                    Ok(row) => output.push(LocalProject {
-                        pid: pid,
-                        title: row.get::<String, &str>("title").to_string(),
-                        team_name: row.get::<String, &str>("team_name").to_string(),
-                    }),
-                    Err(err) => {
-                        println!("error: {}", err);
-                    }
-                }
-            }
-        }
-        Err(err) => {
-            println!("error: {}", err);
-        }
-    }
-    Ok(output)
 }

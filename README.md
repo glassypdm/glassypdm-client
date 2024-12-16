@@ -19,6 +19,11 @@ $ pnpm tauri dev
 # for building installers, etc.
 $ $env:TAURI_SIGNING_PRIVATE_KEY="Path or content of your private key"
 $ pnpm tauri build
+
+# to run rust tests
+$ cd src-tauri
+$ cargo test
+$ cargo test -- --nocapture # to run tests with println
 ```
 ### Recommended IDE Setup
 
