@@ -362,7 +362,7 @@ pub fn assemble_file(cache_dir: &String, proj_path: &String) -> Result<bool, ()>
     }
     #[cfg(target_os = "linux")]
     {
-        assdsaf = translate_filepath(proj_path, true);
+        file_path = translate_filepath(proj_path, true);
     }
 
     if mapping.len() == 1 {
@@ -482,7 +482,7 @@ pub fn trash_file(proj_dir: &String, trash_dir: &String, hash: String) -> Result
     {
         trash_path = translate_filepath(&(trash_dir.to_owned() + &(sep().to_string()) + hash.as_str()), true);
     }
-    
+
     match fs::rename(proj_dir, trash_path) {
         Ok(_) => Ok(true),
         Err(err) => {
