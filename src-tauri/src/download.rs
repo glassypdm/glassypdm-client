@@ -1,5 +1,5 @@
 use crate::config::get_cache_setting;
-use crate::file::sep;
+use crate::file::{sep, translate_filepath};
 use crate::types::{
     DownloadInformation, DownloadRequest, DownloadRequestMessage, DownloadServerOutput, FileChunk,
     ReqwestError,
@@ -233,6 +233,7 @@ pub async fn download_files(
                     // assemble file from chunk(s)
                     let res = assemble_file(&cache_str, &proj_str).unwrap();
                     if !res {
+                        log::error!("error assembling file")
                         // failure
                         // how do we want to handle this? because we've already started copying files into project
                         // TODO
@@ -352,39 +353,48 @@ pub fn assemble_file(cache_dir: &String, proj_path: &String) -> Result<bool, ()>
             Vec::<FileChunk>::new()
         }
     };
+    let file_path;
+    #[cfg(target_os = "windows")]
+    {
+        file_path = proj_path.to_string();
+    }
+    #[cfg(target_os = "linux")]
+    {
+        assdsaf = translate_filepath(proj_path, true);
+    }
 
     if mapping.len() == 1 {
         // nothing to do, just copy the file
         let cache_path = cache_dir.to_owned() + &(sep().to_string()) + &mapping[0].block_hash;
-        let _ = fs::copy(cache_path, proj_path);
+        let _ = fs::copy(cache_path, file_path);
         return Ok(true);
     } else if mapping.len() == 0 {
-        println!("assemble file: empty mapping for {}", cache_dir);
+        log::error!("assemble file: empty mapping for {}", cache_dir);
         return Ok(false);
-    } else { // TODO this can be un-nested
-        // otherwise we need to assemble the file
-        let proj_file = match File::create(proj_path) {
-            Ok(file) => file,
+    }
+
+    // otherwise we need to assemble the file
+    let proj_file = match File::create(file_path) {
+        Ok(file) => file,
+        Err(err) => {
+            log::error!("error creating project file {}", err);
+            return Ok(false);
+        }
+    };
+    let mut writer = BufWriter::new(proj_file);
+    for chunk in mapping {
+        let cache_path = cache_dir.to_owned() + &(sep().to_string()) + &chunk.block_hash;
+        let chunk_data = match fs::read(cache_path.clone()) {
+            Ok(data) => data,
             Err(err) => {
-                println!("error creating project file {}", err);
+                log::error!("error reading chunk data from {}: {}", cache_path, err);
                 return Ok(false);
             }
         };
-        let mut writer = BufWriter::new(proj_file);
-        for chunk in mapping {
-            let cache_path = cache_dir.to_owned() + &(sep().to_string()) + &chunk.block_hash;
-            let chunk_data = match fs::read(cache_path.clone()) {
-                Ok(data) => data,
-                Err(err) => {
-                    println!("error reading chunk data from {}: {}", cache_path, err);
-                    return Ok(false);
-                }
-            };
-            let _ = writer.write_all(&chunk_data);
-        }
-
-        let _ = writer.flush();
+        let _ = writer.write_all(&chunk_data);
     }
+
+    let _ = writer.flush();
     Ok(true)
 }
 

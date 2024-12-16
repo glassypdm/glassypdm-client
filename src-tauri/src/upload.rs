@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::file::sep;
+use crate::file::{sep, translate_filepath};
 use crate::types::{ChangeType, ReqwestError, UpdatedFile};
 use crate::util::verify_file;
 use crate::dal::{get_current_server, get_file_info, get_project_dir};
@@ -87,13 +87,23 @@ pub async fn upload_files(
         let copy_endpoint = endpoint.clone();
         let copy_client = client.clone();
         let copy_token = user.clone();
-        let abspath = project_dir.clone() + &(sep().to_string()) + &upload.path;
         let file_hash = upload.hash.clone();
         let cloned_app = app_handle.clone();
+        let abs_path;
+
+        #[cfg(target_os = "windows")]
+        {
+            abs_path = project_dir.clone() + &(sep().to_string()) + &upload.path;
+        }
+
+        #[cfg(target_os = "linux")]
+        {
+            abs_path = translate_filepath(&(project_dir.clone() + &(sep().to_string()) + &upload.path), true);
+        }
 
         // 4 mb chunks
-        log::debug!("chunking file {}", abspath.clone());
-        let chunks: Vec<Chunk> = fs_chunker::chunk_file(&abspath, 4 * 1024 * 1024, true);
+        log::debug!("chunking file {}", abs_path.clone());
+        let chunks: Vec<Chunk> = fs_chunker::chunk_file(&abs_path, 4 * 1024 * 1024, true);
         log::debug!("chunking file complete");
         let len = chunks.len();
         let copied_client = &copy_client;
