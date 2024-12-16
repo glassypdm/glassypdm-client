@@ -11,6 +11,7 @@ mod upload;
 mod util;
 mod dal;
 mod commands;
+mod network;
 
 use crate::config::*;
 use download::{download_files, download_single_file};

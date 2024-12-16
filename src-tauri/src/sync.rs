@@ -303,7 +303,3 @@ pub async fn get_project_name(
         }
     }
 }
-
-impl<'a> DataAccessLayer<'a> {
-
-}
