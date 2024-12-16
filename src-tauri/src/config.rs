@@ -1,4 +1,4 @@
-use crate::{types::SettingsOptions, dal::get_active_server};
+use crate::{dal::DataAccessLayer, types::SettingsOptions};
 use fs_extra::dir::{move_dir, CopyOptions};
 use sqlx::{Pool, Row, Sqlite};
 use tauri::State;
@@ -137,6 +137,7 @@ pub async fn set_local_dir(
     log::info!("setting local directory to {}", dir);
     log::info!("parent dir: {}", parent_dir);
     let pool = state_mutex.lock().await;
+    let dal = DataAccessLayer::new(&pool);
     let old_server_dir = get_server_dir(&pool).await.unwrap();
     let _ = sqlx::query("UPDATE server SET local_dir = ? WHERE active = 1")
         .bind(dir.clone())
@@ -155,7 +156,7 @@ pub async fn set_local_dir(
             }
         }
     }
-    let url = get_active_server(&pool).await.unwrap();
+    let url = dal.get_active_server().await.unwrap();
     if url == "" {
         log::warn!("could not obtain active server url");
         return Ok(false);
@@ -182,7 +183,8 @@ pub async fn cmd_get_cache_setting(state_mutex: State<'_, Mutex<Pool<Sqlite>>>) 
 #[tauri::command]
 pub async fn cmd_set_cache_setting(new_cache: bool, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<bool, ()> {
     let pool = state_mutex.lock().await;
-    let url = get_active_server(&pool).await.unwrap();
+    let dal = DataAccessLayer::new(&pool);
+    let url = dal.get_active_server().await.unwrap();
 
     match sqlx::query("UPDATE server SET cache_setting = $1 WHERE url = $2")
         .bind(if new_cache { 1 } else { 0 })
@@ -200,7 +202,8 @@ pub async fn cmd_set_cache_setting(new_cache: bool, state_mutex: State<'_, Mutex
 }
 
 pub async fn get_cache_setting(pool: &Pool<Sqlite>) -> Result<bool, ()> {
-    let url = get_active_server(pool).await.unwrap();
+    let dal = DataAccessLayer::new(pool);
+    let url = dal.get_active_server().await.unwrap();
     match sqlx::query("SELECT cache_setting FROM server WHERE url = $1")
         .bind(url)
         .fetch_one(pool)

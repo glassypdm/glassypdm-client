@@ -13,7 +13,7 @@ use crate::file::sep;
 //use std::alloc;
 //use cap::Cap;
 use crate::get_server_dir;
-use crate::dal::{get_file_info, get_project_dir};
+use crate::dal::DataAccessLayer;
 
 pub async fn get_cache_dir(pool: &Pool<Sqlite>) -> Result<String, ()> {
     let server_dir = get_server_dir(pool).await;
@@ -155,11 +155,12 @@ pub fn get_max_allocated() -> usize {
      */
 
 pub async fn verify_file(rel_path: &String, pid: i32, pool: &Pool<Sqlite>) -> Result<bool, ()> {
-    let project_dir = get_project_dir(pid, pool).await.unwrap();
+    let dal = DataAccessLayer::new(pool);
+    let project_dir = dal.get_project_dir(pid).await.unwrap();
     let absolute_path = project_dir + &(sep().to_string()) + rel_path;
     let abs_path = Path::new(&absolute_path);
     // get current file info
-    let file_info = get_file_info(pid, rel_path.to_string(), pool).await.unwrap();
+    let file_info = dal.get_file_info(pid, rel_path.to_string()).await.unwrap();
 
     // check file existence before any sort of hashing
     if !abs_path.exists() && !file_info.in_fs {

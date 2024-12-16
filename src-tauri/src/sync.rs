@@ -1,5 +1,5 @@
 use crate::{
-    file::translate_filepath, types::RemoteFile, util::open_directory, dal::{get_active_server, get_project_dir}
+    file::translate_filepath, types::RemoteFile, util::open_directory, dal::DataAccessLayer
 };
 use merkle_hash::{bytes_to_hex, Algorithm, MerkleTree};
 use serde::{Deserialize, Serialize};
@@ -35,7 +35,7 @@ pub async fn hash_dir(pid: i32, dir_path: PathBuf, pool: &Pool<Sqlite>) {
         }
         #[cfg(target_os = "linux")]
         {
-            rel_path = translate_filepath(file.path.relative.into_string(), false);
+            rel_path = translate_filepath(&(file.path.relative.into_string()), false);
         }
         let metadata = std::fs::metadata(file.path.absolute.clone()).unwrap();
         let hash = bytes_to_hex(file.hash);
@@ -125,7 +125,8 @@ pub async fn open_project_dir(
     state_mutex: State<'_, Mutex<Pool<Sqlite>>>,
 ) -> Result<(), ()> {
     let pool = state_mutex.lock().await;
-    let project_dir = get_project_dir(pid, &pool).await.unwrap();
+    let dal = DataAccessLayer::new(&pool);
+    let project_dir = dal.get_project_dir(pid).await.unwrap();
     let _ = fs::create_dir_all(&project_dir);
     let mut pb = PathBuf::new();
     pb.push(project_dir);
@@ -144,7 +145,8 @@ pub async fn sync_changes(
     log::info!("syncing changes for project {}", pid);
 
     let pool = state_mutex.lock().await;
-    let project_dir = get_project_dir(pid, &pool).await.unwrap();
+    let dal = DataAccessLayer::new(&pool);
+    let project_dir = dal.get_project_dir(pid).await.unwrap();
 
     // create folder if it does not exist
     let _ = fs::create_dir_all(&project_dir);
@@ -193,7 +195,8 @@ pub async fn update_project_info(
     state_mutex: State<'_, Mutex<Pool<Sqlite>>>,
 ) -> Result<(), ()> {
     let pool = state_mutex.lock().await;
-    let server = get_active_server(&pool).await.unwrap();
+    let dal = DataAccessLayer::new(&pool);
+    let server = dal.get_active_server().await.unwrap();
 
     let _output = sqlx::query("INSERT INTO project(pid, url, title, team_name, base_commitid, remote_title) VALUES (?, ?, ?, ?, ?, ?)
         ON CONFLICT(pid, url) DO UPDATE SET remote_title = excluded.title")
@@ -312,7 +315,8 @@ pub async fn get_project_name(
     state_mutex: State<'_, Mutex<Pool<Sqlite>>>,
 ) -> Result<String, ()> {
     let pool = state_mutex.lock().await;
-    let server = get_active_server(&pool).await.unwrap();
+    let dal = DataAccessLayer::new(&pool);
+    let server = dal.get_active_server().await.unwrap();
     let output = sqlx::query("SELECT title FROM project WHERE pid = $1 AND url = $2")
         .bind(pid)
         .bind(server)
@@ -340,7 +344,8 @@ pub async fn get_local_projects(
     state_mutex: State<'_, Mutex<Pool<Sqlite>>>,
 ) -> Result<Vec<LocalProject>, ()> {
     let pool = state_mutex.lock().await;
-    let server = get_active_server(&pool).await.unwrap();
+    let dal = DataAccessLayer::new(&pool);
+    let server = dal.get_active_server().await.unwrap();
 
     let pid_query = sqlx::query("SELECT DISTINCT pid FROM file")
         .fetch_all(&*pool)

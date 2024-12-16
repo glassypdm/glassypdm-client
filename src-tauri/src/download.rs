@@ -5,7 +5,7 @@ use crate::types::{
     ReqwestError,
 };
 use crate::util::{delete_cache, delete_trash, get_cache_dir, get_trash_dir};
-use crate::dal::{delete_file_entry, get_current_server, get_project_dir};
+use crate::dal::DataAccessLayer;
 use futures::{stream, StreamExt};
 use log::{info, trace, warn};
 use reqwest::Client;
@@ -32,8 +32,10 @@ pub async fn download_files(
     app_handle: AppHandle,
 ) -> Result<bool, ReqwestError> {
     let pool = state_mutex.lock().await;
-    let server_url = get_current_server(&pool).await.unwrap();
-    let project_dir = get_project_dir(pid, &pool).await.unwrap();
+    let dal = DataAccessLayer::new(&pool);
+
+    let server_url = dal.get_current_server().await.unwrap();
+    let project_dir = dal.get_project_dir(pid).await.unwrap();
     let cache_dir = get_cache_dir(&pool).await.unwrap();
     let trash_dir = get_trash_dir(&pool).await.unwrap();
 
@@ -276,7 +278,7 @@ pub async fn download_files(
             .await;
         } else {
             // file.download == delete
-            let _ = delete_file_entry(pid, file.rel_path, &pool).await;
+            let _ = dal.delete_file_entry(pid, file.rel_path).await;
         }
     }
 
@@ -471,7 +473,16 @@ fn read_mapping(hash_dir: &String) -> Result<Vec<FileChunk>, ()> {
 
 // assumes trash dir exists
 pub fn trash_file(proj_dir: &String, trash_dir: &String, hash: String) -> Result<bool, ()> {
-    let trash_path = trash_dir.to_owned() + &(sep().to_string()) + hash.as_str();
+    let trash_path;
+    #[cfg(target_os = "windows")]
+    {
+        trash_path = trash_dir.to_owned() + &(sep().to_string()) + hash.as_str();
+    }
+    #[cfg(target_os = "linux")]
+    {
+        trash_path = translate_filepath(&(trash_dir.to_owned() + &(sep().to_string()) + hash.as_str()), true);
+    }
+    
     match fs::rename(proj_dir, trash_path) {
         Ok(_) => Ok(true),
         Err(err) => {
@@ -495,7 +506,8 @@ pub fn recover_file(trash_dir: &String, proj_dir: &String) -> Result<bool, ()> {
 #[tauri::command]
 pub async fn download_single_file(pid: i64, path: String, commit_id: i64, user_id: String, download_path: String, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<bool, ()> {
     let pool = state_mutex.lock().await;
-    let server_url = get_current_server(&pool).await.unwrap();
+    let dal = DataAccessLayer::new(&pool);
+    let server_url = dal.get_current_server().await.unwrap();
     let cache_dir = get_cache_dir(&pool).await.unwrap();
 
     // request download links from glassy server

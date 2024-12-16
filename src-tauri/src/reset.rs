@@ -8,7 +8,7 @@ use crate::types::{DownloadRequest, DownloadRequestMessage, DownloadServerOutput
 use crate::util::{
     delete_cache, delete_trash, get_cache_dir, get_trash_dir
 };
-use crate::dal::{get_current_server, get_project_dir};
+use crate::dal::DataAccessLayer;
 use futures::{stream, StreamExt};
 use log::{info, warn};
 use reqwest::Client;
@@ -24,17 +24,18 @@ const CONCURRENT_AWS_REQUESTS: usize = 4;
 
 #[tauri::command]
 pub async fn reset_files(
-    pid: i64,
+    pid: i32,
     filepaths: Vec<String>,
     user: String,
     app_handle: AppHandle,
 ) -> Result<bool, ()> {
     let state_mutex = app_handle.state::<Mutex<Pool<Sqlite>>>();
     let pool = state_mutex.lock().await;
-    let project_dir = get_project_dir(pid.try_into().unwrap(), &pool)
+    let dal = DataAccessLayer::new(&pool);
+    let project_dir = dal.get_project_dir(pid)
         .await
         .unwrap();
-    let server_url = get_current_server(&pool).await.unwrap();
+    let server_url = dal.get_current_server().await.unwrap();
     let cache_dir = get_cache_dir(&pool).await.unwrap();
     let trash_dir = get_trash_dir(&pool).await.unwrap();
 
@@ -71,7 +72,7 @@ pub async fn reset_files(
                     // if file isnt in cache, we need to  download it
                     if !verify_cache(&cache_path).unwrap() {
                         to_download.push(DownloadRequest {
-                            project_id: pid,
+                            project_id: pid.into(),
                             path: file,
                             commit_id: commit,
                             user_id: user.clone(),

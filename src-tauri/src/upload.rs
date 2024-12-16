@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::file::{sep, translate_filepath};
 use crate::types::{ChangeType, ReqwestError, UpdatedFile};
 use crate::util::verify_file;
-use crate::dal::{get_current_server, get_file_info, get_project_dir};
+use crate::dal::DataAccessLayer;
 use fs_chunker::Chunk;
 use futures::{stream, StreamExt};
 use log::error;
@@ -52,8 +52,9 @@ pub async fn upload_files(
 ) -> Result<UploadChunkResponse, ReqwestError> {
     let state_mutex = app_handle.state::<Mutex<Pool<Sqlite>>>();
     let pool = state_mutex.lock().await;
-    let project_dir = get_project_dir(pid, &pool).await.unwrap();
-    let server_url = get_current_server(&pool).await.unwrap();
+    let dal = DataAccessLayer::new(&pool);
+    let project_dir = dal.get_project_dir(pid).await.unwrap();
+    let server_url = dal.get_current_server().await.unwrap();
     let endpoint = server_url + "/store/request";
     let client: Client = reqwest::Client::new();
     log::debug!("uploading files for project {}", pid);
@@ -61,7 +62,7 @@ pub async fn upload_files(
     let mut to_upload: Vec<UpdatedFile> = vec![];
     let mut uploaded: u32 = 0;
     for filepath in filepaths {
-        let file: UpdatedFile = get_file_info(pid, filepath.clone(), &pool).await.unwrap();
+        let file: UpdatedFile = dal.get_file_info(pid, filepath.clone()).await.unwrap();
 
         // verify file information
         if !verify_file(&filepath, pid, &pool).await.unwrap() {
