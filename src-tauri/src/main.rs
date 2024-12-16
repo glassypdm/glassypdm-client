@@ -9,6 +9,7 @@ mod sync;
 mod types;
 mod upload;
 mod util;
+mod dal;
 
 use crate::config::*;
 use download::{download_files, download_single_file};

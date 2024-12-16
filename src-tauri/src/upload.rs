@@ -1,7 +1,9 @@
 use std::sync::Arc;
 
+use crate::file::sep;
 use crate::types::{ChangeType, ReqwestError, UpdatedFile};
-use crate::util::{get_current_server, get_file_info, get_project_dir, verify_file};
+use crate::util::verify_file;
+use crate::dal::{get_current_server, get_file_info, get_project_dir};
 use fs_chunker::Chunk;
 use futures::{stream, StreamExt};
 use log::error;
@@ -85,7 +87,7 @@ pub async fn upload_files(
         let copy_endpoint = endpoint.clone();
         let copy_client = client.clone();
         let copy_token = user.clone();
-        let abspath = project_dir.clone() + "\\" + &upload.path;
+        let abspath = project_dir.clone() + &(sep().to_string()) + &upload.path;
         let file_hash = upload.hash.clone();
         let cloned_app = app_handle.clone();
 

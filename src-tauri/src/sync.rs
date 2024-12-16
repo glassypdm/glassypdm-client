@@ -1,6 +1,5 @@
 use crate::{
-    types::RemoteFile,
-    util::{get_active_server, get_project_dir, open_directory},
+    file::translate_filepath, types::RemoteFile, util::open_directory, dal::{get_active_server, get_project_dir}
 };
 use merkle_hash::{bytes_to_hex, Algorithm, MerkleTree};
 use serde::{Deserialize, Serialize};
@@ -28,8 +27,16 @@ pub async fn hash_dir(pid: i32, dir_path: PathBuf, pool: &Pool<Sqlite>) {
     log::info!("merkle tree created");
 
     for file in tree {
-        // uwu
-        let rel_path = file.path.relative.into_string();
+        // store paths as 'windows' paths
+        let rel_path;
+        #[cfg(target_os = "windows")]
+        {
+            rel_path = file.path.relative.into_string();
+        }
+        #[cfg(target_os = "linux")]
+        {
+            rel_path = translate_filepath(file.path.relative.into_string(), false);
+        }
         let metadata = std::fs::metadata(file.path.absolute.clone()).unwrap();
         let hash = bytes_to_hex(file.hash);
         let filesize = metadata.len();
@@ -37,11 +44,9 @@ pub async fn hash_dir(pid: i32, dir_path: PathBuf, pool: &Pool<Sqlite>) {
         if metadata.is_dir() {
             continue;
         }
-        //println!("hash {}", hash);
 
         // ignore temp solidworks files
         if rel_path.contains("~$") {
-            //log::trace!("skiping solidworks temporary file");
             continue;
         }
         // root directory is empty

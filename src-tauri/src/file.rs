@@ -128,14 +128,14 @@ pub fn translate_filepath(path: &String, to_unix: bool) -> String {
     out
 }
 
-pub fn sep() -> String {
+pub fn sep() -> char {
     #[cfg(target_os = "windows")]
     {
-        "\\".to_string()
+        '\\'
     }
     #[cfg(target_os = "linux")]
     {
-        "/".to_string()
+        '/'
     }
 }
 
@@ -170,12 +170,12 @@ mod tests {
     fn test_sep() {
         #[cfg(target_os = "windows")]
         {
-            assert_eq!("\\".to_string(), sep());
+            assert_eq!('\\', sep());
         }
 
         #[cfg(target_os = "linux")]
         {
-            assert_eq!("/".to_string(), sep());
+            assert_eq!('/', sep());
         }
     }
 }

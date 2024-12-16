@@ -1,4 +1,4 @@
-use crate::{types::SettingsOptions, util::get_active_server};
+use crate::{types::SettingsOptions, dal::get_active_server};
 use fs_extra::dir::{move_dir, CopyOptions};
 use sqlx::{Pool, Row, Sqlite};
 use tauri::State;
