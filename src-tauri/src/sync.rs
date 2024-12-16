@@ -141,28 +141,8 @@ pub async fn sync_changes(
     // update table with remote files
     for file in remote {
         // write to sqlite
-        let hehe = sqlx::query("INSERT INTO file(filepath, pid, tracked_commitid, tracked_hash, tracked_changetype, in_fs, change_type, tracked_size)
-            VALUES($1, $2, $3, $4, $5, $6, $7, $8)
-            ON CONFLICT(filepath, pid) DO UPDATE SET
-            tracked_commitid = excluded.tracked_commitid,
-            tracked_hash = excluded.tracked_hash,
-            tracked_changetype = CASE WHEN in_fs = 1 OR excluded.tracked_changetype = 3 THEN excluded.tracked_changetype ELSE 1 END,
-            tracked_size = excluded.tracked_size")
-        .bind(file.path)
-        .bind(pid)
-        .bind(file.commitid)
-        .bind(file.filehash)
-        .bind(file.changetype)
-        .bind(0)
-        .bind(0)
-        .bind(file.blocksize)
-        .execute(&*pool).await;
-        match hehe {
-            Ok(_owo) => {}
-            Err(err) => {
-                println!("error! {}", err);
-            }
-        }
+        // TODO check result
+        let _ = dal.insert_remote_file(file.path, pid, file.commitid, file.filehash, file.changetype, file.blocksize).await;
     }
     log::info!("remote files updated");
     // TODO update last_synced in project table
@@ -200,16 +180,8 @@ pub async fn get_uploads(
 ) -> Result<Vec<FileChange>, ()> {
     log::info!("querying db for uploads");
     let pool = state_mutex.lock().await;
-
-    let output: Vec<FileChange> = match sqlx::query_as("SELECT filepath, size, change_type, curr_hash as hash, base_commitid as commit_id FROM file WHERE pid = $1 AND change_type != 0")
-    .bind(pid).fetch_all(&*pool)
-    .await {
-        Ok(uploads) => uploads,
-        Err(err) => {
-            log::error!("encountered error while querying db: {}", err);
-            Vec::<FileChange>::new()
-        }
-    };
+    let dal = DataAccessLayer::new(&pool);
+    let output: Vec<FileChange> = dal.get_uploads(pid).await.unwrap();
     log::info!("finished querying db for uploads");
     Ok(output)
 }
@@ -221,23 +193,8 @@ pub async fn get_downloads(
 ) -> Result<Vec<FileChange>, ()> {
     log::info!("querying db for downloads");
     let pool = state_mutex.lock().await;
-
-    let output: Vec<FileChange> = match sqlx::query_as(
-        "SELECT filepath, tracked_size as size, tracked_changetype as change_type, tracked_hash as hash, tracked_commitid as commit_id FROM file WHERE pid = $1 AND
-        (
-            (in_fs = 1 AND tracked_changetype = 3) OR
-            (base_hash != tracked_hash AND tracked_changetype != 3)
-        )
-        "
-    )
-    .bind(pid).fetch_all(&*pool)
-    .await {
-        Ok(downloads) => downloads,
-        Err(err) => {
-            log::error!("encountered error while querying db: {}", err);
-            Vec::<FileChange>::new()
-        }
-    };
+    let dal = DataAccessLayer::new(&pool);
+    let output = dal.get_downloads(pid).await.unwrap();
 
     log::info!("finished querying db for downloads");
     Ok(output)
@@ -288,18 +245,5 @@ pub async fn get_project_name(
 ) -> Result<String, ()> {
     let pool = state_mutex.lock().await;
     let dal = DataAccessLayer::new(&pool);
-    let server = dal.get_active_server().await.unwrap();
-    let output = sqlx::query("SELECT title FROM project WHERE pid = $1 AND url = $2")
-        .bind(pid)
-        .bind(server)
-        .fetch_one(&*pool)
-        .await;
-
-    match output {
-        Ok(row) => Ok(row.get::<String, &str>("title")),
-        Err(err) => {
-            println!("Error retrieving project name: {}", err);
-            Ok("".to_string())
-        }
-    }
+    dal.get_project_name(pid).await
 }

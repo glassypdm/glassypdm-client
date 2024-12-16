@@ -1,7 +1,7 @@
 use sqlx::{Pool, Row, Sqlite};
 use std::path::Path;
 use std::result::Result::Ok;
-use crate::types::{ChangeType, UpdatedFile};
+use crate::{sync::FileChange, types::{ChangeType, UpdatedFile}};
 
 pub struct DataAccessLayer<'a> {
     pub pool: &'a Pool<Sqlite>
@@ -249,6 +249,90 @@ impl<'a> DataAccessLayer<'a> {
 
         Ok(())
     }
+
+    pub async fn get_project_name(&self, pid: i32) -> Result<String, ()> {
+        let server = self.get_active_server().await.unwrap();
+        let output = sqlx::query("SELECT title FROM project WHERE pid = $1 AND url = $2")
+            .bind(pid)
+            .bind(server)
+            .fetch_one(self.pool)
+            .await;
+
+        match output {
+            Ok(row) => Ok(row.get::<String, &str>("title")),
+            Err(err) => {
+                println!("Error retrieving project name: {}", err);
+                Ok("".to_string())
+            }
+        }
+    }
+
+    pub async fn get_downloads(&self, pid: i32) -> Result<Vec<FileChange>, ()> {
+        let output: Vec<FileChange> = match sqlx::query_as(
+            "SELECT filepath, tracked_size as size, tracked_changetype as change_type, tracked_hash as hash, tracked_commitid as commit_id FROM file WHERE pid = $1 AND
+            (
+                (in_fs = 1 AND tracked_changetype = 3) OR
+                (base_hash != tracked_hash AND tracked_changetype != 3)
+            )
+            "
+        )
+        .bind(pid).fetch_all(self.pool)
+        .await {
+            Ok(downloads) => downloads,
+            Err(err) => {
+                log::error!("encountered error while querying db: {}", err);
+                Vec::<FileChange>::new()
+            }
+        };
+        Ok(output)
+    }
+
+    pub async fn get_uploads(&self, pid: i32) -> Result<Vec<FileChange>, ()> {
+        let output = match sqlx::query_as("SELECT filepath, size, change_type, curr_hash as hash, base_commitid as commit_id FROM file WHERE pid = $1 AND change_type != 0")
+        .bind(pid).fetch_all(self.pool)
+        .await {
+            Ok(uploads) => uploads,
+            Err(err) => {
+                log::error!("encountered error while querying db: {}", err);
+                Vec::<FileChange>::new()
+            }
+        };
+
+        Ok(output)
+    }
+
+    pub async fn get_conflicts(&self, pid: i32) -> Result<Vec<FileChange>, ()> {
+        todo!()
+    }
+
+    pub async fn insert_remote_file(&self, file_path: String, pid: i32, commit_id: i32, file_hash: String, changetype: i32, tracked_size: i32) ->Result<(), ()> {
+        let hehe = sqlx::query("INSERT INTO file(filepath, pid, tracked_commitid, tracked_hash, tracked_changetype, in_fs, change_type, tracked_size)
+            VALUES($1, $2, $3, $4, $5, $6, $7, $8)
+            ON CONFLICT(filepath, pid) DO UPDATE SET
+            tracked_commitid = excluded.tracked_commitid,
+            tracked_hash = excluded.tracked_hash,
+            tracked_changetype = CASE WHEN in_fs = 1 OR excluded.tracked_changetype = 3 THEN excluded.tracked_changetype ELSE 1 END,
+            tracked_size = excluded.tracked_size")
+        .bind(file_path)
+        .bind(pid)
+        .bind(commit_id)
+        .bind(file_hash)
+        .bind(changetype)
+        .bind(0)
+        .bind(0)
+        .bind(tracked_size)
+        .execute(self.pool).await;
+        match hehe {
+            Ok(_owo) => {
+                Ok(())
+            }
+            Err(err) => {
+                println!("error! {}", err);
+                Err(())
+            }
+        }
+    }
+
 } // end impl DataAcessLayer<'_>
 
 #[cfg(test)]
