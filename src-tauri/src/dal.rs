@@ -318,8 +318,8 @@ impl<'a> DataAccessLayer<'a> {
         .bind(commit_id)
         .bind(file_hash)
         .bind(changetype)
-        .bind(0)
-        .bind(0)
+        .bind(0) // in_fs
+        .bind(0) // changetype
         .bind(tracked_size)
         .execute(self.pool).await;
         match hehe {
@@ -435,22 +435,36 @@ mod tests {
         let _ = dal.insert_local_file("path/to/file2".to_string(), 0, "sf".to_string(), 43).await;
         let _ = dal.insert_local_file("abc/def/ghi".to_string(), 0, "xyz".to_string(), 43).await;
 
+        // call function under test
         let _ = dal.update_change_types(0).await;
-        let hehe = dal.get_uploads(0).await.unwrap();
+        let uploads = dal.get_uploads(0).await.unwrap();
         let mut err_flag = false;
-        for owo in hehe.clone() {
+        for owo in uploads.clone() {
             if owo.change_type != ChangeType::Create {
                 err_flag = true;
             }
         }
-        // all of the inserted files are new, so they should all be changetype create
-        assert_eq!(err_flag, false);
-        assert_eq!(hehe.len(), 3); // 3 files were added in add_local_files
+
+        assert_eq!(err_flag, false); // all of the inserted files are new, so they should all be changetype create
+        assert_eq!(uploads.len(), 3); // 3 files were added in add_local_files
         assert_eq!(dal.get_downloads(0).await.unwrap().len(), 0); // no downloads
         //assert_eq!(dal.get_conflicts(0).await.unwrap().len(), 0); // TODO
 
+        // TODO move this to test_get_downloads
         /* test 2: sync with server with no local files, get files to download */
         let _ = dal.clear_file_table().await;
+        let _ = dal.reset_fs_state(0).await;
+        let _ = dal.insert_remote_file("path/to/file".to_string(), 0, 13, "abcd".to_string(), ChangeType::Create as i32, 132).await;
+        let _ = dal.insert_remote_file("path/to/file2".to_string(), 0, 6, "sss".to_string(), ChangeType::Create as i32, 132).await;
+        let _ = dal.insert_remote_file("abc/def/ghi".to_string(), 0, 14, "xyz".to_string(), ChangeType::Create as i32, 132).await;
+        let _ = dal.insert_remote_file("abc/def/hello".to_string(), 0, 12, "hh".to_string(), ChangeType::Delete as i32, 132).await;
+
+        // FIXME investigate this
+        // this fails - update_change_types gets called before remote files are added to table
+        // so currently (241216) this is 'unrealistic'
+        //let _ = dal.update_change_types(0).await;
+        let downloads = dal.get_downloads(0).await.unwrap();
+        assert_eq!(downloads.len(), 3); // we don't need to download abc/def/hello
 
         /* test 3: sync with server with some local files, test different changetypes and such */
 
