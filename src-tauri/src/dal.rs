@@ -333,26 +333,80 @@ impl<'a> DataAccessLayer<'a> {
         }
     }
 
+    pub async fn insert_local_file(&self, rel_path: String, pid: i32, hash: String, filesize: u64) -> Result<(), ()> {
+        let hehe = sqlx::query("INSERT INTO file(filepath, pid, curr_hash, size) VALUES($1, $2, $3, $4)
+        ON CONFLICT(filepath, pid) DO UPDATE SET curr_hash = excluded.curr_hash, size = excluded.size, in_fs = 1")
+        .bind(rel_path)
+        .bind(pid)
+        .bind(hash)
+        .bind(filesize as i64)
+        .execute(self.pool).await;
+        match hehe {
+            Ok(_owo) => { Ok(())}
+            Err(err) => {
+                log::error!("encountered error while saving file to db: {}", err);
+                Err(())
+            }
+        }
+    }
+
+    // TODO handle errors
+    pub async fn update_change_types(&self, pid: i32) -> Result<(), ()> {
+            // no change - file was un-deleted (e.g., recovered from user's recycle bin)
+        let _ = sqlx::query(
+            "UPDATE file SET change_type = 0 WHERE in_fs = 1 AND change_type = 3 AND pid = $1",
+        )
+        .bind(pid)
+        .execute(self.pool)
+        .await;
+
+        // no change - file was reset
+        let _ = sqlx::query(
+            "UPDATE file SET change_type = 0 WHERE in_fs = 1 AND base_hash == curr_hash AND pid = $1",
+        )
+        .bind(pid)
+        .execute(self.pool)
+        .await;
+
+        // updated file - base hash is different from current hash, and file is tracked, i.e. base hash not empty
+        let _ = sqlx::query(
+            "UPDATE file SET change_type = 2 WHERE in_fs = 1 AND base_hash != curr_hash AND pid = $1 AND base_hash != ''"
+        ).bind(pid).execute(self.pool).await;
+
+        // new file - base hash is different from current hash and file is untracked, i.e. base hash is empty
+        let _ = sqlx::query(
+            "UPDATE file SET change_type = 1 WHERE in_fs = 1 AND base_hash != curr_hash AND pid = $1 AND base_hash == ''"
+        ).bind(pid).execute(self.pool).await;
+
+        // deleted file - file is tracked, i.e. base hash not empty and file wasn't found in folder
+        let _ = sqlx::query(
+            "UPDATE file SET change_type = 3 WHERE in_fs = 0 AND pid = $1 AND base_hash != ''",
+        )
+        .bind(pid)
+        .execute(self.pool)
+        .await;
+
+        // delete entries of files that are untracked and deleted
+        let _ = sqlx::query("DELETE FROM file WHERE in_fs = 0 AND pid = $1 AND base_hash = ''")
+            .bind(pid)
+            .execute(self.pool)
+            .await;
+        Ok(())
+    }
+
+    pub async fn reset_fs_state(&self, pid: i32) -> Result<(), ()> {
+        let _ = sqlx::query("UPDATE file SET in_fs = 0 WHERE pid = $1")
+        .bind(pid)
+        .execute(self.pool)
+        .await;
+        Ok(())
+    }
 } // end impl DataAcessLayer<'_>
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use sqlx::SqlitePool;
-
-    /// initialize a db with a server and some projects
-    async fn init_db(pool: &SqlitePool) {
-        let dal = DataAccessLayer::new(&pool);
-
-        // create server entry
-        let _ = dal.add_server("url".to_string(), "key".to_string(), "owo/location".to_string(), "test server".to_string()).await;
-
-        // create project entries
-        let _ = dal.add_project(0, "project name".to_string(), "team name".to_string(), 0).await;
-        let _ = dal.add_project(1, "project 2".to_string(), "team name".to_string(), 41).await;
-        let _ = dal.add_project(14, "another project".to_string(), "team 2".to_string(), 2).await;
-
-    }
 
     #[sqlx::test]
     async fn test_cache_setting(pool: SqlitePool) {
@@ -372,10 +426,63 @@ mod tests {
     }
 
     #[sqlx::test]
-    async fn test_owo(pool: SqlitePool) {
+    async fn test_update_change_types(pool: SqlitePool) {
         let dal = DataAccessLayer::new(&pool);
-        init_db(&pool).await;
 
-        
+        /* test 1: uploading untracked files */
+        init_db(&pool).await;
+        let _ = dal.insert_local_file("path/to/file".to_string(), 0, "abcd".to_string(), 43).await;
+        let _ = dal.insert_local_file("path/to/file2".to_string(), 0, "sf".to_string(), 43).await;
+        let _ = dal.insert_local_file("abc/def/ghi".to_string(), 0, "xyz".to_string(), 43).await;
+
+        let _ = dal.update_change_types(0).await;
+        let hehe = dal.get_uploads(0).await.unwrap();
+        let mut err_flag = false;
+        for owo in hehe.clone() {
+            if owo.change_type != ChangeType::Create {
+                err_flag = true;
+            }
+        }
+        // all of the inserted files are new, so they should all be changetype create
+        assert_eq!(err_flag, false);
+        assert_eq!(hehe.len(), 3); // 3 files were added in add_local_files
+        assert_eq!(dal.get_downloads(0).await.unwrap().len(), 0); // no downloads
+        //assert_eq!(dal.get_conflicts(0).await.unwrap().len(), 0); // TODO
+
+        /* test 2: sync with server with no local files, get files to download */
+        let _ = dal.clear_file_table().await;
+
+        /* test 3: sync with server with some local files, test different changetypes and such */
+
+        /* test 4: something with conflicts */
+
+    }
+
+
+    //////////////////////
+    // helper functions //
+    //////////////////////
+
+    /// initialize a db with a server and some projects
+    async fn init_db(pool: &SqlitePool) {
+        let dal = DataAccessLayer::new(&pool);
+
+        // create server entry
+        let _ = dal.add_server("url".to_string(), "key".to_string(), "owo/location".to_string(), "test server".to_string()).await;
+
+        let _ = dal.clear_file_table().await;
+        let _ = dal.clear_project_table("url".to_string()).await;
+        // create project entries
+        let _ = dal.add_project(0, "project name".to_string(), "team name".to_string(), 0).await;
+        let _ = dal.add_project(1, "project 2".to_string(), "team name".to_string(), 41).await;
+        let _ = dal.add_project(14, "another project".to_string(), "team 2".to_string(), 2).await;
+    }
+
+    async fn add_local_files(pool: &SqlitePool, pid: i32) {
+        let dal = DataAccessLayer::new(&pool);
+
+        let _ = dal.insert_local_file("path/to/file".to_string(), pid, "abcd".to_string(), 43).await;
+        let _ = dal.insert_local_file("path/to/file2".to_string(), pid, "sf".to_string(), 43).await;
+        let _ = dal.insert_local_file("abc/def/ghi".to_string(), pid, "xyz".to_string(), 43).await;
     }
 }

@@ -12,11 +12,9 @@ use tokio::sync::Mutex;
 pub async fn hash_dir(pid: i32, dir_path: PathBuf, pool: &Pool<Sqlite>) {
     log::info!("starting hashing directory");
     log::info!("directory: {}", dir_path.display());
+    let dal = DataAccessLayer::new(pool);
 
-    let _ = sqlx::query("UPDATE file SET in_fs = 0 WHERE pid = $1")
-        .bind(pid)
-        .execute(&*pool)
-        .await;
+    let _ = dal.reset_fs_state(pid).await;
 
     let tree = MerkleTree::builder(dir_path.display().to_string())
         .algorithm(Algorithm::Blake3)
@@ -60,60 +58,10 @@ pub async fn hash_dir(pid: i32, dir_path: PathBuf, pool: &Pool<Sqlite>) {
         }
 
         // write to sqlite
-        let hehe = sqlx::query("INSERT INTO file(filepath, pid, curr_hash, size) VALUES($1, $2, $3, $4)
-        ON CONFLICT(filepath, pid) DO UPDATE SET curr_hash = excluded.curr_hash, size = excluded.size, in_fs = 1")
-        .bind(rel_path)
-        .bind(pid)
-        .bind(hash)
-        .bind(filesize as i64)
-        .execute(&*pool).await;
-        match hehe {
-            Ok(_owo) => {}
-            Err(err) => {
-                log::error!("encountered error while saving file to db: {}", err);
-            }
-        }
+        let _ = dal.insert_local_file(rel_path, pid, hash, filesize).await;
     }
     log::info!("files parsed");
-    // no change - file was un-deleted (e.g., recovered from user's recycle bin)
-    let _ = sqlx::query(
-        "UPDATE file SET change_type = 0 WHERE in_fs = 1 AND change_type = 3 AND pid = $1",
-    )
-    .bind(pid)
-    .execute(pool)
-    .await;
-
-    // no change - file was reset
-    let _ = sqlx::query(
-        "UPDATE file SET change_type = 0 WHERE in_fs = 1 AND base_hash == curr_hash AND pid = $1",
-    )
-    .bind(pid)
-    .execute(pool)
-    .await;
-
-    // updated file - base hash is different from current hash, and file is tracked, i.e. base hash not empty
-    let _ = sqlx::query(
-        "UPDATE file SET change_type = 2 WHERE in_fs = 1 AND base_hash != curr_hash AND pid = $1 AND base_hash != ''"
-    ).bind(pid).execute(pool).await;
-
-    // new file - base hash is different from current hash and file is untracked, i.e. base hash is empty
-    let _ = sqlx::query(
-        "UPDATE file SET change_type = 1 WHERE in_fs = 1 AND base_hash != curr_hash AND pid = $1 AND base_hash == ''"
-    ).bind(pid).execute(pool).await;
-
-    // deleted file - file is tracked, i.e. base hash not empty and file wasn't found in folder
-    let _ = sqlx::query(
-        "UPDATE file SET change_type = 3 WHERE in_fs = 0 AND pid = $1 AND base_hash != ''",
-    )
-    .bind(pid)
-    .execute(pool)
-    .await;
-
-    // delete entries of files that are untracked and deleted
-    let _ = sqlx::query("DELETE FROM file WHERE in_fs = 0 AND pid = $1 AND base_hash = ''")
-        .bind(pid)
-        .execute(pool)
-        .await;
+    let _ = dal.update_change_types(pid).await;
 
     log::info!("hashing directory complete");
 }
@@ -164,13 +112,13 @@ pub async fn update_project_info(
     Ok(())
 }
 
-#[derive(sqlx::FromRow, Serialize, Deserialize)]
+#[derive(sqlx::FromRow, Serialize, Deserialize, Clone)]
 pub struct FileChange {
-    filepath: String,
-    size: u32,
-    change_type: u32,
-    hash: String,
-    commit_id: i32,
+    pub filepath: String,
+    pub size: u32,
+    pub change_type: u32,
+    pub hash: String,
+    pub commit_id: i32,
 }
 
 #[tauri::command]
