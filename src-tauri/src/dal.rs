@@ -426,10 +426,9 @@ mod tests {
     }
 
     #[sqlx::test]
-    async fn test_update_change_types(pool: SqlitePool) {
+    async fn test_upload_untracked_files(pool: SqlitePool) {
         let dal = DataAccessLayer::new(&pool);
 
-        /* test 1: uploading untracked files */
         init_db(&pool).await;
         let _ = dal.insert_local_file("path/to/file".to_string(), 0, "abcd".to_string(), 43).await;
         let _ = dal.insert_local_file("path/to/file2".to_string(), 0, "sf".to_string(), 43).await;
@@ -450,10 +449,15 @@ mod tests {
         assert_eq!(dal.get_downloads(0).await.unwrap().len(), 0); // no downloads
         //assert_eq!(dal.get_conflicts(0).await.unwrap().len(), 0); // TODO
 
-        // TODO move this to test_get_downloads
-        /* test 2: sync with server with no local files, get files to download */
+    }
+
+    #[sqlx::test]
+    async fn test_download_for_fresh_install(pool: SqlitePool) {
+        let dal = DataAccessLayer::new(&pool);
+        init_db(&pool).await;
         let _ = dal.clear_file_table().await;
         let _ = dal.reset_fs_state(0).await;
+        let _ = dal.update_change_types(0).await;
         let _ = dal.insert_remote_file("path/to/file".to_string(), 0, 13, "abcd".to_string(), ChangeType::Create as i32, 132).await;
         let _ = dal.insert_remote_file("path/to/file2".to_string(), 0, 6, "sss".to_string(), ChangeType::Create as i32, 132).await;
         let _ = dal.insert_remote_file("abc/def/ghi".to_string(), 0, 14, "xyz".to_string(), ChangeType::Create as i32, 132).await;
@@ -462,15 +466,18 @@ mod tests {
         // FIXME investigate this
         // this fails - update_change_types gets called before remote files are added to table
         // so currently (241216) this is 'unrealistic'
+        // it works IRL, but this feels like it shouldnt fail
         //let _ = dal.update_change_types(0).await;
+
         let downloads = dal.get_downloads(0).await.unwrap();
         assert_eq!(downloads.len(), 3); // we don't need to download abc/def/hello
-
-        /* test 3: sync with server with some local files, test different changetypes and such */
-
-        /* test 4: something with conflicts */
-
+        assert_eq!(dal.get_uploads(0).await.unwrap().len(), 0); // no uploads
+        // TODO conflicts
     }
+
+    /* test 3: sync with server with some local files, test different changetypes and such */
+
+    /* test 4: something with conflicts */
 
 
     //////////////////////
@@ -492,11 +499,4 @@ mod tests {
         let _ = dal.add_project(14, "another project".to_string(), "team 2".to_string(), 2).await;
     }
 
-    async fn add_local_files(pool: &SqlitePool, pid: i32) {
-        let dal = DataAccessLayer::new(&pool);
-
-        let _ = dal.insert_local_file("path/to/file".to_string(), pid, "abcd".to_string(), 43).await;
-        let _ = dal.insert_local_file("path/to/file2".to_string(), pid, "sf".to_string(), 43).await;
-        let _ = dal.insert_local_file("abc/def/ghi".to_string(), pid, "xyz".to_string(), 43).await;
-    }
 }
