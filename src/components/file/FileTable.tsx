@@ -1,5 +1,6 @@
 import {
   ColumnDef,
+  ColumnFilter,
   ColumnFiltersState,
   RowSelectionState,
   flexRender,
@@ -27,6 +28,9 @@ interface DataTableProps<TData, TValue> {
   setSelection: any;
   height: string;
   includeFilter: boolean;
+  filter: ColumnFilter[];
+  setFilter: any;
+
 }
 
 export function FileTable<TData, TValue>({
@@ -36,6 +40,8 @@ export function FileTable<TData, TValue>({
   setSelection,
   height,
   includeFilter,
+  filter,
+  setFilter
 }: DataTableProps<TData, TValue>) {
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
 
@@ -44,11 +50,11 @@ export function FileTable<TData, TValue>({
     columns,
     getCoreRowModel: getCoreRowModel(),
     onRowSelectionChange: setSelection,
-    onColumnFiltersChange: setColumnFilters,
+    onColumnFiltersChange: setFilter,
     getFilteredRowModel: getFilteredRowModel(),
     state: {
       rowSelection: selection,
-      columnFilters,
+      columnFilters: filter,
     },
   });
 
