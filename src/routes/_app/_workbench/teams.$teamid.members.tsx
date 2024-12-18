@@ -59,7 +59,7 @@ function TeamMembers() {
 
   console.log(data);
   return (
-    <div>
+    <div className="flex flex-col">
       {isRefetching ? (
         <div className="flex flex-row items-center space-x-2">
           <Loader2 className="w-4 h-4 animate-spin" />
@@ -68,8 +68,8 @@ function TeamMembers() {
       ) : (
         <></>
       )}
-      <ScrollArea className="h-96">
-        <TableCaption>
+      <ScrollArea className="max-h-[70vh]">
+        <TableCaption className="flex">
           {data.body.members.length} member
           {data.body.members.length == 1 ? "" : "s"}
         </TableCaption>

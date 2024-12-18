@@ -148,7 +148,7 @@ function History() {
     }
 
     history = (
-      <ScrollArea className="h-96 space-y-2">
+      <ScrollArea className="max-h-[70vh] space-y-2">
         <div className="space-y-2 p-4">
           {data.body.commits.map((commit: CommitDescription) => {
             return (
