@@ -65,6 +65,7 @@ function Project() {
                 <Link to='/projects/$pid/history' params={{ pid: pid }} search={{ offset: 0 }}>Project History</Link>
               </NavigationMenuLink>
             </NavigationMenuItem>
+            {/** 
             <NavigationMenuItem>
               <NavigationMenuLink className={cn(navigationMenuTriggerStyle(), 'text-md')} asChild>
                 <Link to='/projects/$pid/files' params={{ pid: pid }} search={{ directory: ""}}>Files</Link>
@@ -78,6 +79,7 @@ function Project() {
               </NavigationMenuLink>
             </NavigationMenuItem> : <></>
             }
+            */}
           </NavigationMenuList>
         </NavigationMenu>
         <Outlet />

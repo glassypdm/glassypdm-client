@@ -186,15 +186,8 @@ function SyncPage() {
             ? "Up to date"
             : downloadSize + " files ready to download"}
         </Button>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-            <Button variant={"outline"}>Open in Website</Button>
-            </TooltipTrigger>
-            <TooltipContent>Feature coming soon</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
       </div>
+      <div className="flex flex-col gap-4">
       <Button
         className="flex h-full"
         onClick={syncChanges}
@@ -202,6 +195,10 @@ function SyncPage() {
       >
         {syncInProgress ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />: "Sync"}
       </Button>
+      <Button variant={"outline"} onClick={openFolder}>
+          Open Project Folder
+        </Button>
+      </div>
       <div className="flex flex-col gap-4">
         <Button
           className="grow text-wrap"
@@ -211,9 +208,6 @@ function SyncPage() {
           {uploadSize == 0
             ? "Up to date"
             : uploadSize + " files ready to upload"}
-        </Button>
-        <Button variant={"outline"} onClick={openFolder}>
-          Open Project Folder
         </Button>
       </div>
     </div>
