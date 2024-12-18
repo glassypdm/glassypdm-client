@@ -100,6 +100,7 @@ function UploadPage() {
     });
     if (action == "Upload") {
 
+      return;
       // upload files (as chunks)
       let res: any = await invoke("upload_files", {
         pid: parseInt(pid),
@@ -255,7 +256,8 @@ function UploadPage() {
         data={uploads}
         selection={selection}
         setSelection={setSelection}
-        height='h-[50vh]'
+        includeFilter={true}
+        height='h-[41vh]'
       />
     </div>
   );
