@@ -4,8 +4,8 @@ use crate::{
 use merkle_hash::{bytes_to_hex, Algorithm, MerkleTree};
 use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Row, Sqlite};
-use std::path::PathBuf;
-use std::fs;
+use std::path::{Path, PathBuf};
+use std::fs::{self, remove_dir_all};
 use tauri::State;
 use tokio::sync::Mutex;
 use crate::types::LocalProject;
@@ -68,4 +68,31 @@ pub async fn open_project_dir(
     open_directory(pb);
 
     return Ok(());
+}
+
+#[tauri::command]
+pub async fn clear_file_table(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<(), ()> {
+    let pool = state_mutex.lock().await;
+    let dal = DataAccessLayer::new(&pool);
+
+    let _ = dal.clear_file_table_for_project(pid).await;
+    return Ok(());
+}
+
+#[tauri::command]
+pub async fn delete_project(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<(), String> {
+    let pool = state_mutex.lock().await;
+    let dal = DataAccessLayer::new(&pool);
+
+    let _ = dal.clear_file_table_for_project(pid).await;
+
+    // delete project folder
+    let project_dir = dal.get_project_dir(pid).await.unwrap();
+    match remove_dir_all(Path::new(&project_dir)) {
+        Ok(_res) => {},
+        Err(err) => {
+            log::error!("could not delete the trash: {}", err);
+        }
+    }
+  Ok(())
 }

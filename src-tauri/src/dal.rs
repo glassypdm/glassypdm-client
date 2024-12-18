@@ -202,6 +202,14 @@ impl<'a> DataAccessLayer<'a> {
         Ok(())
     }
 
+    pub async fn clear_file_table_for_project(&self, pid: i32) -> Result<(), ()> {
+        let _ = sqlx::query("DELETE from file WHERE pid = $1")
+            .bind(pid.clone())
+            .execute(self.pool)
+            .await;
+        Ok(())
+    }
+
     pub async fn get_server_name(&self) -> Result<String, ()> {
         let output = sqlx::query("SELECT name FROM server WHERE active = 1")
         .fetch_one(self.pool)

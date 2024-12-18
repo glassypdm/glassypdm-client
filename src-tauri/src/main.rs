@@ -24,7 +24,7 @@ use util::{cmd_delete_cache, get_cache_size, open_app_data_dir, open_log_dir};
 use sync::{
     get_conflicts, get_downloads, get_project_name, get_uploads, sync_changes, update_project_info,
 };
-use commands::project::{open_project_dir, get_local_projects};
+use commands::project::{open_project_dir, get_local_projects, clear_file_table, delete_project};
 use file::get_files;
 use tauri::path::BaseDirectory;
 use tauri::{Emitter, Manager};
@@ -64,7 +64,9 @@ fn main() {
             cmd_get_cache_setting,
             cmd_set_cache_setting,
             get_files,
-            is_dev_mode
+            is_dev_mode,
+            clear_file_table,
+            delete_project
             //get_mem
         ])
         .plugin(
