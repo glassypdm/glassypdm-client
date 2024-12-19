@@ -155,29 +155,9 @@ pub async fn get_conflicts(
 ) -> Result<Vec<FileChange>, ()> {
     log::info!("querying db for file conflicts in project {}", pid);
     let pool = state_mutex.lock().await;
+    let dal = DataAccessLayer::new(&pool);
 
-    let output: Vec<FileChange> = match sqlx::query_as(
-// commented out: old conflict detection
-// current logic: get_uploads \cap get_downloads
-//        "SELECT filepath, size, change_type, curr_hash as hash, base_commitid as commit_id FROM file WHERE pid = $1 AND
-//        tracked_hash != curr_hash AND curr_hash != '' AND tracked_hash != base_hash"
-        "SELECT filepath, size, change_type, curr_hash as hash, base_commitid as commit_id FROM file WHERE pid = $1 AND
-        change_type != 0 AND
-        (
-            (in_fs = 1 AND tracked_changetype = 3) OR
-            (base_hash != tracked_hash AND tracked_changetype != 3)
-        )
-        "
-    )
-    .bind(pid).fetch_all(&*pool)
-    .await {
-        Ok(conflicts) => conflicts,
-        Err(err) => {
-            println!("get_conflicts had error querying db: {}", err);
-            log::error!("encountered error querying db: {}", err);
-            Vec::<FileChange>::new()
-        }
-    };
+    let output: Vec<FileChange> = dal.get_conflicts(pid).await.unwrap();
     log::info!(
         "found {} conflicting files for project {}",
         output.len(),

@@ -310,7 +310,24 @@ impl<'a> DataAccessLayer<'a> {
     }
 
     pub async fn get_conflicts(&self, pid: i32) -> Result<Vec<FileChange>, ()> {
-        todo!()
+        match sqlx::query_as(
+            "SELECT filepath, size, change_type, curr_hash as hash, base_commitid as commit_id FROM file WHERE pid = $1 AND
+            change_type != 0 AND
+            (
+                (in_fs = 1 AND tracked_changetype = 3) OR
+                (base_hash != tracked_hash AND tracked_changetype != 3)
+            )
+            "
+        )
+        .bind(pid).fetch_all(self.pool)
+        .await {
+            Ok(conflicts) => Ok(conflicts),
+            Err(err) => {
+                println!("get_conflicts had error querying db: {}", err);
+                log::error!("encountered error querying db: {}", err);
+                Ok(Vec::<FileChange>::new())
+            }
+        }
     }
 
     pub async fn insert_remote_file(&self, file_path: String, pid: i32, commit_id: i32, file_hash: String, changetype: i32, tracked_size: i32) ->Result<(), ()> {
