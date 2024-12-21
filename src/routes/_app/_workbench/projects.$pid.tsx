@@ -1,3 +1,4 @@
+import Loading from '@/components/loading';
 import { NavigationMenu, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, navigationMenuTriggerStyle } from '@/components/ui/navigation-menu';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@clerk/clerk-react';
@@ -39,7 +40,7 @@ function Project() {
     })
 
     if(isPending) {
-      return <div>Loading project...</div>
+      return <Loading />
     }
     else if(isError) {
       return <div>

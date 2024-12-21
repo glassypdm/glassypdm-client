@@ -36,6 +36,7 @@ import {
 } from '@/components/ui/form'
 import { message } from '@tauri-apps/plugin-dialog'
 import { useToast } from '@/components/ui/use-toast'
+import Loading from '@/components/loading'
 
 export const Route = createFileRoute('/_app/_workbench/teams/')({
   component: Teams,
@@ -133,7 +134,7 @@ function Teams() {
   }
 
   if (isPending) {
-    return <div>Loading...</div>
+    return <Loading />
   } else if (isError) {
     return <div>an error occured while fetching data :c</div>
   } else if (data.response != 'success') {

@@ -32,6 +32,8 @@ import {
 } from "../ui/accordion";
 import { PermissionGroupConfig } from "./pgroupconfig";
 import { Loader2 } from "lucide-react";
+import Loading from "../loading";
+import Refetching from "../refetching";
 
 const createPGFormSchema = z.object({
   pgroupName: z.string().regex(new RegExp("^[a-zA-Z0-9 -]+$")).trim(),
@@ -121,7 +123,7 @@ function PermissionGroupDashboard(props: PermissionGroupDashboardProps) {
 
   let pgroupList = <></>;
   if (isPending) {
-    pgroupList = <div>Loading permission groups...</div>;
+    pgroupList = <Loading />;
   } else if (isError) {
     console.log(error);
     pgroupList = (
@@ -167,10 +169,7 @@ function PermissionGroupDashboard(props: PermissionGroupDashboardProps) {
   return (
     <div className="flex flex-col py-2 space-y-2">
       {isRefetching ? (
-        <div className="flex flex-row items-center space-x-2">
-          <Loader2 className="w-4 h-4 animate-spin" />
-          <div>Loading...</div>
-        </div>
+        <Refetching />
       ) : (
         <></>
       )}

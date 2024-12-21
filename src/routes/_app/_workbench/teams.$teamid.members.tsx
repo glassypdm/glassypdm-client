@@ -1,3 +1,5 @@
+import Loading from "@/components/loading";
+import Refetching from "@/components/refetching";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Table,
@@ -48,7 +50,7 @@ function TeamMembers() {
   });
 
   if (isPending) {
-    return <div>Loading members...</div>;
+    return <Loading />;
   } else if (isError) {
     return (
       <div>
@@ -61,10 +63,7 @@ function TeamMembers() {
   return (
     <div className="flex flex-col">
       {isRefetching ? (
-        <div className="flex flex-row items-center space-x-2">
-          <Loader2 className="w-4 h-4 animate-spin" />
-          <div>Loading...</div>
-        </div>
+        <Refetching />
       ) : (
         <></>
       )}

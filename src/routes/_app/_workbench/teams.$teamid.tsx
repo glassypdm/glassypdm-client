@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Undo2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import Loading from "@/components/loading";
 
 export const Route = createFileRoute("/_app/_workbench/teams/$teamid")({
   component: () => <TeamDashboard />,
@@ -50,7 +51,7 @@ function TeamDashboard() {
   console.log()
 
   if (isPending) {
-    return <div>Loading...</div>;
+    return <Loading />;
   } else if (isError) {
     return <div>Encountered error while fetching team information</div>;
   }

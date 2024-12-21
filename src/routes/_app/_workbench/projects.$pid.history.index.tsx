@@ -1,3 +1,5 @@
+import Loading from "@/components/loading";
+import Refetching from "@/components/refetching";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -144,7 +146,7 @@ function History() {
 
   let history = <div></div>;
   if (isPending) {
-    history = <div>Loading...</div>;
+    history = <Loading />;
   } else if (isError) {
     console.log(error);
     return (
@@ -203,10 +205,7 @@ function History() {
   return (
     <div className="flex flex-col items-center">
       {isRefetching ? (
-        <div className="flex flex-row items-center space-x-2">
-          <Loader2 className="w-4 h-4 animate-spin" />
-          <div>Loading...</div>
-        </div>
+        <Refetching />
       ) : (
         <></>
       )}

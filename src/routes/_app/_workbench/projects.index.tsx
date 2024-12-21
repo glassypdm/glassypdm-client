@@ -1,3 +1,4 @@
+import Loading from "@/components/loading";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -102,9 +103,7 @@ function ProjectsIndex() {
 
     if(isPending) {
         return (
-            <div>
-                Loading Projects...
-            </div>
+                <Loading />
         )
     }
     else if(isError) {
