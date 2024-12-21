@@ -87,28 +87,9 @@ function Settings() {
                             <CardDescription>Manage your local app data.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                        <div>
-                            {/** TODO configure delete cache post downloads */}
-                        </div>
                         <div className="grid-cols-3 space-x-4 space-y-2">
                             <Button onClick={openAppData}>View App Data</Button>
                             <Button onClick={openLogs}>View App Logs</Button>
-                            {/* POSTPONED 
-                            <Dialog>
-                                <DialogTrigger>
-                                    <Button variant={"outline"}>Delete App Data</Button>               
-                                </DialogTrigger>
-                                <DialogContent>
-                                    <DialogHeader>
-                                    <DialogTitle>Are you sure you want to delete the app's data?</DialogTitle>
-                                    <DialogDescription>You will need to go through server setup again.</DialogDescription>
-                                    </DialogHeader>
-                                    <DialogFooter>
-                                        <Button variant={'destructive'}>Delete App Data</Button>
-                                    </DialogFooter>
-                                </DialogContent>
-                            </Dialog>
-                            */}
                         </div>
                         </CardContent>
                     </Card>
