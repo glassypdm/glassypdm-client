@@ -139,7 +139,7 @@ function Settings() {
                 <TabsContent value="account">
                                 <UserProfile />
                 </TabsContent>
-                <TabsContent value="dev">
+                <TabsContent value="dev" className="flex flex-col gap-y-2">
                     <Card>
                         <CardHeader>
                             <CardTitle>Developer Settings</CardTitle>
@@ -159,6 +159,15 @@ function Settings() {
                         <CardFooter>
                             <Button onClick={saveDevSettings}>Save</Button>
                         </CardFooter>
+                    </Card>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Button Box</CardTitle>
+                            <CardDescription>Generic buttons to test Rust snippets</CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex gap-x-2">
+                            <Button onClick={() => {invoke("dev")}}>One</Button>
+                        </CardContent>
                     </Card>
                 </TabsContent>
             </div>

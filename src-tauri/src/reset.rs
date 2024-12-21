@@ -260,11 +260,17 @@ pub async fn reset_files(
             Ok(res) => {
                 if res {
                     let prefix = Path::new(&proj_str).parent().unwrap();
-                    fs::create_dir_all(prefix).unwrap();
+                    match fs::create_dir_all(prefix) {
+                        Ok(_) => {},
+                        Err(err) => {
+                            log::error!("reset: couldn't create directory {}: {}", prefix.display(), err);
+                        }
+                    };
                     // assemble file from chunk(s)
                     let res = assemble_file(&cache_str, &proj_str).unwrap();
                     let _ = app_handle.clone().emit("fileAction", 4);
                     if !res {
+                        log::error!("error assembling file")
                         // failure
                         // how do we want to handle this? because we've already started copying files into project
                         // TODO
