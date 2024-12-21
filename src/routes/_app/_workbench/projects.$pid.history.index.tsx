@@ -1,3 +1,4 @@
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -17,6 +18,7 @@ import {
 } from "@/components/ui/pagination";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@clerk/clerk-react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -70,16 +72,27 @@ function DescriptionCard(props: DescriptionCardProps) {
   const commitdesc = props.commitDesc;
   const d = new Date(0);
   d.setUTCSeconds(commitdesc.timestamp);
-  // d.tolocalestring
   return (
-    <Card className="">
+    <Card>
       <div className="flex flex-row items-center">
         <CardHeader className="p-4 grow">
-          <CardTitle className="text-lg">
+          <CardTitle className="text-lg flex flex-row space-x-2">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger>
+                <Badge variant={'outline'}>v{commitdesc.commit_number}</Badge>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <div>Project Update {commitdesc.commit_number}</div>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <div>
             {commitdesc.author} made {commitdesc.num_files} changes
+            </div>
           </CardTitle>
           <CardDescription className="w-[400px]">
-            Project Update {commitdesc.commit_number} - {commitdesc.comment}
+            {commitdesc.comment}
           </CardDescription>
         </CardHeader>
         <CardContent className="p-4 justify-self-end">
