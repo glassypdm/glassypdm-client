@@ -60,7 +60,7 @@ export function FileTable<TData, TValue>({
 
   return (
     <div className="rounded-md border">
-      <div className="flex items-center py-4 px-2">
+      <div className={cn("flex items-center px-2", includeFilter ? "py-4": "")}>
         { includeFilter ? <Input
           placeholder="Filter files..."
           value={(table.getColumn("file")?.getFilterValue() as string) ?? ""}
