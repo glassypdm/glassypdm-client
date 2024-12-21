@@ -137,6 +137,32 @@ function SyncPage() {
   async function devSync() {
     await syncChanges(syncCommit);
   }
+
+  async function devHehez() {
+    if(syncCommit == "latest") {
+      return;
+    }
+
+    // get commit id from commit number
+    const endpoint = url + "/project/commit" + "?pid=" + pid + "&cno=" + syncCommit;
+    const resp = await fetch(endpoint, {
+      method: "GET",
+      mode: "cors",
+      headers: { Authorization: `Bearer ${await getToken()}` }
+    })
+    const data = await resp.json();
+    console.log(data)
+    if(data.response != 'success') {
+      toast({ title: "unsuccesful"})
+      return;
+    }
+
+    // do the file table clearing
+    await invoke("clear_file_table", {pid: parseInt(pid), commit: syncCommit })
+
+    toast({ title: "success"})
+  }
+
   async function navigateUpload() {
     navigate({
       to: "/upload",
@@ -230,9 +256,14 @@ function SyncPage() {
         onClick={devSync}
         disabled={syncInProgress}
         >Sync at commit</Button>
+        <Button
+        onClick={devHehez}
+        variant={'secondary'}>
+          Set file table to commit
+        </Button>
       </div>
       <div className="flex flex-row gap-x-2">
-        <Button onClick={async() => { await invoke("clear_file_table", {pid: parseInt(pid) })}}>Clear File Table</Button>
+        <Button onClick={async() => { await invoke("clear_file_table", {pid: parseInt(pid), commit: "latest" })}}>Clear File Table</Button>
         <Button onClick={async() => { await invoke("delete_project", {pid: parseInt(pid) })}} variant={'destructive'}>Delete Project</Button>
         </div>
       </div>

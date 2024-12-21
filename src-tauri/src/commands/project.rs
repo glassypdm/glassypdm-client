@@ -71,11 +71,37 @@ pub async fn open_project_dir(
 }
 
 #[tauri::command]
-pub async fn clear_file_table(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<(), ()> {
+pub async fn clear_file_table(pid: i32, commit: String, delete: bool, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<(), ()> {
     let pool = state_mutex.lock().await;
     let dal = DataAccessLayer::new(&pool);
 
-    let _ = dal.clear_file_table_for_project(pid).await;
+    if commit == "latest" {
+        let _ = dal.clear_file_table_for_project(pid).await;
+        return Ok(());
+    }
+    let res = dal.clear_file_table_for_project_after_commit(pid, commit.parse().unwrap()).await;
+    if !delete {
+        return Ok(())
+    }
+    match res {
+        Ok(hehez) => {
+            // delete the files!
+            let proj_dir = dal.get_project_dir(pid).await.unwrap();
+            if proj_dir == "" {
+                log::warn!("did not get a project dir, so could not delete files");
+                return Ok(());
+            }
+            for hehe in hehez {
+                let path = proj_dir.clone() + "\\" + &hehe;
+                let _ = fs::remove_file(path);
+
+                // TODO try to delete its directories
+            }
+        },
+        Err(err) => {
+            log::warn!("did not delete the files")
+        }
+    }
     return Ok(());
 }
 

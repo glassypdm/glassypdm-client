@@ -1,4 +1,4 @@
-use sqlx::{Pool, Row, Sqlite};
+use sqlx::{sqlite::SqliteQueryResult, Pool, Row, Sqlite};
 use std::path::Path;
 use std::result::Result::Ok;
 use crate::{sync::FileChange, types::{ChangeType, UpdatedFile}};
@@ -210,6 +210,15 @@ impl<'a> DataAccessLayer<'a> {
         Ok(())
     }
 
+    pub async fn clear_file_table_for_project_after_commit(&self, pid: i32, commit_id: i32) -> Result<Vec<String>, ()> {
+        let results: Vec<String> = sqlx::query_scalar("DELETE from file WHERE pid = $1 AND commit_id > $2 RETURNING filepath")
+            .bind(pid)
+            .bind(commit_id)
+            .fetch_all(self.pool)
+            .await.unwrap();
+        Ok(results)
+    }
+
     pub async fn get_server_name(&self) -> Result<String, ()> {
         let output = sqlx::query("SELECT name FROM server WHERE active = 1")
         .fetch_one(self.pool)
@@ -412,10 +421,17 @@ impl<'a> DataAccessLayer<'a> {
         .await;
 
         // delete entries of files that are untracked and deleted
-        let _ = sqlx::query("DELETE FROM file WHERE in_fs = 0 AND pid = $1 AND base_hash = ''")
+        let _ = match sqlx::query("DELETE FROM file WHERE in_fs = 0 AND pid = $1 AND base_hash = ''")
             .bind(pid)
             .execute(self.pool)
-            .await;
+            .await {
+                Ok(a) => {
+                    log::info!("rows affected: {}",a.rows_affected());
+                },
+                Err(e) => {
+                    log::error!("error deleting entries of untracked and deleted: {}", e)
+                }
+            };
         Ok(())
     }
 
