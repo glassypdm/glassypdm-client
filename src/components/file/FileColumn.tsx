@@ -39,6 +39,7 @@ export const columns: ColumnDef<File>[] = [
     accessorKey: "file",
     header: "File",
     filterFn: (row, id, value) => {
+      id;
       const file: File = row.original;
       return file.filepath.includes(value);
     },
