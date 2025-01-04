@@ -28,8 +28,8 @@ interface DataTableProps<TData, TValue> {
   setSelection: any;
   height: string;
   includeFilter: boolean;
-  filter: ColumnFilter[];
-  setFilter: any;
+  filter?: ColumnFilter[];
+  setFilter?: any;
 
 }
 
