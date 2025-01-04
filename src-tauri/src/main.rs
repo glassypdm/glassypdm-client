@@ -9,6 +9,9 @@ mod sync;
 mod types;
 mod upload;
 mod util;
+mod dal;
+mod commands;
+mod network;
 
 use crate::config::*;
 use download::{download_files, download_single_file};
@@ -17,11 +20,12 @@ use reset::reset_files;
 use sqlx::migrate::Migrator;
 use sqlx::{sqlite::SqliteConnectOptions, SqlitePool};
 use std::fs;
+use std::path::Path;
 use util::{cmd_delete_cache, get_cache_size, open_app_data_dir, open_log_dir};
 use sync::{
-    get_conflicts, get_downloads, get_local_projects, get_project_name, get_uploads,
-    open_project_dir, sync_changes, update_project_info,
+    get_conflicts, get_downloads, get_project_name, get_uploads, sync_changes, update_project_info,
 };
+use commands::project::{open_project_dir, get_local_projects, clear_file_table, delete_project};
 use file::get_files;
 use tauri::path::BaseDirectory;
 use tauri::{Emitter, Manager};
@@ -42,8 +46,8 @@ fn main() {
             get_server_name,
             update_project_info,
             get_uploads,
-            open_project_dir,
             get_project_name,
+            open_project_dir,
             upload_files,
             update_uploaded,
             get_local_projects,
@@ -61,7 +65,10 @@ fn main() {
             cmd_get_cache_setting,
             cmd_set_cache_setting,
             get_files,
-            //get_mem
+            is_dev_mode,
+            clear_file_table,
+            delete_project,
+            dev
         ])
         .plugin(
             tauri_plugin_log::Builder::new()
@@ -167,9 +174,9 @@ async fn restart(app: tauri::AppHandle) -> tauri::Result<()> {
     Ok(())
 }
 
-/* 
 #[tauri::command]
-fn get_mem() {
-    println!("allocated/total: {} {}", get_allocated(), get_max_allocated());
+async fn dev(app: tauri::AppHandle) {
+    // these are the same (they both return true on winblows)
+    println!("does path exist? {}", Path::new("D:\\glassyPDM\\Sun Devil Motorsports\\SDM-25\\Drivetrain\\Parts\\Diff Mounts\\Jack bar.SLDPRT").exists());
+    println!("does path exist? {}", Path::new("D:\\glassyPDM\\Sun Devil Motorsports\\SDM-25\\Drivetrain\\Parts\\diff mounts\\jack bar.SLDPRT").exists());
 }
-*/

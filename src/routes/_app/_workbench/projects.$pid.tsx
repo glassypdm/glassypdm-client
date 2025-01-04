@@ -1,3 +1,4 @@
+import Loading from '@/components/loading';
 import { NavigationMenu, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, navigationMenuTriggerStyle } from '@/components/ui/navigation-menu';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@clerk/clerk-react';
@@ -39,7 +40,7 @@ function Project() {
     })
 
     if(isPending) {
-      return <div>Loading project...</div>
+      return <Loading />
     }
     else if(isError) {
       return <div>
@@ -65,6 +66,7 @@ function Project() {
                 <Link to='/projects/$pid/history' params={{ pid: pid }} search={{ offset: 0 }}>Project History</Link>
               </NavigationMenuLink>
             </NavigationMenuItem>
+            {/** 
             <NavigationMenuItem>
               <NavigationMenuLink className={cn(navigationMenuTriggerStyle(), 'text-md')} asChild>
                 <Link to='/projects/$pid/files' params={{ pid: pid }} search={{ directory: ""}}>Files</Link>
@@ -78,6 +80,7 @@ function Project() {
               </NavigationMenuLink>
             </NavigationMenuItem> : <></>
             }
+            */}
           </NavigationMenuList>
         </NavigationMenu>
         <Outlet />

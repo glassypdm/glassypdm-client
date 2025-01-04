@@ -23,6 +23,7 @@ export const Route = createFileRoute('/_app/_workbench/settings')({
         const result = await invoke("init_settings_options");
         const cache = await invoke("get_cache_size");
         const cacheSetting = await invoke("cmd_get_cache_setting");
+        const devMode = await invoke("is_dev_mode");
         const dir = (result as any).local_dir;
         const debug = (result as any).debug_active;
         return {
@@ -30,7 +31,8 @@ export const Route = createFileRoute('/_app/_workbench/settings')({
             url: url,
             dir: dir,
             cacheSetting: cacheSetting,
-            debug: debug == 1 ? true : false
+            debug: debug == 1 ? true : false,
+            devMode: devMode
         }
     }
 })
@@ -70,7 +72,9 @@ function Settings() {
                 <TabsTrigger value="appdata">App Data</TabsTrigger>
                 <TabsTrigger value="appearance">Appearance</TabsTrigger>
                 <TabsTrigger value="account">Account</TabsTrigger>
-                <TabsTrigger value="dev">Developer Settings</TabsTrigger>
+                {
+                    loaderData.devMode ? <TabsTrigger value="dev">Developer Settings</TabsTrigger> : <></>
+                }
             </TabsList>
             <div className="w-full">
                 <TabsContent value="folder">
@@ -83,28 +87,9 @@ function Settings() {
                             <CardDescription>Manage your local app data.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                        <div>
-                            {/** TODO configure delete cache post downloads */}
-                        </div>
                         <div className="grid-cols-3 space-x-4 space-y-2">
                             <Button onClick={openAppData}>View App Data</Button>
                             <Button onClick={openLogs}>View App Logs</Button>
-                            {/* POSTPONED 
-                            <Dialog>
-                                <DialogTrigger>
-                                    <Button variant={"outline"}>Delete App Data</Button>               
-                                </DialogTrigger>
-                                <DialogContent>
-                                    <DialogHeader>
-                                    <DialogTitle>Are you sure you want to delete the app's data?</DialogTitle>
-                                    <DialogDescription>You will need to go through server setup again.</DialogDescription>
-                                    </DialogHeader>
-                                    <DialogFooter>
-                                        <Button variant={'destructive'}>Delete App Data</Button>
-                                    </DialogFooter>
-                                </DialogContent>
-                            </Dialog>
-                            */}
                         </div>
                         </CardContent>
                     </Card>
@@ -135,7 +120,7 @@ function Settings() {
                 <TabsContent value="account">
                                 <UserProfile />
                 </TabsContent>
-                <TabsContent value="dev">
+                <TabsContent value="dev" className="flex flex-col gap-y-2">
                     <Card>
                         <CardHeader>
                             <CardTitle>Developer Settings</CardTitle>
@@ -155,6 +140,15 @@ function Settings() {
                         <CardFooter>
                             <Button onClick={saveDevSettings}>Save</Button>
                         </CardFooter>
+                    </Card>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Button Box</CardTitle>
+                            <CardDescription>Generic buttons to test Rust snippets</CardDescription>
+                        </CardHeader>
+                        <CardContent className="flex gap-x-2">
+                            <Button onClick={() => {invoke("dev")}}>One</Button>
+                        </CardContent>
                     </Card>
                 </TabsContent>
             </div>

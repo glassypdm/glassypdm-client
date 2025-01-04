@@ -1,7 +1,9 @@
 use std::sync::Arc;
 
+use crate::file::{sep, translate_filepath};
 use crate::types::{ChangeType, ReqwestError, UpdatedFile};
-use crate::util::{get_current_server, get_file_info, get_project_dir, verify_file};
+use crate::util::verify_file;
+use crate::dal::DataAccessLayer;
 use fs_chunker::Chunk;
 use futures::{stream, StreamExt};
 use log::error;
@@ -50,8 +52,9 @@ pub async fn upload_files(
 ) -> Result<UploadChunkResponse, ReqwestError> {
     let state_mutex = app_handle.state::<Mutex<Pool<Sqlite>>>();
     let pool = state_mutex.lock().await;
-    let project_dir = get_project_dir(pid, &pool).await.unwrap();
-    let server_url = get_current_server(&pool).await.unwrap();
+    let dal = DataAccessLayer::new(&pool);
+    let project_dir = dal.get_project_dir(pid).await.unwrap();
+    let server_url = dal.get_current_server().await.unwrap();
     let endpoint = server_url + "/store/request";
     let client: Client = reqwest::Client::new();
     log::debug!("uploading files for project {}", pid);
@@ -59,7 +62,7 @@ pub async fn upload_files(
     let mut to_upload: Vec<UpdatedFile> = vec![];
     let mut uploaded: u32 = 0;
     for filepath in filepaths {
-        let file: UpdatedFile = get_file_info(pid, filepath.clone(), &pool).await.unwrap();
+        let file: UpdatedFile = dal.get_file_info(pid, filepath.clone()).await.unwrap();
 
         // verify file information
         if !verify_file(&filepath, pid, &pool).await.unwrap() {
@@ -85,13 +88,23 @@ pub async fn upload_files(
         let copy_endpoint = endpoint.clone();
         let copy_client = client.clone();
         let copy_token = user.clone();
-        let abspath = project_dir.clone() + "\\" + &upload.path;
         let file_hash = upload.hash.clone();
         let cloned_app = app_handle.clone();
+        let abs_path;
+
+        #[cfg(target_os = "windows")]
+        {
+            abs_path = project_dir.clone() + &(sep().to_string()) + &upload.path;
+        }
+
+        #[cfg(target_os = "linux")]
+        {
+            abs_path = translate_filepath(&(project_dir.clone() + &(sep().to_string()) + &upload.path), true);
+        }
 
         // 4 mb chunks
-        log::debug!("chunking file {}", abspath.clone());
-        let chunks: Vec<Chunk> = fs_chunker::chunk_file(&abspath, 4 * 1024 * 1024, true);
+        log::debug!("chunking file {}", abs_path.clone());
+        let chunks: Vec<Chunk> = fs_chunker::chunk_file(&abs_path, 4 * 1024 * 1024, true);
         log::debug!("chunking file complete");
         let len = chunks.len();
         let copied_client = &copy_client;

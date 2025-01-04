@@ -1,3 +1,6 @@
+import Loading from "@/components/loading";
+import Refetching from "@/components/refetching";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -17,6 +20,7 @@ import {
 } from "@/components/ui/pagination";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@clerk/clerk-react";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
@@ -70,16 +74,27 @@ function DescriptionCard(props: DescriptionCardProps) {
   const commitdesc = props.commitDesc;
   const d = new Date(0);
   d.setUTCSeconds(commitdesc.timestamp);
-  // d.tolocalestring
   return (
-    <Card className="">
+    <Card>
       <div className="flex flex-row items-center">
         <CardHeader className="p-4 grow">
-          <CardTitle className="text-lg">
+          <CardTitle className="text-lg flex flex-row space-x-2">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger>
+                <Badge variant={'outline'}>v{commitdesc.commit_number}</Badge>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <div>Project Update {commitdesc.commit_number}</div>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <div>
             {commitdesc.author} made {commitdesc.num_files} changes
+            </div>
           </CardTitle>
           <CardDescription className="w-[400px]">
-            Project Update {commitdesc.commit_number} - {commitdesc.comment}
+            {commitdesc.comment}
           </CardDescription>
         </CardHeader>
         <CardContent className="p-4 justify-self-end">
@@ -131,7 +146,7 @@ function History() {
 
   let history = <div></div>;
   if (isPending) {
-    history = <div>Loading...</div>;
+    history = <Loading />;
   } else if (isError) {
     console.log(error);
     return (
@@ -148,7 +163,7 @@ function History() {
     }
 
     history = (
-      <ScrollArea className="h-96 space-y-2">
+      <ScrollArea className="max-h-[69vh] space-y-2">
         <div className="space-y-2 p-4">
           {data.body.commits.map((commit: CommitDescription) => {
             return (
@@ -165,38 +180,44 @@ function History() {
     );
   }
 
-  // TODO handle pagination
   let pagination = [];
-  // 5: number of commits to show per page
-  // determined by server
+  const COMMITS_PER_PAGE = 8; // this number is determined by server
   if (!isPending && !isError) {
-    for (let i = offset - 2 * 5; i <= offset + 2 * 5; i += 5) {
-      if (i < 0) continue;
-      if (i > data.body.num_commits) continue;
+    let idx = offset - 3 * COMMITS_PER_PAGE;
+    if(data.body.num_commits - offset < 2 * COMMITS_PER_PAGE) {
+      idx = offset - 4 * COMMITS_PER_PAGE;
+    }
 
-      pagination.push(i);
+    while ( pagination.length < 5) {
+      idx += COMMITS_PER_PAGE;
+      if (idx < 0) {
+        continue;
+      }
+      if (idx > data.body.num_commits){
+        break;
+      }
+
+      pagination.push(idx);
     }
   }
+  console.log(pagination)
 
   return (
     <div className="flex flex-col items-center">
       {isRefetching ? (
-        <div className="flex flex-row items-center space-x-2">
-          <Loader2 className="w-4 h-4 animate-spin" />
-          <div>Loading...</div>
-        </div>
+        <Refetching />
       ) : (
         <></>
       )}
       {history}
-      <Pagination>
+      <Pagination className="pt-2">
         <PaginationContent>
           <PaginationItem
-            className={offset - 5 < 0 || isPending ? DISABLED : ""}
+            className={offset - COMMITS_PER_PAGE < 0 || isPending ? DISABLED : ""}
           >
             <PaginationPrevious
               from={Route.fullPath}
-              search={(prev: any) => ({ offset: Number(prev.offset ?? 0) - 5 })}
+              search={(prev: any) => ({ offset: Number(prev.offset ?? 0) - COMMITS_PER_PAGE })}
               params={{ pid: pid }}
             ></PaginationPrevious>
           </PaginationItem>
@@ -209,7 +230,7 @@ function History() {
                   params={{ pid: pid }}
                   isActive={offset_val == offset}
                 >
-                  {offset_val / 5 + 1}
+                  {offset_val / COMMITS_PER_PAGE + 1}
                 </PaginationLink>
               </PaginationItem>
             ))
@@ -220,12 +241,12 @@ function History() {
           )}
           <PaginationItem
             className={
-              isPending || offset + 5 > data.body.num_commits ? DISABLED : ""
+              isPending || offset + COMMITS_PER_PAGE > data.body.num_commits ? DISABLED : ""
             }
           >
             <PaginationNext
               from={Route.fullPath}
-              search={(prev: any) => ({ offset: Number(prev.offset ?? 0) + 5 })}
+              search={(prev: any) => ({ offset: Number(prev.offset ?? 0) + COMMITS_PER_PAGE })}
               params={{ pid: pid }}
             ></PaginationNext>
           </PaginationItem>

@@ -14,8 +14,8 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/components/ui/use-toast";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 export const Route = createFileRoute("/_app/_workbench/projects/$pid/sync")({
   component: () => <SyncPage />,
   loader: async ({ params }) => {
@@ -60,9 +60,14 @@ function SyncPage() {
   const [conflictList, setConflictList] = useState(conflict);
   const [conflictExists, setConflictExists] = useState(conflict.length > 0);
   const [syncInProgress, setSyncInProgress] = useState(false);
+  const [syncCommit, setSyncCommit] = useState("latest");
   const { toast } = useToast();
 
-  async function syncChanges() {
+  async function doSync() {
+    await syncChanges("latest");
+  }
+
+  async function syncChanges(bop: string) {
     setSyncInProgress(true);
     const pid_number = parseInt(pid);
 
@@ -70,7 +75,7 @@ function SyncPage() {
 
     let data;
     try {
-      data = await fetch(url + "/project/status/by-id/" + pid, {
+      data = await fetch(url + "/project/status/by-id/" + pid + "/" + bop, {
         headers: { Authorization: `Bearer ${await getToken()}` },
         method: "GET",
         mode: "cors",
@@ -129,6 +134,35 @@ function SyncPage() {
     })
   }
 
+  async function devSync() {
+    await syncChanges(syncCommit);
+  }
+
+  async function devHehez() {
+    if(syncCommit == "latest") {
+      return;
+    }
+
+    // get commit id from commit number
+    const endpoint = url + "/project/commit" + "?pid=" + pid + "&cno=" + syncCommit;
+    const resp = await fetch(endpoint, {
+      method: "GET",
+      mode: "cors",
+      headers: { Authorization: `Bearer ${await getToken()}` }
+    })
+    const data = await resp.json();
+    console.log(data)
+    if(data.response != 'success') {
+      toast({ title: "unsuccesful"})
+      return;
+    }
+
+    // do the file table clearing
+    await invoke("clear_file_table", {pid: parseInt(pid), commit: syncCommit })
+
+    toast({ title: "success"})
+  }
+
   async function navigateUpload() {
     navigate({
       to: "/upload",
@@ -148,6 +182,7 @@ function SyncPage() {
   }
 
   return (
+    <div>
     <div className="grid grid-cols-3 gap-8 p-4 h-64 w-[600px]">
       <Dialog defaultOpen={conflictExists} open={conflictExists}>
         <DialogContent className="h-4/5">
@@ -186,22 +221,19 @@ function SyncPage() {
             ? "Up to date"
             : downloadSize + " files ready to download"}
         </Button>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-            <Button variant={"outline"}>Open in Website</Button>
-            </TooltipTrigger>
-            <TooltipContent>Feature coming soon</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
       </div>
+      <div className="flex flex-col gap-4">
       <Button
         className="flex h-full"
-        onClick={syncChanges}
+        onClick={doSync}
         disabled={syncInProgress}
       >
         {syncInProgress ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />: "Sync"}
       </Button>
+      <Button variant={"outline"} onClick={openFolder}>
+          Open Project Folder
+        </Button>
+      </div>
       <div className="flex flex-col gap-4">
         <Button
           className="grow text-wrap"
@@ -212,10 +244,31 @@ function SyncPage() {
             ? "Up to date"
             : uploadSize + " files ready to upload"}
         </Button>
-        <Button variant={"outline"} onClick={openFolder}>
-          Open Project Folder
+      </div>
+    </div>
+    {
+      import.meta.env.DEV ?
+      <div className="flex flex-col gap-y-2">
+      <div className="text-2xl font-semibold"> Dev Options</div>
+      <div className="flex flex-row gap-x-2">
+        <Input onChange={(e) => {setSyncCommit(e.target.value)}} value={syncCommit}/>
+        <Button
+        onClick={devSync}
+        disabled={syncInProgress}
+        >Sync at commit</Button>
+        <Button
+        onClick={devHehez}
+        variant={'secondary'}>
+          Set file table to commit
         </Button>
       </div>
+      <div className="flex flex-row gap-x-2">
+        <Button onClick={async() => { await invoke("clear_file_table", {pid: parseInt(pid), commit: "latest" })}}>Clear File Table</Button>
+        <Button onClick={async() => { await invoke("delete_project", {pid: parseInt(pid) })}} variant={'destructive'}>Delete Project</Button>
+        </div>
+      </div>
+    : <></>
+    }
     </div>
   );
 }

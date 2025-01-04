@@ -55,6 +55,7 @@ function UploadPage() {
   const [progress, setProgress] = useState(0);
   const [disabled, setDisabled] = useState(false);
   const [selection, setSelection] = useState(selectionList);
+  const [filter, setFilter] = useState([]);
   const [commitMessage, setCommitMessage] = useState("");
   const { toast } = useToast();
 
@@ -74,10 +75,17 @@ function UploadPage() {
 
     let selectedFiles: string[] = [];
     let uploadList: any[] = [];
+    const filterActive = filter.length > 0;
     for (let i = 0; i < Object.keys(selection).length; i++) {
       const key: number = parseInt(Object.keys(selection)[i]);
-      selectedFiles.push(uploads[key].filepath);
+      // TODO type is wonky
+      // don't add to upload list if we are using filter and
+      // the file include the filter as a substring
+      if(filterActive && !uploads[key].filepath.includes((filter[0] as any).value)) {
+        continue;
+      }
 
+      selectedFiles.push(uploads[key].filepath);
       uploadList.push({
         path: uploads[key].filepath,
         hash: uploads[key].hash,
@@ -85,6 +93,7 @@ function UploadPage() {
       });
     }
     console.log(selectedFiles);
+    console.log(filter)
 
     const selectedLength = selectedFiles.length;
     let actionedFiles = 0;
@@ -255,6 +264,10 @@ function UploadPage() {
         data={uploads}
         selection={selection}
         setSelection={setSelection}
+        includeFilter={true}
+        height='h-[41vh]'
+        filter={filter}
+        setFilter={setFilter}
       />
     </div>
   );

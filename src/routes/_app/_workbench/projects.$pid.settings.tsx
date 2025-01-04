@@ -7,16 +7,15 @@ export const Route = createFileRoute('/_app/_workbench/projects/$pid/settings')(
 
 function ProjectSettings() {
   return (
-    <div className='flex flex-col w-screen[504px]'>
-      {/*
+    <div className='flex flex-col w-full px-4 pt-8'>
       <Card>
         <CardHeader>
           <CardTitle>Ignore List</CardTitle>
-          <CardDescription>Configure a list of paths and files for glassyPDM to ignore.</CardDescription>
+          <CardDescription>
+            Configure a list of paths and files for glassyPDM to ignore changes.
+            </CardDescription>
         </CardHeader>
       </Card>
-       */}
-       Coming soon
     </div>
   )
 }

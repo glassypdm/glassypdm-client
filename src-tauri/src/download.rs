@@ -1,12 +1,13 @@
 use crate::config::get_cache_setting;
+use crate::file::{sep, translate_filepath};
 use crate::types::{
     DownloadInformation, DownloadRequest, DownloadRequestMessage, DownloadServerOutput, FileChunk,
     ReqwestError,
 };
 use crate::util::{delete_cache, delete_trash, get_cache_dir, get_trash_dir};
-use crate::util::{get_current_server, get_project_dir};
+use crate::dal::DataAccessLayer;
 use futures::{stream, StreamExt};
-use log::{info, warn};
+use log::{info, trace, warn};
 use reqwest::Client;
 use sqlx::{Pool, Sqlite};
 use std::cmp::Ordering;
@@ -31,8 +32,10 @@ pub async fn download_files(
     app_handle: AppHandle,
 ) -> Result<bool, ReqwestError> {
     let pool = state_mutex.lock().await;
-    let server_url = get_current_server(&pool).await.unwrap();
-    let project_dir = get_project_dir(pid, &pool).await.unwrap();
+    let dal = DataAccessLayer::new(&pool);
+
+    let server_url = dal.get_current_server().await.unwrap();
+    let project_dir = dal.get_project_dir(pid).await.unwrap();
     let cache_dir = get_cache_dir(&pool).await.unwrap();
     let trash_dir = get_trash_dir(&pool).await.unwrap();
 
@@ -47,7 +50,7 @@ pub async fn download_files(
     let mut to_delete: Vec<DownloadRequestMessage> = Vec::new();
     for file in files.clone() {
         if file.download {
-            let cached_path = cache_dir.clone() + "\\" + &file.hash;
+            let cached_path = cache_dir.clone() + &(sep().to_string()) + &file.hash;
 
             to_copy.push(file.clone());
             if verify_cache(&cached_path).unwrap() {
@@ -144,7 +147,7 @@ pub async fn download_files(
             let handle = &app_handle;
             let client = &aws_client;
             // create cache_dir/file_hash directory
-            let filehash_dir = cache_dir.clone() + "\\" + chunk_info.file_hash.as_str();
+            let filehash_dir = cache_dir.clone() + &(sep().to_string()) + chunk_info.file_hash.as_str();
             async move {
                 let res = download_with_client(&filehash_dir, chunk_info, client).await;
                 let mut error = cloned_error_flag.lock().await;
@@ -168,7 +171,7 @@ pub async fn download_files(
 
     // verify the chunks exist
     for file in to_copy.clone() {
-        let cache_str = cache_dir.clone() + "\\" + file.hash.as_str();
+        let cache_str = cache_dir.clone() + &(sep().to_string()) + file.hash.as_str();
         let res = verify_cache(&cache_str).unwrap();
         if !res {
             log::error!("verifying cache failed: {}", file.hash);
@@ -182,7 +185,7 @@ pub async fn download_files(
     let mut deleted = Vec::<DownloadRequestMessage>::new();
     let mut error_flag = false;
     for file in to_delete.clone() {
-        let proj_path = project_dir.clone() + "\\" + file.rel_path.as_str();
+        let proj_path = project_dir.clone() + &(sep().to_string()) + file.rel_path.as_str();
         if !trash_file(&proj_path, &trash_dir, file.clone().hash).unwrap() {
             error_flag = true;
             break;
@@ -194,7 +197,7 @@ pub async fn download_files(
     // if we failed to delete a file, undo delete and return early
     if error_flag {
         for file in deleted {
-            let proj_dir = project_dir.clone() + "\\" + file.rel_path.as_str();
+            let proj_dir = project_dir.clone() + &(sep().to_string()) + file.rel_path.as_str();
             let _ = recover_file(&trash_dir, &proj_dir).unwrap();
         }
         return Ok(false);
@@ -206,7 +209,7 @@ pub async fn download_files(
         
         for folder in directories {
             info!("{}", folder);
-            let proj_dir = project_dir.clone() + "\\" + &folder;
+            let proj_dir = project_dir.clone() + &(sep().to_string()) + &folder;
             let path = PathBuf::from(proj_dir);
             // if file's folder is empty, delete it (ie use remove_dir() which will delete only if it is empty)
             match remove_dir(path) {
@@ -222,8 +225,8 @@ pub async fn download_files(
     let mut oops = 0;
     for file in to_copy {
         // find the hash in the cache and copy to rel path
-        let cache_str = cache_dir.clone() + "\\" + file.hash.as_str();
-        let proj_str = project_dir.clone() + "\\" + file.rel_path.as_str();
+        let cache_str = cache_dir.clone() + &(sep().to_string()) + file.hash.as_str();
+        let proj_str = project_dir.clone() + &(sep().to_string()) + file.rel_path.as_str();
         match Path::new(&cache_str).try_exists() {
             Ok(res) => {
                 if res {
@@ -232,6 +235,7 @@ pub async fn download_files(
                     // assemble file from chunk(s)
                     let res = assemble_file(&cache_str, &proj_str).unwrap();
                     if !res {
+                        log::error!("error assembling file")
                         // failure
                         // how do we want to handle this? because we've already started copying files into project
                         // TODO
@@ -274,14 +278,7 @@ pub async fn download_files(
             .await;
         } else {
             // file.download == delete
-            let _ = sqlx::query(
-                "DELETE FROM file
-                WHERE pid = $1 AND filepath = $2",
-            )
-            .bind(pid.clone())
-            .bind(file.rel_path)
-            .execute(&*pool)
-            .await;
+            let _ = dal.delete_file_entry(pid, file.rel_path).await;
         }
     }
 
@@ -314,7 +311,7 @@ pub async fn download_with_client(
     };
 
     // temp path: cache + hash(.glassy?)
-    let path = dir.to_owned() + "\\" + &chunk_download.block_hash;
+    let path = dir.to_owned() + &(sep().to_string()) + &chunk_download.block_hash;
     println!("downloading to {}", path);
 
     // create cache folder if it doesnt exist
@@ -334,8 +331,7 @@ pub fn save_filechunkmapping(
     cache_dir: &String,
     download: &DownloadInformation,
 ) -> Result<bool, ()> {
-    // TODO linux support, create path the proper way
-    let abs_path = cache_dir.to_owned() + "\\" + &download.file_hash + "\\mapping.json";
+    let abs_path = cache_dir.to_owned() + &(sep().to_string()) + &download.file_hash + &(sep().to_string()) + "mapping.json";
     let path: &Path = std::path::Path::new(&abs_path);
     let prefix = path.parent().unwrap();
     fs::create_dir_all(prefix).unwrap();
@@ -359,39 +355,48 @@ pub fn assemble_file(cache_dir: &String, proj_path: &String) -> Result<bool, ()>
             Vec::<FileChunk>::new()
         }
     };
+    let file_path;
+    #[cfg(target_os = "windows")]
+    {
+        file_path = proj_path.to_string();
+    }
+    #[cfg(target_os = "linux")]
+    {
+        file_path = translate_filepath(proj_path, true);
+    }
 
     if mapping.len() == 1 {
         // nothing to do, just copy the file
-        let cache_path = cache_dir.to_owned() + "\\" + &mapping[0].block_hash;
-        let _ = fs::copy(cache_path, proj_path);
+        let cache_path = cache_dir.to_owned() + &(sep().to_string()) + &mapping[0].block_hash;
+        let _ = fs::copy(cache_path, file_path);
         return Ok(true);
     } else if mapping.len() == 0 {
-        println!("assemble file: empty mapping for {}", cache_dir);
+        log::error!("assemble file: empty mapping for {}", cache_dir);
         return Ok(false);
-    } else { // TODO this can be un-nested
-        // otherwise we need to assemble the file
-        let proj_file = match File::create(proj_path) {
-            Ok(file) => file,
+    }
+
+    // otherwise we need to assemble the file
+    let proj_file = match File::create(file_path) {
+        Ok(file) => file,
+        Err(err) => {
+            log::error!("error creating project file {}", err);
+            return Ok(false);
+        }
+    };
+    let mut writer = BufWriter::new(proj_file);
+    for chunk in mapping {
+        let cache_path = cache_dir.to_owned() + &(sep().to_string()) + &chunk.block_hash;
+        let chunk_data = match fs::read(cache_path.clone()) {
+            Ok(data) => data,
             Err(err) => {
-                println!("error creating project file {}", err);
+                log::error!("error reading chunk data from {}: {}", cache_path, err);
                 return Ok(false);
             }
         };
-        let mut writer = BufWriter::new(proj_file);
-        for chunk in mapping {
-            let cache_path = cache_dir.to_owned() + "\\" + &chunk.block_hash;
-            let chunk_data = match fs::read(cache_path.clone()) {
-                Ok(data) => data,
-                Err(err) => {
-                    println!("error reading chunk data from {}: {}", cache_path, err);
-                    return Ok(false);
-                }
-            };
-            let _ = writer.write_all(&chunk_data);
-        }
-
-        let _ = writer.flush();
+        let _ = writer.write_all(&chunk_data);
     }
+
+    let _ = writer.flush();
     Ok(true)
 }
 
@@ -427,7 +432,7 @@ pub fn verify_cache(hash_dir: &String) -> Result<bool, ()> {
 
     // check existence of chunks
     for chunk in mapping {
-        let cache_path = hash_dir.to_owned() + "\\" + &chunk.block_hash;
+        let cache_path = hash_dir.to_owned() + &(sep().to_string()) + &chunk.block_hash;
         match Path::new(&cache_path).try_exists() {
             Ok(result) => {
                 if !result {
@@ -445,7 +450,7 @@ pub fn verify_cache(hash_dir: &String) -> Result<bool, ()> {
 }
 
 fn read_mapping(hash_dir: &String) -> Result<Vec<FileChunk>, ()> {
-    let mapping_path = hash_dir.to_owned() + "\\mapping.json";
+    let mapping_path = hash_dir.to_owned() + &(sep().to_string()) + "mapping.json";
 
     let map_file = match File::open(&mapping_path) {
         Ok(file) => file,
@@ -468,11 +473,23 @@ fn read_mapping(hash_dir: &String) -> Result<Vec<FileChunk>, ()> {
 
 // assumes trash dir exists
 pub fn trash_file(proj_dir: &String, trash_dir: &String, hash: String) -> Result<bool, ()> {
-    let trash_path = trash_dir.to_owned() + "\\" + hash.as_str();
-    match fs::rename(proj_dir, trash_path) {
+    let trash_path;
+    let proj_path;
+    #[cfg(target_os = "windows")]
+    {
+        trash_path = trash_dir.to_owned() + &(sep().to_string()) + hash.as_str();
+        proj_path = proj_dir.to_owned();
+    }
+    #[cfg(target_os = "linux")]
+    {
+        trash_path = translate_filepath(&(trash_dir.to_owned() + &(sep().to_string()) + hash.as_str()), true);
+        proj_path = translate_filepath(proj_dir, true);
+    }
+
+    match fs::rename(proj_path, trash_path) {
         Ok(_) => Ok(true),
         Err(err) => {
-            println!("trash_file error: {}", err);
+            log::error!("trash_file error: {}", err);
             Ok(false)
         }
     }
@@ -480,10 +497,22 @@ pub fn trash_file(proj_dir: &String, trash_dir: &String, hash: String) -> Result
 
 // trash dir should be the path to the hash in the trash
 pub fn recover_file(trash_dir: &String, proj_dir: &String) -> Result<bool, ()> {
-    match fs::rename(trash_dir, proj_dir) {
+    let trash_path;
+    let proj_path;
+    #[cfg(target_os = "windows")]
+    {
+        trash_path = trash_dir.to_owned();
+        proj_path = proj_dir.to_owned();
+    }
+    #[cfg(target_os = "linux")]
+    {
+        trash_path = translate_filepath(&(trash_dir.to_owned()), true);
+        proj_path = translate_filepath(proj_dir, true);
+    }
+    match fs::rename(trash_path, proj_path) {
         Ok(_) => Ok(true),
         Err(err) => {
-            println!("recover_file error: {}", err);
+            log::error!("recover_file error: {}", err);
             Ok(false)
         }
     }
@@ -492,7 +521,8 @@ pub fn recover_file(trash_dir: &String, proj_dir: &String) -> Result<bool, ()> {
 #[tauri::command]
 pub async fn download_single_file(pid: i64, path: String, commit_id: i64, user_id: String, download_path: String, state_mutex: State<'_, Mutex<Pool<Sqlite>>>) -> Result<bool, ()> {
     let pool = state_mutex.lock().await;
-    let server_url = get_current_server(&pool).await.unwrap();
+    let dal = DataAccessLayer::new(&pool);
+    let server_url = dal.get_current_server().await.unwrap();
     let cache_dir = get_cache_dir(&pool).await.unwrap();
 
     // request download links from glassy server
@@ -536,7 +566,7 @@ pub async fn download_single_file(pid: i64, path: String, commit_id: i64, user_i
     };
 
     // if file is cached, assemble file to download path
-    let hash_dir = cache_dir.clone() + "\\" + download_info.file_hash.as_str();
+    let hash_dir = cache_dir.clone() + &(sep().to_string()) + download_info.file_hash.as_str();
     if verify_cache(&hash_dir).unwrap() {
         log::info!("hash exists in cache");
         let out = assemble_file(&hash_dir, &download_path).unwrap();
@@ -550,7 +580,7 @@ pub async fn download_single_file(pid: i64, path: String, commit_id: i64, user_i
                 log::warn!("couldn't save filechunk mapping for file hash {}", download_info.file_hash);
             }
         },
-        Err(err) => {
+        Err(_err) => {
             log::error!("encountered error when writing file chunk mapping for ifle hash {}", download_info.file_hash);
         }
     };
@@ -565,7 +595,7 @@ pub async fn download_single_file(pid: i64, path: String, commit_id: i64, user_i
             let cloned_error_flag = Arc::clone(&moved_error_flag);
             let client = &aws_client;
             // create cache_dir/file_hash directory
-            let filehash_dir = cloned_cache.clone() + "\\" + chunk_info.file_hash.as_str();
+            let filehash_dir = cloned_cache.clone() + &(sep().to_string()) + chunk_info.file_hash.as_str();
             async move {
                 let res = download_with_client(&filehash_dir, chunk_info, client).await;
                 let mut error = cloned_error_flag.lock().await;
@@ -588,7 +618,7 @@ pub async fn download_single_file(pid: i64, path: String, commit_id: i64, user_i
     }
 
     // verify the new downloaded chunks exist
-    let cache = cache_dir + "\\" + download_info.file_hash.as_str();
+    let cache = cache_dir + &(sep().to_string()) + download_info.file_hash.as_str();
     let res = verify_cache(&cache).unwrap();
     if !res {
         log::error!("verifying cache failed: {}", download_info.file_hash);
@@ -619,7 +649,7 @@ pub fn compare_directory_deep(path_a: &String, path_b: &String) -> Ordering {
 }
 
 fn count_separators(path: &String) -> usize {
-    let out = path.chars().filter(|c| *c == '\\').count();
+    let out = path.chars().filter(|c| *c == sep()).count();
     out
 }
 
@@ -635,8 +665,8 @@ pub fn get_directories(deleted: &Vec<DownloadRequestMessage>) -> HashSet<String>
         let components: Vec<String> = parent.components().map(|comp| comp.as_os_str().to_str().unwrap().to_string()).collect();
         let mut working: String = "".to_string();
         for component in components {
-            working = working + "\\" + &component;
-            println!("adding {} to list of directories to try to delete", working);
+            working = working + &(sep().to_string()) + &component;
+            trace!("adding {} to list of directories to try to delete", working);
             output.insert(working.clone());
         }
     }

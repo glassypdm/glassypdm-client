@@ -34,8 +34,8 @@ export function FileRevisionTable<TData, TValue>({
   })
 
   return (
-    <div>
-        <ScrollArea className="rounded-md border h-[290px] w-full">
+    <div className="flex flex-col max-h-[60vh]">
+        <ScrollArea className="rounded-md border h-full w-full">
         <Table>
             <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (

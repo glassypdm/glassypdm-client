@@ -1,12 +1,25 @@
 use serde::{Deserialize, Serialize};
 use thiserror;
 
-#[derive(Serialize, Deserialize, PartialEq)]
+#[derive(Serialize, Deserialize, PartialEq, Clone, Copy)]
 pub enum ChangeType {
     NoChange = 0,
     Create,
     Update,
     Delete,
+}
+
+impl PartialEq<ChangeType> for u32 {
+    fn eq(&self, other: &ChangeType) -> bool {
+        *self == *other as u32
+    }
+}
+
+// Optionally, you might want the reverse comparison as well
+impl PartialEq<u32> for ChangeType {
+    fn eq(&self, other: &u32) -> bool {
+        *self as u32 == *other
+    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -87,4 +100,11 @@ pub struct DownloadRequest {
     pub path: String,
     pub commit_id: i64,
     pub user_id: String,
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct LocalProject {
+    pub pid: i32,
+    pub title: String,
+    pub team_name: String,
 }

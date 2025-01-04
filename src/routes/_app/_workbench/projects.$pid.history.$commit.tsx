@@ -8,6 +8,7 @@ import { FileRevisionTable } from '@/components/file/FileRevisionTable'
 import { columns } from '@/components/file/FileRevisionColumn'
 import { Undo2 } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import Loading from '@/components/loading'
 
 
 
@@ -70,7 +71,7 @@ function Commit() {
 
     if(isPending) {
       return (
-        <div>Loading...</div>
+        <Loading />
       )
     }
     if(isError) {

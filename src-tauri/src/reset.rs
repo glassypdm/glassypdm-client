@@ -2,11 +2,13 @@ use crate::download::{
     assemble_file, compare_directory_deep, download_with_client, get_directories, recover_file, save_filechunkmapping, trash_file, verify_cache
 };
 use crate::config::get_cache_setting;
+use crate::file::sep;
 use crate::sync::hash_dir;
 use crate::types::{DownloadRequest, DownloadRequestMessage, DownloadServerOutput, FileChunk};
 use crate::util::{
-    delete_cache, delete_trash, get_cache_dir, get_current_server, get_project_dir, get_trash_dir
+    delete_cache, delete_trash, get_cache_dir, get_trash_dir
 };
+use crate::dal::DataAccessLayer;
 use futures::{stream, StreamExt};
 use log::{info, warn};
 use reqwest::Client;
@@ -22,17 +24,18 @@ const CONCURRENT_AWS_REQUESTS: usize = 4;
 
 #[tauri::command]
 pub async fn reset_files(
-    pid: i64,
+    pid: i32,
     filepaths: Vec<String>,
     user: String,
     app_handle: AppHandle,
 ) -> Result<bool, ()> {
     let state_mutex = app_handle.state::<Mutex<Pool<Sqlite>>>();
     let pool = state_mutex.lock().await;
-    let project_dir = get_project_dir(pid.try_into().unwrap(), &pool)
+    let dal = DataAccessLayer::new(&pool);
+    let project_dir = dal.get_project_dir(pid)
         .await
         .unwrap();
-    let server_url = get_current_server(&pool).await.unwrap();
+    let server_url = dal.get_current_server().await.unwrap();
     let cache_dir = get_cache_dir(&pool).await.unwrap();
     let trash_dir = get_trash_dir(&pool).await.unwrap();
 
@@ -58,7 +61,7 @@ pub async fn reset_files(
                 let base_hash: String = row.get::<String, &str>("base_hash");
                 let curr_hash: String = row.get::<String, &str>("curr_hash");
                 if commit >= 0 {
-                    let cache_path = cache_dir.clone() + "\\" + base_hash.as_str();
+                    let cache_path = cache_dir.clone() + &(sep().to_string()) + base_hash.as_str();
                     to_copy.push(DownloadRequestMessage {
                         hash: base_hash,
                         rel_path: file.clone(),
@@ -69,7 +72,7 @@ pub async fn reset_files(
                     // if file isnt in cache, we need to  download it
                     if !verify_cache(&cache_path).unwrap() {
                         to_download.push(DownloadRequest {
-                            project_id: pid,
+                            project_id: pid.into(),
                             path: file,
                             commit_id: commit,
                             user_id: user.clone(),
@@ -174,7 +177,7 @@ pub async fn reset_files(
             let handle = &app_handle;
             let client = &aws_client;
             // create cache_dir/file_hash directory
-            let filehash_dir = cache_dir.clone() + "\\" + chunk_info.file_hash.as_str();
+            let filehash_dir = cache_dir.clone() + &(sep().to_string()) + chunk_info.file_hash.as_str();
             async move {
                 let res = download_with_client(&filehash_dir, chunk_info, client).await;
                 let mut error = cloned_error_flag.lock().await;
@@ -198,7 +201,7 @@ pub async fn reset_files(
 
     // verify the chunks exist
     for file in to_copy.clone() {
-        let cache_str = cache_dir.clone() + "\\" + file.hash.as_str();
+        let cache_str = cache_dir.clone() + &(sep().to_string()) + file.hash.as_str();
         let res = verify_cache(&cache_str).unwrap();
         if !res {
             println!("verifying cache failed: {}", file.hash);
@@ -212,7 +215,7 @@ pub async fn reset_files(
     let mut deleted = Vec::<DownloadRequestMessage>::new();
     let mut error_flag = false;
     for file in to_delete.clone() {
-        let proj_path = project_dir.clone() + "\\" + file.rel_path.as_str();
+        let proj_path = project_dir.clone() + &(sep().to_string()) + file.rel_path.as_str();
         if !trash_file(&proj_path, &trash_dir, file.clone().hash).unwrap() {
             error_flag = true;
             break;
@@ -224,7 +227,7 @@ pub async fn reset_files(
     // if we failed to delete a file, undo delete and return early
     if error_flag {
         for file in deleted {
-            let proj_dir = project_dir.clone() + "\\" + file.rel_path.as_str();
+            let proj_dir = project_dir.clone() + &(sep().to_string()) + file.rel_path.as_str();
             let _ = recover_file(&trash_dir, &proj_dir).unwrap();
         }
         return Ok(false);
@@ -251,17 +254,23 @@ pub async fn reset_files(
     let mut oops = 0;
     for file in to_copy {
         // find the hash in the cache and copy to rel path
-        let cache_str = cache_dir.clone() + "\\" + file.hash.as_str();
-        let proj_str = project_dir.clone() + "\\" + file.rel_path.as_str();
+        let cache_str = cache_dir.clone() + &(sep().to_string()) + file.hash.as_str();
+        let proj_str = project_dir.clone() + &(sep().to_string()) + file.rel_path.as_str();
         match Path::new(&cache_str).try_exists() {
             Ok(res) => {
                 if res {
                     let prefix = Path::new(&proj_str).parent().unwrap();
-                    fs::create_dir_all(prefix).unwrap();
+                    match fs::create_dir_all(prefix) {
+                        Ok(_) => {},
+                        Err(err) => {
+                            log::error!("reset: couldn't create directory {}: {}", prefix.display(), err);
+                        }
+                    };
                     // assemble file from chunk(s)
                     let res = assemble_file(&cache_str, &proj_str).unwrap();
                     let _ = app_handle.clone().emit("fileAction", 4);
                     if !res {
+                        log::error!("error assembling file")
                         // failure
                         // how do we want to handle this? because we've already started copying files into project
                         // TODO

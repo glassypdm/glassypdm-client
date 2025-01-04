@@ -140,7 +140,7 @@ function DownloadPage() {
       <div className='py-4 space-y-2'>
         <Progress value={progress}/>
       </div>
-      <FileTable columns={columns} data={downloads} selection={selection} setSelection={setSelection}/>
+      <FileTable columns={columns} data={downloads} selection={selection} setSelection={setSelection} includeFilter={false} height='h-[65vh]'/>
       </div>
   )
 }
