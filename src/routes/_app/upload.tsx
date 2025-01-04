@@ -79,6 +79,8 @@ function UploadPage() {
     for (let i = 0; i < Object.keys(selection).length; i++) {
       const key: number = parseInt(Object.keys(selection)[i]);
       // TODO type is wonky
+      // don't add to upload list if we are using filter and
+      // the file include the filter as a substring
       if(filterActive && !uploads[key].filepath.includes((filter[0] as any).value)) {
         continue;
       }
