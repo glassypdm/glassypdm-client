@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.7.2](https://github.com/glassypdm/glassypdm-client/compare/v0.7.1...v0.7.2) (2025-01-04)
+
+
+### Bug Fixes
+
+* break long filepaths in download/upload pages ([c01b0b9](https://github.com/glassypdm/glassypdm-client/commit/c01b0b910b5ceff29527d2332c986ba36fcde59b))
+
+
+### Miscellaneous
+
+* add dev-only tooling for debug purposes ([764cbe6](https://github.com/glassypdm/glassypdm-client/commit/764cbe649269436741e5a85f5b9a7e4d959e2b78))
+* add link for wiki website ([5347ebb](https://github.com/glassypdm/glassypdm-client/commit/5347ebbd3a4f9a69b97eb51e76db38bcebbc5f7b))
+* added file filter to improve selecting files for upload ([701ce44](https://github.com/glassypdm/glassypdm-client/commit/701ce447c2b4309a144a30f2dc051bf5650dd18f))
+* hide dev settings on release build ([86d2060](https://github.com/glassypdm/glassypdm-client/commit/86d2060ee1c59a852010818c7c646595e4ca87d2))
+* improve pagination ui in project history page ([feb0be3](https://github.com/glassypdm/glassypdm-client/commit/feb0be38cf1f97fe5bad51d1542fbd7e0c50a924))
+* improve UI when app is fullscreen ([34500ac](https://github.com/glassypdm/glassypdm-client/commit/34500ac6f04db8729085d3851492e2506ce2f6b2))
+* project history entries are more compact now ([8699922](https://github.com/glassypdm/glassypdm-client/commit/869992239c05d7183f0fc005645b23f5c94a7d43))
+* redesign loading data symbol ([dfc8b9c](https://github.com/glassypdm/glassypdm-client/commit/dfc8b9c1f615034d8ba6d185c4262dc57a3aa7c3))
+* remove unused project buttons ([b2c2456](https://github.com/glassypdm/glassypdm-client/commit/b2c245609c5459c4ee3e215af7b252030fdf8e94))
+* upload file table height adjusted ([5c6fc09](https://github.com/glassypdm/glassypdm-client/commit/5c6fc095ded01f16ef63a7614600b847383c2052))
+
 ## [0.7.1](https://github.com/glassypdm/glassypdm-client/compare/v0.7.0...v0.7.1) (2024-12-08)
 
 
