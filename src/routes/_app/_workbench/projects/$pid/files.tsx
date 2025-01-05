@@ -42,19 +42,26 @@ function Files() {
     console.log(end - start)
     console.log(oop)
   }
-  const parentDirectory = directory.substring(0, directory.lastIndexOf('\\'))
+
+
+  let parentDirectory = "";
+  const components = directory.split('\\');
+  if(components.length > 2) {
+    for(let i = 0; i < components.length - 2; i++) {
+      parentDirectory += components[i] + '\\';
+    }
+  }
   return (
     <div className="flex flex-col">
-      {/*
+      <div>current directory: {directory}</div>
+      <div>parent directory: {parentDirectory}</div>
       <div>breadcrumb todo</div>
-            <Link from={Route.fullPath} search={{directory: parentDirectory}} className='underline'>..</Link>
+            { directory != "" ? <Link from={Route.fullPath} search={{directory: parentDirectory}} className='underline'>..</Link> : <></> }
             { data.folders.map((folder) => {
         return (
             <Link from={Route.fullPath} search={{directory: directory + folder}} className='underline' key={folder}>{folder}</Link>
         )
       })}
-      */}
-      Coming soon
     </div>
   )
 }
