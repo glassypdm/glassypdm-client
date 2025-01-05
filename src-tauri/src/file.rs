@@ -26,6 +26,7 @@ pub async fn get_files(project_id: i32, directory: String, state_mutex: State<'_
     // get files that have the path in the project
     // only return files and folders that are in the directory
     // TODO move to dal
+    // FIXME ignore in_fs = 0, base_hash == '', tracked_changetype == 3
     let all_files: Vec<FileSummary> = match sqlx::query_as("SELECT filepath, tracked_changetype as change_type, in_fs FROM file WHERE pid = $1 ORDER BY filepath")
         .bind(project_id).fetch_all(&*pool)
         .await {
