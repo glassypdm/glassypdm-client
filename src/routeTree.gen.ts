@@ -22,19 +22,19 @@ import { Route as AppWorkbenchImport } from './routes/_app/_workbench'
 import { Route as AppWorkbenchSettingsImport } from './routes/_app/_workbench/settings'
 import { Route as AppWorkbenchDashboardImport } from './routes/_app/_workbench/dashboard'
 import { Route as AppWorkbenchTeamsIndexImport } from './routes/_app/_workbench/teams.index'
-import { Route as AppWorkbenchProjectsIndexImport } from './routes/_app/_workbench/projects.index'
+import { Route as AppWorkbenchProjectsIndexImport } from './routes/_app/_workbench/projects/index'
 import { Route as AppWorkbenchTeamsTeamidImport } from './routes/_app/_workbench/teams.$teamid'
-import { Route as AppWorkbenchProjectsPidImport } from './routes/_app/_workbench/projects.$pid'
+import { Route as AppWorkbenchProjectsPidImport } from './routes/_app/_workbench/projects/$pid'
 import { Route as AppWorkbenchTeamsTeamidPgroupsImport } from './routes/_app/_workbench/teams.$teamid.pgroups'
 import { Route as AppWorkbenchTeamsTeamidMembersImport } from './routes/_app/_workbench/teams.$teamid.members'
 import { Route as AppWorkbenchTeamsTeamidManageImport } from './routes/_app/_workbench/teams.$teamid.manage'
-import { Route as AppWorkbenchProjectsPidSyncImport } from './routes/_app/_workbench/projects.$pid.sync'
-import { Route as AppWorkbenchProjectsPidSettingsImport } from './routes/_app/_workbench/projects.$pid.settings'
-import { Route as AppWorkbenchProjectsPidFilesImport } from './routes/_app/_workbench/projects.$pid.files'
+import { Route as AppWorkbenchProjectsPidSyncImport } from './routes/_app/_workbench/projects/$pid/sync'
+import { Route as AppWorkbenchProjectsPidSettingsImport } from './routes/_app/_workbench/projects/$pid/settings'
+import { Route as AppWorkbenchProjectsPidFilesImport } from './routes/_app/_workbench/projects/$pid/files'
 import { Route as AppWorkbenchTeamsTeamidOrdersIndexImport } from './routes/_app/_workbench/teams.$teamid.orders.index'
-import { Route as AppWorkbenchProjectsPidHistoryIndexImport } from './routes/_app/_workbench/projects.$pid.history.index'
+import { Route as AppWorkbenchProjectsPidHistoryIndexImport } from './routes/_app/_workbench/projects/$pid/history.index'
 import { Route as AppWorkbenchTeamsTeamidOrdersOptionsImport } from './routes/_app/_workbench/teams.$teamid.orders.options'
-import { Route as AppWorkbenchProjectsPidHistoryCommitImport } from './routes/_app/_workbench/projects.$pid.history.$commit'
+import { Route as AppWorkbenchProjectsPidHistoryCommitImport } from './routes/_app/_workbench/projects/$pid/history.$commit'
 
 // Create/Update Routes
 
@@ -697,7 +697,7 @@ export const routeTree = rootRoute
       "parent": "/_app/_workbench"
     },
     "/_app/_workbench/projects/$pid": {
-      "filePath": "_app/_workbench/projects.$pid.tsx",
+      "filePath": "_app/_workbench/projects/$pid.tsx",
       "parent": "/_app/_workbench",
       "children": [
         "/_app/_workbench/projects/$pid/files",
@@ -719,7 +719,7 @@ export const routeTree = rootRoute
       ]
     },
     "/_app/_workbench/projects/": {
-      "filePath": "_app/_workbench/projects.index.tsx",
+      "filePath": "_app/_workbench/projects/index.tsx",
       "parent": "/_app/_workbench"
     },
     "/_app/_workbench/teams/": {
@@ -727,15 +727,15 @@ export const routeTree = rootRoute
       "parent": "/_app/_workbench"
     },
     "/_app/_workbench/projects/$pid/files": {
-      "filePath": "_app/_workbench/projects.$pid.files.tsx",
+      "filePath": "_app/_workbench/projects/$pid/files.tsx",
       "parent": "/_app/_workbench/projects/$pid"
     },
     "/_app/_workbench/projects/$pid/settings": {
-      "filePath": "_app/_workbench/projects.$pid.settings.tsx",
+      "filePath": "_app/_workbench/projects/$pid/settings.tsx",
       "parent": "/_app/_workbench/projects/$pid"
     },
     "/_app/_workbench/projects/$pid/sync": {
-      "filePath": "_app/_workbench/projects.$pid.sync.tsx",
+      "filePath": "_app/_workbench/projects/$pid/sync.tsx",
       "parent": "/_app/_workbench/projects/$pid"
     },
     "/_app/_workbench/teams/$teamid/manage": {
@@ -751,7 +751,7 @@ export const routeTree = rootRoute
       "parent": "/_app/_workbench/teams/$teamid"
     },
     "/_app/_workbench/projects/$pid/history/$commit": {
-      "filePath": "_app/_workbench/projects.$pid.history.$commit.tsx",
+      "filePath": "_app/_workbench/projects/$pid/history.$commit.tsx",
       "parent": "/_app/_workbench/projects/$pid"
     },
     "/_app/_workbench/teams/$teamid/orders/options": {
@@ -759,7 +759,7 @@ export const routeTree = rootRoute
       "parent": "/_app/_workbench/teams/$teamid"
     },
     "/_app/_workbench/projects/$pid/history/": {
-      "filePath": "_app/_workbench/projects.$pid.history.index.tsx",
+      "filePath": "_app/_workbench/projects/$pid/history.index.tsx",
       "parent": "/_app/_workbench/projects/$pid"
     },
     "/_app/_workbench/teams/$teamid/orders/": {

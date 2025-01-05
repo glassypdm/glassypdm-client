@@ -1,7 +1,7 @@
-import Loading from "@/components/loading";
-import Refetching from "@/components/refetching";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import Loading from '@/components/loading'
+import Refetching from '@/components/refetching'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
@@ -9,7 +9,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from '@/components/ui/card'
 import {
   Pagination,
   PaginationContent,
@@ -17,63 +17,68 @@ import {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-} from "@/components/ui/pagination";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { useAuth } from "@clerk/clerk-react";
-import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { invoke } from "@tauri-apps/api/core";
-import { ChevronLeft, Loader2 } from "lucide-react";
+} from '@/components/ui/pagination'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Skeleton } from '@/components/ui/skeleton'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
+import { useAuth } from '@clerk/clerk-react'
+import { useQuery } from '@tanstack/react-query'
+import { createFileRoute, Link } from '@tanstack/react-router'
+import { invoke } from '@tauri-apps/api/core'
+import { ChevronLeft, Loader2 } from 'lucide-react'
 
 export type HistorySearch = {
-  offset: number;
-};
+  offset: number
+}
 
-export const Route = createFileRoute("/_app/_workbench/projects/$pid/history/")(
+export const Route = createFileRoute('/_app/_workbench/projects/$pid/history/')(
   {
     validateSearch: (search: Record<string, unknown>): HistorySearch => {
       // validate and parse the search params into a typed state
       return {
         offset: Number(search?.offset ?? 0),
-      };
+      }
     },
     component: () => <History />,
     loader: async ({ params }) => {
-      const url = await invoke("get_server_url");
+      const url = await invoke('get_server_url')
       return {
         url: url,
         pid: params.pid,
-      };
+      }
     },
-  }
-);
+  },
+)
 
 interface CommitDescription {
-  commit_id: number;
-  commit_number: number;
-  num_files: number;
-  author: string;
-  comment: string;
-  timestamp: number;
+  commit_id: number
+  commit_number: number
+  num_files: number
+  author: string
+  comment: string
+  timestamp: number
 }
 
 interface Data {
-  num_commits: number;
-  commits: CommitDescription[];
+  num_commits: number
+  commits: CommitDescription[]
 }
 
-const DISABLED = "pointer-events-none opacity-50";
+const DISABLED = 'pointer-events-none opacity-50'
 interface DescriptionCardProps {
-  pid: string;
-  commitDesc: CommitDescription;
-  offset: number;
+  pid: string
+  commitDesc: CommitDescription
+  offset: number
 }
 function DescriptionCard(props: DescriptionCardProps) {
-  const commitdesc = props.commitDesc;
-  const d = new Date(0);
-  d.setUTCSeconds(commitdesc.timestamp);
+  const commitdesc = props.commitDesc
+  const d = new Date(0)
+  d.setUTCSeconds(commitdesc.timestamp)
   return (
     <Card>
       <div className="flex flex-row items-center">
@@ -82,7 +87,7 @@ function DescriptionCard(props: DescriptionCardProps) {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger>
-                <Badge variant={'outline'}>v{commitdesc.commit_number}</Badge>
+                  <Badge variant={'outline'}>v{commitdesc.commit_number}</Badge>
                 </TooltipTrigger>
                 <TooltipContent>
                   <div>Project Update {commitdesc.commit_number}</div>
@@ -90,7 +95,7 @@ function DescriptionCard(props: DescriptionCardProps) {
               </Tooltip>
             </TooltipProvider>
             <div>
-            {commitdesc.author} made {commitdesc.num_files} changes
+              {commitdesc.author} made {commitdesc.num_files} changes
             </div>
           </CardTitle>
           <CardDescription className="w-[400px]">
@@ -116,50 +121,48 @@ function DescriptionCard(props: DescriptionCardProps) {
         <CardDescription>{d.toLocaleString()}</CardDescription>
       </CardFooter>
     </Card>
-  );
+  )
 }
 
 function History() {
-  const { getToken } = useAuth();
-  const { url, pid } = Route.useLoaderData();
-  const { offset } = Route.useSearch();
+  const { getToken } = useAuth()
+  const { url, pid } = Route.useLoaderData()
+  const { offset } = Route.useSearch()
   const { isPending, isError, data, error, isRefetching } = useQuery({
-    queryKey: ["history", pid, offset],
+    queryKey: ['history', pid, offset],
     queryFn: async () => {
-      console.log(offset);
-      console.log("fetching...");
+      console.log(offset)
+      console.log('fetching...')
       const endpoint =
         (url as string) +
-        "/commit/select/by-project/" +
+        '/commit/select/by-project/' +
         pid +
-        "?offset=" +
-        offset;
+        '?offset=' +
+        offset
       const response = await fetch(endpoint, {
         headers: { Authorization: `Bearer ${await getToken()}` },
-        method: "GET",
-        mode: "cors",
-      });
+        method: 'GET',
+        mode: 'cors',
+      })
 
-      return response.json();
+      return response.json()
     },
-  });
+  })
 
-  let history = <div></div>;
+  let history = <div></div>
   if (isPending) {
-    history = <Loading />;
+    history = <Loading />
   } else if (isError) {
-    console.log(error);
+    console.log(error)
     return (
       <div>
         An error occurred while fetching data, check your Internet connection
       </div>
-    );
+    )
   } else {
-    console.log(data);
-    if (data.response != "success") {
-      return (
-        <div>An error occured, open an issue on the GitHub repository</div>
-      );
+    console.log(data)
+    if (data.response != 'success') {
+      return <div>An error occured, open an issue on the GitHub repository</div>
     }
 
     history = (
@@ -173,51 +176,51 @@ function History() {
                 pid={pid}
                 offset={offset}
               />
-            );
+            )
           })}
         </div>
       </ScrollArea>
-    );
+    )
   }
 
-  let pagination = [];
-  const COMMITS_PER_PAGE = 8; // this number is determined by server
+  let pagination = []
+  const COMMITS_PER_PAGE = 8 // this number is determined by server
   if (!isPending && !isError) {
-    let idx = offset - 3 * COMMITS_PER_PAGE;
-    if(data.body.num_commits - offset < 2 * COMMITS_PER_PAGE) {
-      idx = offset - 4 * COMMITS_PER_PAGE;
+    let idx = offset - 3 * COMMITS_PER_PAGE
+    if (data.body.num_commits - offset < 2 * COMMITS_PER_PAGE) {
+      idx = offset - 4 * COMMITS_PER_PAGE
     }
 
-    while ( pagination.length < 5) {
-      idx += COMMITS_PER_PAGE;
+    while (pagination.length < 5) {
+      idx += COMMITS_PER_PAGE
       if (idx < 0) {
-        continue;
+        continue
       }
-      if (idx > data.body.num_commits){
-        break;
+      if (idx > data.body.num_commits) {
+        break
       }
 
-      pagination.push(idx);
+      pagination.push(idx)
     }
   }
   console.log(pagination)
 
   return (
     <div className="flex flex-col items-center">
-      {isRefetching ? (
-        <Refetching />
-      ) : (
-        <></>
-      )}
+      {isRefetching ? <Refetching /> : <></>}
       {history}
       <Pagination className="pt-2">
         <PaginationContent>
           <PaginationItem
-            className={offset - COMMITS_PER_PAGE < 0 || isPending ? DISABLED : ""}
+            className={
+              offset - COMMITS_PER_PAGE < 0 || isPending ? DISABLED : ''
+            }
           >
             <PaginationPrevious
               from={Route.fullPath}
-              search={(prev: any) => ({ offset: Number(prev.offset ?? 0) - COMMITS_PER_PAGE })}
+              search={(prev: any) => ({
+                offset: Number(prev.offset ?? 0) - COMMITS_PER_PAGE,
+              })}
               params={{ pid: pid }}
             ></PaginationPrevious>
           </PaginationItem>
@@ -241,17 +244,21 @@ function History() {
           )}
           <PaginationItem
             className={
-              isPending || offset + COMMITS_PER_PAGE > data.body.num_commits ? DISABLED : ""
+              isPending || offset + COMMITS_PER_PAGE > data.body.num_commits
+                ? DISABLED
+                : ''
             }
           >
             <PaginationNext
               from={Route.fullPath}
-              search={(prev: any) => ({ offset: Number(prev.offset ?? 0) + COMMITS_PER_PAGE })}
+              search={(prev: any) => ({
+                offset: Number(prev.offset ?? 0) + COMMITS_PER_PAGE,
+              })}
               params={{ pid: pid }}
             ></PaginationNext>
           </PaginationItem>
         </PaginationContent>
       </Pagination>
     </div>
-  );
+  )
 }
