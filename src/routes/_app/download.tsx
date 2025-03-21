@@ -181,7 +181,7 @@ function DownloadPage() {
         includeFilter={true}
         filter={filter}
         setFilter={setFilter}
-        height="h-[65vh]"
+        height="h-[56vh]"
       />
     </div>
   );
