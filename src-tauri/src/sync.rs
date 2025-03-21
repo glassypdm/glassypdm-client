@@ -1,11 +1,13 @@
 use crate::{
     file::translate_filepath, types::RemoteFile, util::open_directory, dal::DataAccessLayer
 };
+use bincode::config;
 use merkle_hash::{bytes_to_hex, Algorithm, MerkleTree};
 use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Row, Sqlite};
+use std::io::Write;
 use std::path::PathBuf;
-use std::fs;
+use std::fs::{self, File};
 use tauri::State;
 use tokio::sync::Mutex;
 
@@ -16,6 +18,9 @@ pub async fn hash_dir(pid: i32, dir_path: PathBuf, pool: &Pool<Sqlite>) {
 
     let _ = dal.reset_fs_state(pid).await;
 
+    let mut treepath = dir_path.clone();
+    treepath.push(".glassytree");
+
     let tree = MerkleTree::builder(dir_path.display().to_string())
         .algorithm(Algorithm::Blake3)
         .hash_names(false)
@@ -24,7 +29,7 @@ pub async fn hash_dir(pid: i32, dir_path: PathBuf, pool: &Pool<Sqlite>) {
 
     log::info!("merkle tree created");
 
-    for file in tree {
+    for file in tree.iter().cloned() {
         // store paths as 'windows' paths
         let rel_path;
         #[cfg(target_os = "windows")]
@@ -40,6 +45,13 @@ pub async fn hash_dir(pid: i32, dir_path: PathBuf, pool: &Pool<Sqlite>) {
         let filesize = metadata.len();
         // ignore folders
         if metadata.is_dir() {
+            continue;
+        }
+
+        // ignore tree file
+        // TODO unwrap ?? test this LOL
+        if rel_path == treepath.to_str().unwrap() {
+            println!("ignoring .glassytree");
             continue;
         }
 
@@ -63,6 +75,21 @@ pub async fn hash_dir(pid: i32, dir_path: PathBuf, pool: &Pool<Sqlite>) {
     log::info!("files parsed");
     let _ = dal.update_change_types(pid).await;
 
+
+
+    /* serde
+    let serialized = serde_json::to_string(&tree.root).unwrap();
+    let mut file = File::create(treepath).unwrap();
+    file.write_all(serialized.as_bytes());
+    */
+    let config = config::standard();
+    let serialized = bincode::encode_to_vec(&tree.root, config).unwrap();
+    //let mut file = File::create(treepath).unwrap();
+    //let _ = file.write_all(&serialized);
+    // TODO don't ignore the result and don't unwrap 
+    // TODO we'll need to overwrite tree file if it exists already
+
+
     log::info!("hashing directory complete");
 }
 
@@ -71,6 +98,7 @@ pub async fn hash_dir(pid: i32, dir_path: PathBuf, pool: &Pool<Sqlite>) {
 pub async fn sync_changes(
     pid: i32,
     remote: Vec<RemoteFile>,
+    latest_commit: i32,
     state_mutex: State<'_, Mutex<Pool<Sqlite>>>,
 ) -> Result<bool, ()> {
     log::info!("syncing changes for project {}", pid);
@@ -84,7 +112,13 @@ pub async fn sync_changes(
 
     // hash local files
     hash_dir(pid, project_dir.into(), &pool).await;
-
+    let tracked = dal.get_tracked_commit_for_project(pid).await.unwrap();
+    if tracked == latest_commit {
+        // skip updating remote files
+        log::info!("skipping updating remote files");
+        return Ok(true);
+    }
+    let _ = dal.set_tracked_commit_for_project(pid, latest_commit).await;
     log::info!("updating db with remote files...");
     // update table with remote files
     for file in remote {
@@ -93,7 +127,6 @@ pub async fn sync_changes(
         let _ = dal.insert_remote_file(file.path, pid, file.commitid, file.filehash, file.changetype, file.blocksize).await;
     }
     log::info!("remote files updated");
-    // TODO update last_synced in project table
     Ok(true)
 }
 

@@ -1,10 +1,13 @@
-use sqlx::{sqlite::SqliteQueryResult, Pool, Row, Sqlite};
+use crate::{
+    sync::FileChange,
+    types::{ChangeType, UpdatedFile},
+};
+use sqlx::{Pool, Row, Sqlite};
 use std::path::Path;
 use std::result::Result::Ok;
-use crate::{sync::FileChange, types::{ChangeType, UpdatedFile}};
 
 pub struct DataAccessLayer<'a> {
-    pub pool: &'a Pool<Sqlite>
+    pub pool: &'a Pool<Sqlite>,
 }
 
 impl<'a> DataAccessLayer<'a> {
@@ -16,7 +19,7 @@ impl<'a> DataAccessLayer<'a> {
     pub async fn get_current_server(&self) -> Result<String, ()> {
         let output = sqlx::query("SELECT CASE WHEN debug_active = 1 THEN debug_url ELSE url END as url FROM server WHERE active = 1")
             .fetch_one(self.pool).await;
-    
+
         match output {
             Ok(row) => Ok(row.get::<String, &str>("url")),
             Err(err) => {
@@ -31,7 +34,7 @@ impl<'a> DataAccessLayer<'a> {
         let output = sqlx::query("SELECT url FROM server WHERE active = 1")
             .fetch_one(self.pool)
             .await;
-    
+
         match output {
             Ok(row) => Ok(row.get::<String, &str>("url")),
             Err(err) => {
@@ -71,7 +74,11 @@ impl<'a> DataAccessLayer<'a> {
                 Ok(output.display().to_string())
             }
             Err(err) => {
-                log::error!("couldn't get the project directory for pid {}: {}", pid, err);
+                log::error!(
+                    "couldn't get the project directory for pid {}: {}",
+                    pid,
+                    err
+                );
                 Ok("".to_string())
             }
         }
@@ -85,7 +92,7 @@ impl<'a> DataAccessLayer<'a> {
         .bind(pid)
         .fetch_one(self.pool)
         .await;
-    
+
         match output {
             Ok(row) => {
                 let change = match row.get::<i32, &str>("change_type") {
@@ -94,19 +101,28 @@ impl<'a> DataAccessLayer<'a> {
                     3 => ChangeType::Delete,
                     _ => ChangeType::NoChange,
                 };
-                let in_fs = if row.get::<i32, &str>("in_fs") > 0 { true } else { false };
+                let in_fs = if row.get::<i32, &str>("in_fs") > 0 {
+                    true
+                } else {
+                    false
+                };
                 let owo: UpdatedFile = UpdatedFile {
                     path: path,
                     hash: row.get::<String, &str>("curr_hash").to_string(),
                     size: row.get::<i64, &str>("size"),
                     change: change,
-                    in_fs: in_fs
+                    in_fs: in_fs,
                 };
-    
+
                 Ok(owo)
             }
             Err(err) => {
-                log::error!("couldn't get the file information for {} in project {}: {}", path, pid, err);
+                log::error!(
+                    "couldn't get the file information for {} in project {}: {}",
+                    path,
+                    pid,
+                    err
+                );
                 Err(())
             }
         }
@@ -122,7 +138,7 @@ impl<'a> DataAccessLayer<'a> {
         .bind(path)
         .fetch_one(self.pool)
         .await;
-    
+
         match result {
             Ok(row) => Ok(row.get::<String, &str>("base_hash")),
             Err(err) => {
@@ -131,10 +147,10 @@ impl<'a> DataAccessLayer<'a> {
             }
         }
     }
-    
+
     // TODO necessary to have in dal?
     pub async fn update_downloaded_file_entry(&self, pid: i32, path: String) -> Result<bool, ()> {
-            let _ = sqlx::query(
+        let _ = sqlx::query(
             "
             UPDATE file SET
             base_hash = tracked_hash,
@@ -156,13 +172,12 @@ impl<'a> DataAccessLayer<'a> {
     pub async fn update_cache_setting(&self, new_cache: bool) -> Result<bool, ()> {
         let url = self.get_active_server().await.unwrap();
         match sqlx::query("UPDATE server SET cache_setting = $1 WHERE url = $2")
-        .bind(if new_cache { 1 } else { 0 })
-        .bind(url)
-        .execute(self.pool)
-        .await {
-            Ok(_o) => {
-                Ok(true)
-            },
+            .bind(if new_cache { 1 } else { 0 })
+            .bind(url)
+            .execute(self.pool)
+            .await
+        {
+            Ok(_o) => Ok(true),
             Err(err) => {
                 log::error!("could not set cache setting due to db error: {}", err);
                 Ok(false)
@@ -175,15 +190,16 @@ impl<'a> DataAccessLayer<'a> {
         match sqlx::query("SELECT cache_setting FROM server WHERE url = $1")
             .bind(url)
             .fetch_one(self.pool)
-            .await {
-                Ok(row) => {
-                    let setting = row.get::<u32, &str>("cache_setting");
-                    Ok(if setting == 1 { true } else { false })
-                },
-                Err(err) => {
-                    log::error!("could not retrieve cache setting due to db error: {}", err);
-                    Ok(false)
-                }
+            .await
+        {
+            Ok(row) => {
+                let setting = row.get::<u32, &str>("cache_setting");
+                Ok(if setting == 1 { true } else { false })
+            }
+            Err(err) => {
+                log::error!("could not retrieve cache setting due to db error: {}", err);
+                Ok(false)
+            }
         }
     }
 
@@ -196,9 +212,7 @@ impl<'a> DataAccessLayer<'a> {
     }
 
     pub async fn clear_file_table(&self) -> Result<(), ()> {
-        let _ = sqlx::query("DELETE from file")
-            .execute(self.pool)
-            .await;
+        let _ = sqlx::query("DELETE from file").execute(self.pool).await;
         Ok(())
     }
 
@@ -210,19 +224,26 @@ impl<'a> DataAccessLayer<'a> {
         Ok(())
     }
 
-    pub async fn clear_file_table_for_project_after_commit(&self, pid: i32, commit_id: i32) -> Result<Vec<String>, ()> {
-        let results: Vec<String> = sqlx::query_scalar("DELETE from file WHERE pid = $1 AND commit_id > $2 RETURNING filepath")
-            .bind(pid)
-            .bind(commit_id)
-            .fetch_all(self.pool)
-            .await.unwrap();
+    pub async fn clear_file_table_for_project_after_commit(
+        &self,
+        pid: i32,
+        commit_id: i32,
+    ) -> Result<Vec<String>, ()> {
+        let results: Vec<String> = sqlx::query_scalar(
+            "DELETE from file WHERE pid = $1 AND commit_id > $2 RETURNING filepath",
+        )
+        .bind(pid)
+        .bind(commit_id)
+        .fetch_all(self.pool)
+        .await
+        .unwrap();
         Ok(results)
     }
 
     pub async fn get_server_name(&self) -> Result<String, ()> {
         let output = sqlx::query("SELECT name FROM server WHERE active = 1")
-        .fetch_one(self.pool)
-        .await;
+            .fetch_one(self.pool)
+            .await;
 
         match output {
             Ok(row) => Ok(row.get::<String, &str>("name")),
@@ -233,7 +254,13 @@ impl<'a> DataAccessLayer<'a> {
         }
     }
 
-    pub async fn add_server(&self, url: String, clerk_pub_key: String, local_dir: String, name: String) -> Result<(), ()> {
+    pub async fn add_server(
+        &self,
+        url: String,
+        clerk_pub_key: String,
+        local_dir: String,
+        name: String,
+    ) -> Result<(), ()> {
         sqlx::query(
             "INSERT INTO server (url, clerk_publickey, local_dir, name, active, debug_url, debug_active) VALUES (?, ?, ?, ?, ?, ?, ?);"
         )
@@ -250,7 +277,13 @@ impl<'a> DataAccessLayer<'a> {
         Ok(())
     }
 
-    pub async fn add_project(&self, pid: i32, title: String, team_name: String, init_commit: i32) -> Result<(), ()> {
+    pub async fn add_project(
+        &self,
+        pid: i32,
+        title: String,
+        team_name: String,
+        init_commit: i32,
+    ) -> Result<(), ()> {
         let server = self.get_active_server().await.unwrap();
 
         let _output = sqlx::query("INSERT INTO project(pid, url, title, team_name, base_commitid, remote_title) VALUES (?, ?, ?, ?, ?, ?)
@@ -339,7 +372,15 @@ impl<'a> DataAccessLayer<'a> {
         }
     }
 
-    pub async fn insert_remote_file(&self, file_path: String, pid: i32, commit_id: i32, file_hash: String, changetype: i32, tracked_size: i32) ->Result<(), ()> {
+    pub async fn insert_remote_file(
+        &self,
+        file_path: String,
+        pid: i32,
+        commit_id: i32,
+        file_hash: String,
+        changetype: i32,
+        tracked_size: i32,
+    ) -> Result<(), ()> {
         let hehe = sqlx::query("INSERT INTO file(filepath, pid, tracked_commitid, tracked_hash, tracked_changetype, in_fs, change_type, tracked_size)
             VALUES($1, $2, $3, $4, $5, $6, $7, $8)
             ON CONFLICT(filepath, pid) DO UPDATE SET
@@ -357,9 +398,7 @@ impl<'a> DataAccessLayer<'a> {
         .bind(tracked_size)
         .execute(self.pool).await;
         match hehe {
-            Ok(_owo) => {
-                Ok(())
-            }
+            Ok(_owo) => Ok(()),
             Err(err) => {
                 println!("error! {}", err);
                 Err(())
@@ -367,7 +406,13 @@ impl<'a> DataAccessLayer<'a> {
         }
     }
 
-    pub async fn insert_local_file(&self, rel_path: String, pid: i32, hash: String, filesize: u64) -> Result<(), ()> {
+    pub async fn insert_local_file(
+        &self,
+        rel_path: String,
+        pid: i32,
+        hash: String,
+        filesize: u64,
+    ) -> Result<(), ()> {
         let hehe = sqlx::query("INSERT INTO file(filepath, pid, curr_hash, size) VALUES($1, $2, $3, $4)
         ON CONFLICT(filepath, pid) DO UPDATE SET curr_hash = excluded.curr_hash, size = excluded.size, in_fs = 1")
         .bind(rel_path)
@@ -376,7 +421,7 @@ impl<'a> DataAccessLayer<'a> {
         .bind(filesize as i64)
         .execute(self.pool).await;
         match hehe {
-            Ok(_owo) => { Ok(())}
+            Ok(_owo) => Ok(()),
             Err(err) => {
                 log::error!("encountered error while saving file to db: {}", err);
                 Err(())
@@ -386,7 +431,7 @@ impl<'a> DataAccessLayer<'a> {
 
     // TODO handle errors
     pub async fn update_change_types(&self, pid: i32) -> Result<(), ()> {
-            // no change - file was un-deleted (e.g., recovered from user's recycle bin)
+        // no change - file was un-deleted (e.g., recovered from user's recycle bin)
         let _ = sqlx::query(
             "UPDATE file SET change_type = 0 WHERE in_fs = 1 AND change_type = 3 AND pid = $1",
         )
@@ -421,13 +466,15 @@ impl<'a> DataAccessLayer<'a> {
         .await;
 
         // delete entries of files that are untracked and deleted
-        let _ = match sqlx::query("DELETE FROM file WHERE in_fs = 0 AND pid = $1 AND base_hash = ''")
-            .bind(pid)
-            .execute(self.pool)
-            .await {
+        let _ =
+            match sqlx::query("DELETE FROM file WHERE in_fs = 0 AND pid = $1 AND base_hash = ''")
+                .bind(pid)
+                .execute(self.pool)
+                .await
+            {
                 Ok(a) => {
-                    log::info!("rows affected: {}",a.rows_affected());
-                },
+                    log::info!("rows affected: {}", a.rows_affected());
+                }
                 Err(e) => {
                     log::error!("error deleting entries of untracked and deleted: {}", e)
                 }
@@ -437,9 +484,34 @@ impl<'a> DataAccessLayer<'a> {
 
     pub async fn reset_fs_state(&self, pid: i32) -> Result<(), ()> {
         let _ = sqlx::query("UPDATE file SET in_fs = 0 WHERE pid = $1")
-        .bind(pid)
-        .execute(self.pool)
-        .await;
+            .bind(pid)
+            .execute(self.pool)
+            .await;
+        Ok(())
+    }
+
+    pub async fn get_tracked_commit_for_project(&self, pid: i32) -> Result<i32, ()> {
+        let row = sqlx::query("SELECT tracked_commitid FROM project WHERE pid = $1 LIMIT 1")
+            .bind(pid)
+            .fetch_one(self.pool)
+            .await;
+        match row {
+            Ok(row) => {
+                Ok(row.get::<i32, &str>("tracked_commitid"))
+            },
+            Err(err) => {
+                log::error!("could not select tracked commit id from project");
+                Ok(-1)
+            }
+        }
+    }
+
+    pub async fn set_tracked_commit_for_project(&self, pid: i32, commit: i32) -> Result<(), ()> {
+        let _ = sqlx::query("UPDATE project SET tracked_commitid = $2 WHERE pid = $1")
+            .bind(pid)
+            .bind(commit)
+            .execute(self.pool)
+            .await;
         Ok(())
     }
 } // end impl DataAcessLayer<'_>
@@ -471,9 +543,15 @@ mod tests {
         let dal = DataAccessLayer::new(&pool);
 
         init_db(&pool).await;
-        let _ = dal.insert_local_file("path/to/file".to_string(), 0, "abcd".to_string(), 43).await;
-        let _ = dal.insert_local_file("path/to/file2".to_string(), 0, "sf".to_string(), 43).await;
-        let _ = dal.insert_local_file("abc/def/ghi".to_string(), 0, "xyz".to_string(), 43).await;
+        let _ = dal
+            .insert_local_file("path/to/file".to_string(), 0, "abcd".to_string(), 43)
+            .await;
+        let _ = dal
+            .insert_local_file("path/to/file2".to_string(), 0, "sf".to_string(), 43)
+            .await;
+        let _ = dal
+            .insert_local_file("abc/def/ghi".to_string(), 0, "xyz".to_string(), 43)
+            .await;
 
         // call function under test
         let _ = dal.update_change_types(0).await;
@@ -488,8 +566,7 @@ mod tests {
         assert_eq!(err_flag, false); // all of the inserted files are new, so they should all be changetype create
         assert_eq!(uploads.len(), 3); // 3 files were added in add_local_files
         assert_eq!(dal.get_downloads(0).await.unwrap().len(), 0); // no downloads
-        //assert_eq!(dal.get_conflicts(0).await.unwrap().len(), 0); // TODO
-
+                                                                  //assert_eq!(dal.get_conflicts(0).await.unwrap().len(), 0); // TODO
     }
 
     #[sqlx::test]
@@ -499,10 +576,46 @@ mod tests {
         let _ = dal.clear_file_table().await;
         let _ = dal.reset_fs_state(0).await;
         let _ = dal.update_change_types(0).await;
-        let _ = dal.insert_remote_file("path/to/file".to_string(), 0, 13, "abcd".to_string(), ChangeType::Create as i32, 132).await;
-        let _ = dal.insert_remote_file("path/to/file2".to_string(), 0, 6, "sss".to_string(), ChangeType::Create as i32, 132).await;
-        let _ = dal.insert_remote_file("abc/def/ghi".to_string(), 0, 14, "xyz".to_string(), ChangeType::Create as i32, 132).await;
-        let _ = dal.insert_remote_file("abc/def/hello".to_string(), 0, 12, "hh".to_string(), ChangeType::Delete as i32, 132).await;
+        let _ = dal
+            .insert_remote_file(
+                "path/to/file".to_string(),
+                0,
+                13,
+                "abcd".to_string(),
+                ChangeType::Create as i32,
+                132,
+            )
+            .await;
+        let _ = dal
+            .insert_remote_file(
+                "path/to/file2".to_string(),
+                0,
+                6,
+                "sss".to_string(),
+                ChangeType::Create as i32,
+                132,
+            )
+            .await;
+        let _ = dal
+            .insert_remote_file(
+                "abc/def/ghi".to_string(),
+                0,
+                14,
+                "xyz".to_string(),
+                ChangeType::Create as i32,
+                132,
+            )
+            .await;
+        let _ = dal
+            .insert_remote_file(
+                "abc/def/hello".to_string(),
+                0,
+                12,
+                "hh".to_string(),
+                ChangeType::Delete as i32,
+                132,
+            )
+            .await;
 
         // FIXME investigate this
         // this fails - update_change_types gets called before remote files are added to table
@@ -513,13 +626,12 @@ mod tests {
         let downloads = dal.get_downloads(0).await.unwrap();
         assert_eq!(downloads.len(), 3); // we don't need to download abc/def/hello
         assert_eq!(dal.get_uploads(0).await.unwrap().len(), 0); // no uploads
-        // TODO conflicts
+                                                                // TODO conflicts
     }
 
     /* test 3: sync with server with some local files, test different changetypes and such */
 
     /* test 4: something with conflicts */
-
 
     //////////////////////
     // helper functions //
@@ -530,14 +642,26 @@ mod tests {
         let dal = DataAccessLayer::new(&pool);
 
         // create server entry
-        let _ = dal.add_server("url".to_string(), "key".to_string(), "owo/location".to_string(), "test server".to_string()).await;
+        let _ = dal
+            .add_server(
+                "url".to_string(),
+                "key".to_string(),
+                "owo/location".to_string(),
+                "test server".to_string(),
+            )
+            .await;
 
         let _ = dal.clear_file_table().await;
         let _ = dal.clear_project_table("url".to_string()).await;
         // create project entries
-        let _ = dal.add_project(0, "project name".to_string(), "team name".to_string(), 0).await;
-        let _ = dal.add_project(1, "project 2".to_string(), "team name".to_string(), 41).await;
-        let _ = dal.add_project(14, "another project".to_string(), "team 2".to_string(), 2).await;
+        let _ = dal
+            .add_project(0, "project name".to_string(), "team name".to_string(), 0)
+            .await;
+        let _ = dal
+            .add_project(1, "project 2".to_string(), "team name".to_string(), 41)
+            .await;
+        let _ = dal
+            .add_project(14, "another project".to_string(), "team 2".to_string(), 2)
+            .await;
     }
-
 }
