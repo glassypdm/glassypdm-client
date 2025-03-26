@@ -8,10 +8,19 @@ import { CirclePlus, Loader2 } from "lucide-react"
 import { Separator } from "../ui/separator"
 import { Badge } from "../ui/badge"
 import { Button } from "../ui/button"
+import PGroupBadge from "./PGroupBadge"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu"
 
 interface MemberPopoverProps {
     member: Member
     trigger?: any
+}
+
+function stringRoleToNumber(role: string) {
+    if(role == "Owner") return 3;
+    if(role == "Manager") return 2;
+    if(role == "Member") return 1;
+    return 0;
 }
 
 
@@ -62,31 +71,47 @@ function MemberPopover(props: MemberPopoverProps) {
         )
     }
 
+    // TODO actions
+    const promoteManager = <Button variant={'outline'}>Promote to Manager</Button>
+    const demoteManager = <Button variant={'outline'}>Demote to Member</Button>
+    const promoteOwner = <Button variant={'outline'}>Promote to Owner</Button>
+    const kickMember = <Button variant={'outline'} className="text-red-600">Kick Member</Button>
+
     // if fetching data
-    let content = <div>init</div>
+    let content = <div>no data available</div>
     if( isFetching|| !data || !data.body) {
         content =  <div className="flex flex-row items-center space-x-2"><Loader2 className="w-4 h-4 animate-spin" /><span>Loading...</span></div>
     }
     else {
         console.log(data)
-        // TODO the badge component here needs to be a new separate component
         let userGroups = (
             <div className="space-x-1 space-y-2">
                 { data.body.user_permission_groups ? <div className="space-x-1 space-y-2">{ data.body.user_permission_groups.map((group: any) => {
-                    return <Badge key={group.pgroupid}>{group.name}</Badge>
+                    return <PGroupBadge
+                                key={group.pgroupid}
+                                pgroup_id={group.pgroupid}
+                                pgroup_name={group.name}
+                                user={props.member.userid}
+                                can_remove={true}/>
                 })}</div> : <div></div> }
                 
                 { data.body.caller_role >= 2 ? <Badge variant={'outline'} className="hover:bg-secondary/80 cursor-pointer" onClick={addUserToPermissionGroup}>Add to permission group</Badge> : <></> }
             </div>
         )
+
+        let userManagement = <>
+            {data.body.caller_role == 3 ? promoteOwner : <></>}
+            {data.body.caller_role >= 2 && stringRoleToNumber(props.member.role) < 2 ? promoteManager : <></>}
+            {data.body.caller_role == 3 && stringRoleToNumber(props.member.role) == 2 ? demoteManager : <></>}
+            {data.body.caller_role >= 2 && (stringRoleToNumber(props.member.role) < 2 || data.body.caller_role == 3) ? kickMember : <></>}
+        </>;
+
         content = (
             <div className="flex flex-col space-y-2">
                 <div>{props.member.name}'s permission groups:</div>
                 {userGroups}
                 <Separator />
-                <div className="hover:bg-secondary/80 cursor-pointer rounded transition-all text-sm">Promote to Manager</div>
-                <Separator />
-                <div className="hover:bg-secondary/80 cursor-pointer rounded transition-all text-sm text-red-500">Kick Member</div>
+                { userId != props.member.userid ? userManagement : <></> }
             </div>
         )
     }

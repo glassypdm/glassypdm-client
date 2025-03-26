@@ -18,6 +18,7 @@ import {
 import { useState } from "react";
 import { Input } from "./input";
 import { Button } from "./button";
+import InviteMember from "../team/InviteMember";
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -40,6 +41,7 @@ export function DataTable<TData, TValue>({
     },
   });
 
+  // TODO move this entire function out of components/ui into components/team
   return (
     <div className="rounded-md border">
       <div className="flex items-center p-2 space-x-2">
@@ -51,7 +53,7 @@ export function DataTable<TData, TValue>({
           }
           className="max-w-sm"
         />
-        <Button variant={'outline'}>Invite Member</Button> {/** TODO this should be a dialog */}
+        <InviteMember />
       </div>
       <Table>
         <TableHeader>

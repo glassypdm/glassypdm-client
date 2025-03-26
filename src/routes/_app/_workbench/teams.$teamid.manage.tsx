@@ -43,7 +43,6 @@ function Manage() {
     const mutationPermission = useMutation({
         mutationFn: async (level: number) => {
           const endpoint = (url as string) + "/permission";
-          console.log("heh");
           return await fetch(endpoint, {
             headers: { Authorization: `Bearer ${await getToken()}` },
             method: "POST",
