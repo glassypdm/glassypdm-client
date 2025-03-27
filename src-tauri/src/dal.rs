@@ -496,9 +496,7 @@ impl<'a> DataAccessLayer<'a> {
             .fetch_one(self.pool)
             .await;
         match row {
-            Ok(row) => {
-                Ok(row.get::<i32, &str>("tracked_commitid"))
-            },
+            Ok(row) => Ok(row.get::<i32, &str>("tracked_commitid")),
             Err(err) => {
                 log::error!("could not select tracked commit id from project");
                 Ok(-1)
@@ -513,6 +511,33 @@ impl<'a> DataAccessLayer<'a> {
             .execute(self.pool)
             .await;
         Ok(())
+    }
+
+    /* note: sqlite/sqlx doesn't seem to support u64, so we store as i64 and fetch as i64 */
+    pub async fn set_last_synced_for_project(&self, pid: i32, timestamp: u64) -> Result<(), ()> {
+        let _ = sqlx::query("UPDATE project SET real_last_synced = $2 WHERE pid = $1")
+        .bind(pid)
+        .bind(timestamp as i64)
+        .execute(self.pool)
+        .await;
+    Ok(())
+    }
+
+    pub async fn get_last_synced_for_project(&self, pid: i32) -> Result<u64, ()> {
+        let row = sqlx::query("SELECT real_last_synced FROM project WHERE pid = $1 LIMIT 1")
+            .bind(pid)
+            .fetch_one(self.pool)
+            .await;
+        match row {
+            Ok(row) => {
+                let stored = row.get::<i64, &str>("real_last_synced") as u64;
+                Ok(stored)
+            },
+            Err(err) => {
+                log::error!("could not select real_last_synced from project");
+                Ok(0)
+            }
+        }
     }
 } // end impl DataAcessLayer<'_>
 
