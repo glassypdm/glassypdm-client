@@ -1,8 +1,11 @@
 use crate::{
     file::translate_filepath, types::RemoteFile, util::open_directory, dal::DataAccessLayer
 };
+use std::cmp::Ordering;
+use std::collections::BTreeSet;
+use std::collections::btree_set::IntoIter;
 use bincode::{config, Decode, Encode};
-use merkle_hash::{bytes_to_hex, Algorithm, MerkleNode, MerkleTree};
+use merkle_hash::{bytes_to_hex, Algorithm, MerkleItem, MerkleNode, MerkleNodeIntoIter, MerkleTree};
 use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Row, Sqlite};
 use std::io::Write;
@@ -17,6 +20,52 @@ struct CachedTree {
     tree: MerkleTree,
     timestamp: u64
 }
+
+// wrapper for custom BTreeSet difference behavior
+#[derive(Debug, Eq, PartialEq)]
+struct MerkleNodeWrapper {
+    node: MerkleNode,
+}
+
+impl Ord for MerkleNodeWrapper {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match self.node.cmp(&other.node) {
+            Ordering::Equal => {
+                // compare the hashes if paths are equal
+                self.node.item.hash.cmp(&other.node.item.hash)
+            },
+            Ordering::Less => Ordering::Less,
+            Ordering::Greater => Ordering::Greater,
+        }
+    }
+}
+
+impl PartialOrd for MerkleNodeWrapper {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+// Implement IntoIterator for MerkleNodeWrapper
+impl IntoIterator for MerkleNodeWrapper {
+    type Item = MerkleItem;
+    type IntoIter = MerkleNodeIntoIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.node.into_iter() // Delegate to MerkleNode's IntoIterator
+    }
+}
+
+// Implement IntoIterator for &MerkleNodeWrapper
+impl<'a> IntoIterator for &'a MerkleNodeWrapper {
+    type Item = MerkleItem;
+    type IntoIter = MerkleNodeIntoIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.node.clone().into_iter() // Clone the inner MerkleNode and delegate
+    }
+}
+
 
 pub async fn hash_dir(pid: i32, dir_path: PathBuf, pool: &Pool<Sqlite>) {
     log::info!("starting hashing directory");
@@ -72,49 +121,37 @@ pub async fn hash_dir(pid: i32, dir_path: PathBuf, pool: &Pool<Sqlite>) {
     if use_cache {
         // if reading the cache was successful, use it to compare
         log::info!("comparing the merkle tree with cached tree");
+        let wrapped_cached: BTreeSet<MerkleNodeWrapper> = cached_tree.as_ref().unwrap().tree.root.children
+            .iter()
+            .map(|node| MerkleNodeWrapper { node: node.clone() })
+            .collect();
+        let wrapped_current: BTreeSet<MerkleNodeWrapper> = tree.root.children
+            .iter()
+            .map(|node| MerkleNodeWrapper { node: node.clone() })
+            .collect();
+
         let cached_children = cached_tree.unwrap().tree.root.children;
         let current_children = tree.root.clone().children;
 
-        // TODO measure how long the differences take
-        // hypothesis: shows modified and deleted entries
-        // actual: shows deleted entries
-        let ca_cu = cached_children.difference(&current_children).flatten();
+
+        // TODO measure how long the differences take on larger projects
+        // shows deleted entries
+        let deleted = cached_children.difference(&current_children).flatten();
+
+        // shows created and modified entries
+        let created_modified = wrapped_current.difference(&wrapped_cached).flatten();
+        log::info!("differences computed");
+
         println!("ca - cu");
-        for node in ca_cu {
+        for node in deleted {
             println!("{}", node.path.relative);
         }
-
-        // hypothesis: shows modified and created entries
-        // actual: shows created entries
-        let cu_ca = current_children.difference(&cached_children).flatten();
         println!("");
-        println!("cu - ca");
-        for node in cu_ca {
+        println!("w(cu) - w(ca)");
+        for node in created_modified {
             println!("{}", node.path.relative);
         }
-
-        // hypothesis: should show everything
-        // actual: shows everything, old hashes
-        let mut intersection = cached_children.intersection(&current_children).flatten();
-        println!("");
-        println!("intersection ca(cu)");
-        for node in intersection {
-            if node.path.relative == "newfile.txt" {
-                println!("{}: {}", node.path.relative, bytes_to_hex(node.clone().hash));
-            }
-        }
-
-        // this might have the new hashes?
-        // actual: shows everything, new hashes
-        intersection = current_children.intersection(&cached_children).flatten();
-        println!("");
-        println!("intersection cu(ca)");
-        for node in intersection {
-            if node.path.relative == "newfile.txt" {
-                println!("{}: {}", node.path.relative, bytes_to_hex(node.clone().hash));
-            }
-        }
-
+        log::info!("files parsed");
     } else {
         // iterate through entire tree
         log::info!("couldn't read cached tree, so iterating through entire merkle tree");
