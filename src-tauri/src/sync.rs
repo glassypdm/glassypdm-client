@@ -46,7 +46,6 @@ impl PartialOrd for MerkleNodeWrapper {
     }
 }
 
-// Implement IntoIterator for MerkleNodeWrapper
 impl IntoIterator for MerkleNodeWrapper {
     type Item = MerkleItem;
     type IntoIter = MerkleNodeIntoIter;
@@ -56,7 +55,6 @@ impl IntoIterator for MerkleNodeWrapper {
     }
 }
 
-// Implement IntoIterator for &MerkleNodeWrapper
 impl<'a> IntoIterator for &'a MerkleNodeWrapper {
     type Item = MerkleItem;
     type IntoIter = MerkleNodeIntoIter;
@@ -72,7 +70,6 @@ pub async fn hash_dir(pid: i32, dir_path: PathBuf, pool: &Pool<Sqlite>) {
     log::info!("directory: {}", dir_path.display());
     let dal = DataAccessLayer::new(pool);
 
-    let _ = dal.reset_fs_state(pid).await;
 
     let mut treepath = dir_path.clone();
     treepath.push(".glassytree");
@@ -145,19 +142,8 @@ pub async fn hash_dir(pid: i32, dir_path: PathBuf, pool: &Pool<Sqlite>) {
         println!("ca - cu");
         for node in deleted {
             println!("{}", node.path.relative);
-        }
-        println!("");
-        println!("w(cu) - w(ca)");
-        for node in created_modified {
-            println!("{}", node.path.relative);
-        }
-        log::info!("files parsed");
-    } else {
-        // iterate through entire tree
-        log::info!("couldn't read cached tree, so iterating through entire merkle tree");
-        for file in tree.iter().cloned() {
-            // store paths as 'windows' paths
             let rel_path;
+            let file = node.clone();
             #[cfg(target_os = "windows")]
             {
                 rel_path = file.path.relative.into_string();
@@ -166,44 +152,31 @@ pub async fn hash_dir(pid: i32, dir_path: PathBuf, pool: &Pool<Sqlite>) {
             {
                 rel_path = translate_filepath(&(file.path.relative.into_string()), false);
             }
-            let metadata = std::fs::metadata(file.path.absolute.clone()).unwrap();
-            let hash = bytes_to_hex(file.hash);
-            let filesize = metadata.len();
-            // ignore folders
-            if metadata.is_dir() {
-                continue;
-            }
 
-            // ignore tree file
-            // TODO unwrap ?? test this LOL
-            if file.path.absolute.into_string() == treepath.to_str().unwrap() {
-                log::info!("ignoring .glassytree");
-                continue;
-            }
+            // set file to in_fs = 0
+            let _ = dal.set_file_to_deleted(pid, rel_path).await;
+        }
+        println!("");
+        println!("w(cu) - w(ca)");
+        for file in created_modified {
+            println!("{}", file.path.relative);
+            let _ = upsert_file(file, pid, &treepath, &dal).await;
+        }
+    } else {
 
-            // ignore temp solidworks files
-            if rel_path.contains("~$") {
-                continue;
-            }
-            // root directory is empty
-            else if rel_path == "" {
-                continue;
-            }
+        // set all files in project to in_fs = 0
+        let _ = dal.reset_fs_state(pid).await;
 
-            if filesize == 0 {
-                //log::trace!("skiping empty file");
-                continue;
-            }
-
-            // write to sqlite
-            let _ = dal.insert_local_file(rel_path, pid, hash, filesize).await;
+        // iterate through entire tree
+        log::info!("couldn't read cached tree, so iterating through entire merkle tree");
+        for file in tree.iter().cloned() {
+            let _ = upsert_file(file, pid, &treepath, &dal).await;
         }
     }
 
 
     log::info!("files parsed");
-    // TODO un comment this
-    //let _ = dal.update_change_types(pid).await;
+    let _ = dal.update_change_types(pid).await;
 
 
     // save cache tree
@@ -243,6 +216,7 @@ pub async fn sync_changes(
 
     // hash local files
     hash_dir(pid, project_dir.into(), &pool).await;
+
     let tracked = dal.get_tracked_commit_for_project(pid).await.unwrap();
     if tracked == latest_commit {
         // skip updating remote files
@@ -250,13 +224,14 @@ pub async fn sync_changes(
         return Ok(true);
     }
     let _ = dal.set_tracked_commit_for_project(pid, latest_commit).await;
+
     log::info!("updating db with remote files...");
-    // update table with remote files
     for file in remote {
         // write to sqlite
         // TODO check result
         let _ = dal.insert_remote_file(file.path, pid, file.commitid, file.filehash, file.changetype, file.blocksize).await;
     }
+
     log::info!("remote files updated");
     Ok(true)
 }
@@ -338,4 +313,49 @@ pub async fn get_project_name(
     let pool = state_mutex.lock().await;
     let dal = DataAccessLayer::new(&pool);
     dal.get_project_name(pid).await
+}
+
+async fn upsert_file(file: MerkleItem, pid: i32, treepath: &PathBuf, dal: &DataAccessLayer<'_>) -> Result<bool, ()> {
+    // store paths as 'windows' paths
+    let rel_path;
+    #[cfg(target_os = "windows")]
+    {
+        rel_path = file.path.relative.into_string();
+    }
+    #[cfg(target_os = "linux")]
+    {
+        rel_path = translate_filepath(&(file.path.relative.into_string()), false);
+    }
+    let metadata = std::fs::metadata(file.path.absolute.clone()).unwrap();
+    let hash = bytes_to_hex(file.hash);
+    let filesize = metadata.len();
+    // ignore folders
+    if metadata.is_dir() {
+        return Ok(false);
+    }
+
+    // ignore tree file
+    // TODO unwrap ?? test this LOL
+    if file.path.absolute.into_string() == treepath.to_str().unwrap() {
+        log::info!("ignoring .glassytree");
+        return Ok(false);
+    }
+
+    // ignore temp solidworks files
+    if rel_path.contains("~$") {
+        return Ok(false);
+    }
+    // root directory is empty
+    else if rel_path == "" {
+        return Ok(false);
+    }
+
+    if filesize == 0 {
+        //log::trace!("skiping empty file");
+        return Ok(false);
+    }
+
+    // write to sqlite
+    let _ = dal.upsert_local_file(rel_path, pid, hash, filesize).await;
+    Ok(true)
 }

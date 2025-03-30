@@ -224,6 +224,15 @@ impl<'a> DataAccessLayer<'a> {
         Ok(())
     }
 
+    pub async fn remove_project_row(&self, pid: i32, url: String) -> Result<(), ()> {
+        let _ = sqlx::query("DELETE from project WHERE pid = $1 AND url = $2")
+        .bind(pid)
+        .bind(url)
+        .execute(self.pool)
+        .await;
+    Ok(())
+    }
+
     pub async fn clear_file_table_for_project_after_commit(
         &self,
         pid: i32,
@@ -406,7 +415,7 @@ impl<'a> DataAccessLayer<'a> {
         }
     }
 
-    pub async fn insert_local_file(
+    pub async fn upsert_local_file(
         &self,
         rel_path: String,
         pid: i32,
@@ -465,7 +474,9 @@ impl<'a> DataAccessLayer<'a> {
         .execute(self.pool)
         .await;
 
+        // TODO i like the idea of this but since we don't iterate over all the files all the time anymore, this code doesn't work
         // delete entries of files that are untracked and deleted
+        /*
         let _ =
             match sqlx::query("DELETE FROM file WHERE in_fs = 0 AND pid = $1 AND base_hash = ''")
                 .bind(pid)
@@ -473,12 +484,13 @@ impl<'a> DataAccessLayer<'a> {
                 .await
             {
                 Ok(a) => {
-                    log::info!("rows affected: {}", a.rows_affected());
+                    log::info!("deleting files that are untracked and deleted, rows affected: {}", a.rows_affected());
                 }
                 Err(e) => {
                     log::error!("error deleting entries of untracked and deleted: {}", e)
                 }
             };
+        */
         Ok(())
     }
 
@@ -488,6 +500,15 @@ impl<'a> DataAccessLayer<'a> {
             .execute(self.pool)
             .await;
         Ok(())
+    }
+
+    pub async fn set_file_to_deleted(&self, pid: i32, path: String) -> Result<(), ()> {
+        let _ = sqlx::query("UPDATE file SET in_fs = 0 WHERE pid = $1 AND filepath = $2")
+        .bind(pid)
+        .bind(path)
+        .execute(self.pool)
+        .await;
+    Ok(()) 
     }
 
     pub async fn get_tracked_commit_for_project(&self, pid: i32) -> Result<i32, ()> {
@@ -569,13 +590,13 @@ mod tests {
 
         init_db(&pool).await;
         let _ = dal
-            .insert_local_file("path/to/file".to_string(), 0, "abcd".to_string(), 43)
+            .upsert_local_file("path/to/file".to_string(), 0, "abcd".to_string(), 43)
             .await;
         let _ = dal
-            .insert_local_file("path/to/file2".to_string(), 0, "sf".to_string(), 43)
+            .upsert_local_file("path/to/file2".to_string(), 0, "sf".to_string(), 43)
             .await;
         let _ = dal
-            .insert_local_file("abc/def/ghi".to_string(), 0, "xyz".to_string(), 43)
+            .upsert_local_file("abc/def/ghi".to_string(), 0, "xyz".to_string(), 43)
             .await;
 
         // call function under test

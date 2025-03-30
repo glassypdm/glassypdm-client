@@ -1,3 +1,4 @@
+use crate::config::get_server_url;
 use crate::{
     file::translate_filepath, types::RemoteFile, util::open_directory, dal::DataAccessLayer
 };
@@ -120,5 +121,9 @@ pub async fn delete_project(pid: i32, state_mutex: State<'_, Mutex<Pool<Sqlite>>
             log::error!("could not delete the trash: {}", err);
         }
     }
+
+    // delete row in project table
+    let _ = dal.remove_project_row(pid, dal.get_active_server().await.unwrap()).await;
+
   Ok(())
 }

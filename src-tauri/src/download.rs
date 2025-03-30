@@ -312,7 +312,6 @@ pub async fn download_with_client(
 
     // temp path: cache + hash(.glassy?)
     let path = dir.to_owned() + &(sep().to_string()) + &chunk_download.block_hash;
-    println!("downloading to {}", path);
 
     // create cache folder if it doesnt exist
     let p: &Path = std::path::Path::new(&path);
