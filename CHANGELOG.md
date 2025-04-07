@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.7.3](https://github.com/glassypdm/glassypdm-client/compare/v0.7.2...v0.7.3) (2025-04-07)
+
+
+### Miscellaneous
+
+* Add filter files feature to downloads page ([eb00ddc](https://github.com/glassypdm/glassypdm-client/commit/eb00ddc4484d41f739677be8bf12b6cf0c5d185a))
+* optimize project sync - more efficient parsing of local files ([d9e59a9](https://github.com/glassypdm/glassypdm-client/commit/d9e59a98f1776fc878e87d951838c9e736e8345b))
+* optimize project syncing when tracked commit did not change ([d0533e8](https://github.com/glassypdm/glassypdm-client/commit/d0533e82600ce1043f5030d3db940457aa8b33e9))
+
 ## [0.7.2](https://github.com/glassypdm/glassypdm-client/compare/v0.7.1...v0.7.2) (2025-01-04)
 
 
