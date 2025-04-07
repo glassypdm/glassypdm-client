@@ -74,12 +74,20 @@ function SyncPage() {
     const start = performance.now();
 
     let data;
+    let latestCommit;
     try {
       data = await fetch(url + "/project/status/by-id/" + pid + "/" + bop, {
         headers: { Authorization: `Bearer ${await getToken()}` },
         method: "GET",
         mode: "cors",
       });
+      const hehez = await fetch(url + "/project/latest" + "?pid=" + pid, {
+        headers: { Authorization: `Bearer ${await getToken()}` },
+        method: "GET",
+        mode: "cors",
+      });
+      latestCommit = (await hehez.json()).body
+      console.log(latestCommit)
     } catch(err) {
       console.log(err);
       toast({
@@ -106,7 +114,7 @@ function SyncPage() {
       project = remote.body;
     }
 
-    await invoke("sync_changes", { pid: pid_number, remote: project });
+    await invoke("sync_changes", { pid: pid_number, remote: project, latestCommit: latestCommit });
 
     // TODO type this so its not any
     const uploadOutput: any = await invoke("get_uploads", { pid: pid_number });

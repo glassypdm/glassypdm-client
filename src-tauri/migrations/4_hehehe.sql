@@ -1,0 +1,1 @@
+ALTER TABLE project ADD COLUMN real_last_synced INTEGER DEFAULT 0;
