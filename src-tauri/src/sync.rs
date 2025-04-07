@@ -139,9 +139,9 @@ pub async fn hash_dir(pid: i32, dir_path: PathBuf, pool: &Pool<Sqlite>) {
         let created_modified = wrapped_current.difference(&wrapped_cached).flatten();
         log::info!("differences computed");
 
-        println!("ca - cu");
+        //println!("ca - cu");
         for node in deleted {
-            println!("{}", node.path.relative);
+            //println!("{}", node.path.relative);
             let rel_path;
             let file = node.clone();
             #[cfg(target_os = "windows")]
@@ -156,10 +156,10 @@ pub async fn hash_dir(pid: i32, dir_path: PathBuf, pool: &Pool<Sqlite>) {
             // set file to in_fs = 0
             let _ = dal.set_file_to_deleted(pid, rel_path).await;
         }
-        println!("");
-        println!("w(cu) - w(ca)");
+        //println!("");
+        //println!("w(cu) - w(ca)");
         for file in created_modified {
-            println!("{}", file.path.relative);
+            //println!("{}", file.path.relative);
             let _ = upsert_file(file, pid, &treepath, &dal).await;
         }
     } else {

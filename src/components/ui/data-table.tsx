@@ -53,7 +53,7 @@ export function DataTable<TData, TValue>({
           }
           className="max-w-sm"
         />
-        <InviteMember />
+        {/*<InviteMember />*/}
       </div>
       <Table>
         <TableHeader>

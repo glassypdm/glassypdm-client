@@ -18,6 +18,7 @@ export const MemberColumns: ColumnDef<Member>[] = [
         accessorKey: "role",
         header: "Role"
     },
+    /*
     {
         id: "actions",
         cell: ({ row }) => {
@@ -28,4 +29,5 @@ export const MemberColumns: ColumnDef<Member>[] = [
             )
         }
     }
+    */
 ]
