@@ -1603,7 +1603,7 @@ dependencies = [
 
 [[package]]
 name = "glassy_pdm_client"
-version = "0.7.3"
+version = "0.7.4"
 dependencies = [
  "bincode",
  "fs-chunker",

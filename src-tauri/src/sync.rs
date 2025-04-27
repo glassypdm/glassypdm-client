@@ -127,23 +127,19 @@ pub async fn hash_dir(pid: i32, dir_path: PathBuf, pool: &Pool<Sqlite>) {
             .map(|node| MerkleNodeWrapper { node: node.clone() })
             .collect();
 
-        let cached_children = cached_tree.unwrap().tree.root.children;
-        let current_children = tree.root.clone().children;
 
-
-        // TODO measure how long the differences take on larger projects
         // shows deleted entries
-        let deleted = cached_children.difference(&current_children).flatten();
+        let deleted = wrapped_cached.difference(&wrapped_current).flatten();
 
         // shows created and modified entries
         let created_modified = wrapped_current.difference(&wrapped_cached).flatten();
         log::info!("differences computed");
 
-        //println!("ca - cu");
+        //println!("w(ca) - w(cu)");
         for node in deleted {
-            //println!("{}", node.path.relative);
             let rel_path;
             let file = node.clone();
+            //println!("{}", file.path.relative);
             #[cfg(target_os = "windows")]
             {
                 rel_path = file.path.relative.into_string();
@@ -154,6 +150,8 @@ pub async fn hash_dir(pid: i32, dir_path: PathBuf, pool: &Pool<Sqlite>) {
             }
 
             // set file to in_fs = 0
+            // this will set some files (i.e. those that are in the folder of deleted files) to be set as not in the filesystem (in_fs = 0).
+            // this will fix itself because they are also in created_modified, and will be set as in the filesystem (in_fs = 1)
             let _ = dal.set_file_to_deleted(pid, rel_path).await;
         }
         //println!("");
