@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.4](https://github.com/glassypdm/glassypdm-client/compare/v0.7.3...v0.7.4) (2025-04-27)
+
+
+### Bug Fixes
+
+* Fixed bug where deleted files inside of folders were not caught ([c98200f](https://github.com/glassypdm/glassypdm-client/commit/c98200f1376bb6328fe6cd7acc55e5e06f3f7738))
+
 ## [0.7.3](https://github.com/glassypdm/glassypdm-client/compare/v0.7.2...v0.7.3) (2025-04-07)
 
 
