@@ -475,8 +475,8 @@ impl<'a> DataAccessLayer<'a> {
         .await;
 
         // TODO i like the idea of this but since we don't iterate over all the files all the time anymore, this code doesn't work
+        // 250719: shouldnt this work? does this delete remote files that arent yet downloaded?
         // delete entries of files that are untracked and deleted
-        /*
         let _ =
             match sqlx::query("DELETE FROM file WHERE in_fs = 0 AND pid = $1 AND base_hash = ''")
                 .bind(pid)
@@ -490,7 +490,6 @@ impl<'a> DataAccessLayer<'a> {
                     log::error!("error deleting entries of untracked and deleted: {}", e)
                 }
             };
-        */
         Ok(())
     }
 
