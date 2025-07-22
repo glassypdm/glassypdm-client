@@ -216,8 +216,9 @@ pub async fn sync_changes(
     hash_dir(pid, project_dir.into(), &pool).await;
 
     let tracked = dal.get_tracked_commit_for_project(pid).await.unwrap();
+
     if tracked == latest_commit {
-        // skip updating remote files
+        // skip updating remote files if the tracked commit is up to date
         log::info!("skipping updating remote files");
         return Ok(true);
     }

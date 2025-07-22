@@ -76,11 +76,14 @@ function SyncPage() {
     let data;
     let latestCommit;
     try {
+      // repository info
       data = await fetch(url + "/project/status/by-id/" + pid + "/" + bop, {
         headers: { Authorization: `Bearer ${await getToken()}` },
         method: "GET",
         mode: "cors",
       });
+
+      // latest commit
       const hehez = await fetch(url + "/project/latest" + "?pid=" + pid, {
         headers: { Authorization: `Bearer ${await getToken()}` },
         method: "GET",
@@ -97,6 +100,7 @@ function SyncPage() {
       setSyncInProgress(false);
       return;
     }
+    
     const remote: ProjectStateOutput = await data.json();
     if (remote.response != "success") {
       toast({

@@ -474,11 +474,10 @@ impl<'a> DataAccessLayer<'a> {
         .execute(self.pool)
         .await;
 
-        // TODO i like the idea of this but since we don't iterate over all the files all the time anymore, this code doesn't work
-        // 250719: shouldnt this work? does this delete remote files that arent yet downloaded?
         // delete entries of files that are untracked and deleted
+        // this will NOT delete entries that are tracked by the project but not yet downloaded
         let _ =
-            match sqlx::query("DELETE FROM file WHERE in_fs = 0 AND pid = $1 AND base_hash = ''")
+            match sqlx::query("DELETE FROM file WHERE in_fs = 0 AND pid = $1 AND base_hash = '' AND tracked_hash = ''")
                 .bind(pid)
                 .execute(self.pool)
                 .await
