@@ -166,7 +166,7 @@ pub async fn upload_files(
                     Err(err) => {
                         let reqwest_error =
                             "error uploading chunk: ".to_string() + &err.to_string();
-                        log::error!("error uploading a chunk: {}", err);
+                        log::error!("request error uploading a chunk: {}", err);
                         let mut error = error_flag.lock().await;
                         *error = true;
                         reqwest_error
