@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.5](https://github.com/glassypdm/glassypdm-client/compare/v0.7.4...v0.7.5) (2025-07-23)
+
+
+### Bug Fixes
+
+* Deleted, untracked files will no longer show as pending uploads ([1915df6](https://github.com/glassypdm/glassypdm-client/commit/1915df6f85dd835d4d36d371449bd274a3e335f2))
+
 ## [0.7.4](https://github.com/glassypdm/glassypdm-client/compare/v0.7.3...v0.7.4) (2025-04-27)
 
 
