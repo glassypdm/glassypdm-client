@@ -1,6 +1,12 @@
 import { useAuth } from "@clerk/clerk-react";
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link, Outlet, useRouter, useRouterState } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Link,
+  Outlet,
+  useRouter,
+  useRouterState,
+} from "@tanstack/react-router";
 import { invoke } from "@tauri-apps/api/core";
 import {
   NavigationMenu,
@@ -33,7 +39,7 @@ interface Member {
 }
 
 function TeamDashboard() {
-  const { resolvedLocation} = useRouterState();
+  const { resolvedLocation } = useRouterState();
   const { teamid, url } = Route.useLoaderData();
   const { getToken } = useAuth();
   const { isPending, isError, data, error } = useQuery({
@@ -48,9 +54,9 @@ function TeamDashboard() {
       return response.json();
     },
   });
-  console.log()
+  console.log();
 
-  if (isPending) {
+  if (isPending || !resolvedLocation) {
     return <Loading />;
   } else if (isError) {
     return <div>Encountered error while fetching team information</div>;
@@ -70,7 +76,7 @@ function TeamDashboard() {
               <NavigationMenuItem>
                 <NavigationMenuLink
                   className={cn(navigationMenuTriggerStyle(), "")}
-                  active={resolvedLocation.pathname.includes('members')}
+                  active={resolvedLocation.pathname.includes("members")}
                   asChild
                 >
                   <Link to="/teams/$teamid/members" params={{ teamid: teamid }}>
@@ -81,7 +87,7 @@ function TeamDashboard() {
               <NavigationMenuItem>
                 <NavigationMenuLink
                   className={cn(navigationMenuTriggerStyle(), "")}
-                  active={resolvedLocation.pathname.includes('pgroups')}
+                  active={resolvedLocation.pathname.includes("pgroups")}
                   asChild
                 >
                   <Link to="/teams/$teamid/pgroups" params={{ teamid: teamid }}>
@@ -89,7 +95,7 @@ function TeamDashboard() {
                   </Link>
                 </NavigationMenuLink>
               </NavigationMenuItem>
-                  {/*
+              {/*
               <NavigationMenuItem>
                 <NavigationMenuLink
                   className={cn(navigationMenuTriggerStyle(), "")}
@@ -106,7 +112,7 @@ function TeamDashboard() {
                 <NavigationMenuItem>
                   <NavigationMenuLink
                     className={cn(navigationMenuTriggerStyle(), "")}
-                    active={resolvedLocation.pathname.includes('manage')}
+                    active={resolvedLocation.pathname.includes("manage")}
                     asChild
                   >
                     <Link
