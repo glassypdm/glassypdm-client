@@ -1,16 +1,18 @@
 use crate::{
-    file::translate_filepath, types::RemoteFile, util::open_directory, dal::DataAccessLayer
+    dal::DataAccessLayer, file::translate_filepath, types::RemoteFile, util::open_directory,
 };
-use std::cmp::Ordering;
-use std::collections::BTreeSet;
-use std::collections::btree_set::IntoIter;
 use bincode::{config, Decode, Encode};
-use merkle_hash::{bytes_to_hex, Algorithm, MerkleItem, MerkleNode, MerkleNodeIntoIter, MerkleTree};
+use merkle_hash::{
+    bytes_to_hex, Algorithm, MerkleItem, MerkleNode, MerkleNodeIntoIter, MerkleTree,
+};
 use serde::{Deserialize, Serialize};
 use sqlx::{Pool, Row, Sqlite};
+use std::cmp::Ordering;
+use std::collections::btree_set::IntoIter;
+use std::collections::BTreeSet;
+use std::fs::{self, OpenOptions};
 use std::io::Write;
 use std::path::PathBuf;
-use std::fs::{self, OpenOptions};
 use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::State;
 use tokio::sync::Mutex;
@@ -18,7 +20,7 @@ use tokio::sync::Mutex;
 #[derive(Encode, Decode)]
 struct CachedTree {
     tree: MerkleTree,
-    timestamp: u64
+    timestamp: u64,
 }
 
 // wrapper for custom BTreeSet difference behavior
@@ -33,7 +35,7 @@ impl Ord for MerkleNodeWrapper {
             Ordering::Equal => {
                 // compare the hashes if paths are equal
                 self.node.item.hash.cmp(&other.node.item.hash)
-            },
+            }
             Ordering::Less => Ordering::Less,
             Ordering::Greater => Ordering::Greater,
         }
@@ -64,12 +66,10 @@ impl<'a> IntoIterator for &'a MerkleNodeWrapper {
     }
 }
 
-
 pub async fn hash_dir(pid: i32, dir_path: PathBuf, pool: &Pool<Sqlite>) {
     log::info!("starting hashing directory");
     log::info!("directory: {}", dir_path.display());
     let dal = DataAccessLayer::new(pool);
-
 
     let mut treepath = dir_path.clone();
     treepath.push(".glassytree");
@@ -92,9 +92,12 @@ pub async fn hash_dir(pid: i32, dir_path: PathBuf, pool: &Pool<Sqlite>) {
     let owowo = fs::read(&treepath);
     let config = config::standard();
     let mut cached_tree: Option<CachedTree> = Option::None;
-    let use_cache= match owowo {
+    let use_cache = match owowo {
         Ok(bytes) => {
-            match bincode::decode_from_slice::<CachedTree, bincode::config::Configuration>(&bytes[..], config) {
+            match bincode::decode_from_slice::<CachedTree, bincode::config::Configuration>(
+                &bytes[..],
+                config,
+            ) {
                 Ok(res) => {
                     if res.0.timestamp == time_last_synced {
                         // cached tree is valid
@@ -103,30 +106,36 @@ pub async fn hash_dir(pid: i32, dir_path: PathBuf, pool: &Pool<Sqlite>) {
                     } else {
                         false
                     }
-                },
+                }
                 Err(err) => {
                     log::error!("decoding error when reading cached tree: {}", err);
                     false
                 }
             }
-        },
+        }
         Err(err) => {
             log::error!("failed to read cache tree: {}", err);
             false
         }
     };
-    if use_cache {
+    if false {
         // if reading the cache was successful, use it to compare
         log::info!("comparing the merkle tree with cached tree");
-        let wrapped_cached: BTreeSet<MerkleNodeWrapper> = cached_tree.as_ref().unwrap().tree.root.children
+        let wrapped_cached: BTreeSet<MerkleNodeWrapper> = cached_tree
+            .as_ref()
+            .unwrap()
+            .tree
+            .root
+            .children
             .iter()
             .map(|node| MerkleNodeWrapper { node: node.clone() })
             .collect();
-        let wrapped_current: BTreeSet<MerkleNodeWrapper> = tree.root.children
+        let wrapped_current: BTreeSet<MerkleNodeWrapper> = tree
+            .root
+            .children
             .iter()
             .map(|node| MerkleNodeWrapper { node: node.clone() })
             .collect();
-
 
         // shows deleted entries
         let deleted = wrapped_cached.difference(&wrapped_current).flatten();
@@ -161,7 +170,6 @@ pub async fn hash_dir(pid: i32, dir_path: PathBuf, pool: &Pool<Sqlite>) {
             let _ = upsert_file(file, pid, &treepath, &dal).await;
         }
     } else {
-
         // set all files in project to in_fs = 0
         let _ = dal.reset_fs_state(pid).await;
 
@@ -172,13 +180,14 @@ pub async fn hash_dir(pid: i32, dir_path: PathBuf, pool: &Pool<Sqlite>) {
         }
     }
 
-
     log::info!("files parsed");
     let _ = dal.update_change_types(pid).await;
 
-
     // save cache tree
-    let cache: CachedTree = CachedTree { tree: tree, timestamp: in_s };
+    let cache: CachedTree = CachedTree {
+        tree: tree,
+        timestamp: in_s,
+    };
     let _ = dal.set_last_synced_for_project(pid, in_s).await.unwrap();
 
     let serialized = bincode::encode_to_vec(&cache, config).unwrap();
@@ -186,11 +195,11 @@ pub async fn hash_dir(pid: i32, dir_path: PathBuf, pool: &Pool<Sqlite>) {
         .write(true)
         .create(true)
         .truncate(true)
-        .open(treepath).unwrap();
+        .open(treepath)
+        .unwrap();
     let _ = file.write_all(&serialized);
-    // TODO don't ignore the result and don't unwrap 
+    // TODO don't ignore the result and don't unwrap
     // TODO we'll need to overwrite tree file if it exists already
-
 
     log::info!("hashing directory complete");
 }
@@ -228,7 +237,16 @@ pub async fn sync_changes(
     for file in remote {
         // write to sqlite
         // TODO check result
-        let _ = dal.insert_remote_file(file.path, pid, file.commitid, file.filehash, file.changetype, file.blocksize).await;
+        let _ = dal
+            .insert_remote_file(
+                file.path,
+                pid,
+                file.commitid,
+                file.filehash,
+                file.changetype,
+                file.blocksize,
+            )
+            .await;
     }
 
     log::info!("remote files updated");
@@ -314,7 +332,12 @@ pub async fn get_project_name(
     dal.get_project_name(pid).await
 }
 
-async fn upsert_file(file: MerkleItem, pid: i32, treepath: &PathBuf, dal: &DataAccessLayer<'_>) -> Result<bool, ()> {
+async fn upsert_file(
+    file: MerkleItem,
+    pid: i32,
+    treepath: &PathBuf,
+    dal: &DataAccessLayer<'_>,
+) -> Result<bool, ()> {
     // store paths as 'windows' paths
     let rel_path;
     #[cfg(target_os = "windows")]
