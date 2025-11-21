@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.7.6](https://github.com/glassypdm/glassypdm-client/compare/v0.7.5...v0.7.6) (2025-11-21)
+
+
+### Bug Fixes
+
+* Disable use of .glassytree file for hashing projects ([01e552e](https://github.com/glassypdm/glassypdm-client/commit/01e552e3db8b0da37d04468d37dcea0bc7e7e6f7))
+* type errors ([d5f56c0](https://github.com/glassypdm/glassypdm-client/commit/d5f56c06092cd042abed4a997e635d465f32afce))
+
 ## [0.7.5](https://github.com/glassypdm/glassypdm-client/compare/v0.7.4...v0.7.5) (2025-07-23)
 
 
